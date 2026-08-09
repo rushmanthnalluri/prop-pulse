@@ -1,0 +1,34 @@
+# Render Blueprint for PropPulse — FastAPI backend + Vite/React static frontend.
+# Dashboard: New > Blueprint > select repo rushmanthnalluri/prop-pulse, branch main.
+services:
+  # FastAPI backend (backend/app/main.py). Run from repo root: settings resolve
+  # MODEL_DIR/DATA_DIR repo-relative, and serving artifacts are committed to git.
+  - type: web
+    name: prop-pulse-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      # Dependencies are pinned/verified on Python 3.14.5 (see backend/requirements.txt).
+      - key: PYTHON_VERSION
+        value: 3.14.5
+      # Must match the frontend service URL below (no trailing slash).
+      - key: CORS_ORIGINS
+        value: https://prop-pulse-frontend.onrender.com
+
+  # Vite + React frontend. VITE_API_URL is baked into the bundle at build time.
+  - type: web
+    name: prop-pulse-frontend
+    runtime: static
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://prop-pulse-api.onrender.com
+    # SPA fallback for react-router client-side routes.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
