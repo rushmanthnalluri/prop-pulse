@@ -1,0 +1,7 @@
+# ml.tracking.feature_version() hashes the raw bytes of models/feature_list.json,
+# and the pinned feature_version (see models/champion.json,
+# models/explainability/feature_importance.json, models/monitoring/*.json) is the
+# sha1 of the CRLF working copy produced on Windows. A plain LF checkout (Linux
+# CI, macOS) would hash to a different value and break the pinned chain, so pin
+# the checkout line endings for this one hashed file.
+models/feature_list.json text eol=crlf

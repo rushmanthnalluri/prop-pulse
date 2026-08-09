@@ -55,13 +55,24 @@ def _tree_listing(root: Path) -> list[str]:
     return sorted(str(p.relative_to(root)) for p in root.rglob("*"))
 
 
+def _prediction_log_bytes() -> bytes | None:
+    """Bytes of the real prediction log, or ``None`` when it does not exist.
+
+    ``logs/`` is gitignored, so a fresh CI checkout has no prediction log at
+    all; ``None`` snapshots that state (a journey that wrongly creates the
+    file still fails the byte comparison).
+    """
+    path = DATA_DIR.parent / "logs" / "predictions.jsonl"
+    return path.read_bytes() if path.exists() else None
+
+
 @pytest.fixture(scope="module")
 def pre_journey(workflow_client: TestClient) -> SimpleNamespace:
     """Snapshot every watched artifact before the journey starts."""
     return SimpleNamespace(
         models=_tree_snapshot(MODELS_DIR),
         mlruns=_tree_listing(MLRUNS_DIR),
-        prediction_log=(DATA_DIR.parent / "logs" / "predictions.jsonl").read_bytes(),
+        prediction_log=_prediction_log_bytes(),
         health=workflow_client.get("/health").content,
         model_info=workflow_client.get("/model/info").content,
     )
@@ -148,8 +159,7 @@ class TestIsolation:
         self, pre_journey: SimpleNamespace, journey: SimpleNamespace
     ) -> None:
         """§3.11: sandbox operations never write logs/predictions.jsonl."""
-        current = (DATA_DIR.parent / "logs" / "predictions.jsonl").read_bytes()
-        assert current == pre_journey.prediction_log
+        assert _prediction_log_bytes() == pre_journey.prediction_log
 
     def test_health_and_model_info_byte_identical(
         self,
