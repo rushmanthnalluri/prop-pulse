@@ -16,7 +16,7 @@ flowchart TD
     H --> J[ml/explainability\nSHAP artifacts + per-prediction service]
     I --> K[backend FastAPI\n/predict /market/clusters /model/info /metrics /health]
     J --> K
-    K --> L[frontend React dashboard\nValuation | Market Map | Model Insights]
+    K --> L["frontend React dashboard\nValuation | Market Map | Model Insights"]
     K --> M[ml/monitoring\nprediction log → PSI drift check → retrain recommendation]
     M --> K
 ```
