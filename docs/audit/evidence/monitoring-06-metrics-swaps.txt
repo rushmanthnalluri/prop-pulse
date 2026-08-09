@@ -1,0 +1,34 @@
+/metrics drift-exposure swap tests — server on 127.0.0.1:8350 (uvicorn, PREDICTION_LOG_PATH pointed at temp).
+Original reports/drift/latest.json backed up before, restored after (sha256 eb18910d48f0253c3bed7f5d564cae449e21cc4782811d93219797578d5c5aef before AND after).
+
+--- A. Existing real report (status ok, n=7 from docker smoke) — full passthrough ---
+top-level keys: ['avg_latency_ms', 'drift', 'errors_total', 'requests_by_path', 'requests_total', 'uptime_seconds']
+drift keys: ['drift_detected', 'drifted_features', 'log_path', 'max_psi', 'min_sample_for_retraining', 'n_invalid_lines',
+             'n_predictions', 'per_feature_psi', 'prediction_psi', 'psi_threshold', 'recommendation_text',
+             'reference_feature_version', 'retraining_recommended', 'status', 'timestamp', 'warn_features',
+             'warn_threshold', 'window']
+drift.status: ok | n_predictions: 7 | drift_detected: True | retraining_recommended: False
+per_feature_psi entries: 53 | max_psi: 13.221811
+thresholds: warn 0.1 / drift 0.2 | min_sample: 200
+prediction_psi: {'estimated_price': 10.48874, 'probability': 10.48874}
+
+--- B. Report file missing -> placeholder ---
+{"status": "no_data",
+ "detail": "reports/drift/latest.json not found — run `python -m ml.monitoring.drift_check` after predictions are logged."}
+
+--- C. Crafted small-PSI ok report -> verbatim passthrough ---
+status: ok | n: 42 | drift: False | retrain: False | warn_features: ['OverallQual'] | per_feature_psi: {'GrLivArea': 0.01, 'OverallQual': 0.15}
+
+--- D1. Malformed JSON report -> no exception leak ---
+{"status": "no_data", "detail": "unreadable drift report"}
+
+--- D2. Valid JSON but non-dict ([1,2,3]) ---
+{"status": "no_data"}
+
+Frontend consumption (frontend/src/pages/ModelInsights.jsx:140-207): reads metrics.drift.{status,detail,
+per_feature_psi,warn_threshold,psi_threshold,drift_detected,n_predictions,drifted_features,retraining_recommended,
+timestamp} — all present in ok reports; no_data placeholder handled with `?? 0.1` / `?? 0.2` defaults.
+
+NOTE: the drift report path is NOT env-overridable — config.py:68-70 hardcodes
+REPO_ROOT/reports/drift/latest.json (resolved_drift_report_path); only PREDICTION_LOG_PATH is env-driven
+(config.py:41). The swap tests above were done with backup+restore for that reason.

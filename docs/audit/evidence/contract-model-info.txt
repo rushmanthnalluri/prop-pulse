@@ -1,0 +1,105 @@
+$ curl -s http://localhost:8400/model/info (Origin: http://localhost:5400)
+{
+    "regression": {
+        "name": "ridge",
+        "version": "v1",
+        "path": "models/registry/regression_champion.joblib",
+        "val_metrics": {
+            "mae": 14526.572418,
+            "rmse": 21672.72103,
+            "r2": 0.927982,
+            "rmsle": 0.135437,
+            "rmse_log": 0.135437,
+            "residual_interval": {
+                "q_low": -0.140954,
+                "q_high": 0.116634
+            }
+        },
+        "test_metrics": {
+            "mae": 15075.473458,
+            "rmse": 21151.541687,
+            "r2": 0.93048,
+            "rmsle": 0.118689,
+            "interval_coverage": 0.782857
+        },
+        "residual_interval": {
+            "q_low": -0.140954,
+            "q_high": 0.116634
+        },
+        "bootstrap_vs_runner_up": {
+            "runner_up": "xgboost",
+            "observed_rmsle_diff": -0.004341,
+            "ci95": [
+                -0.013336,
+                0.005985
+            ],
+            "prob_runner_up_better": 0.1925,
+            "n_resamples": 2000,
+            "seed": 42,
+            "significant": false
+        }
+    },
+    "classification": {
+        "name": "random_forest",
+        "version": "v1",
+        "path": "models/registry/classification_champion.joblib",
+        "calibrated": true,
+        "threshold": 0.203292,
+        "val_metrics": {
+            "roc_auc": 0.721778,
+            "pr_auc": 0.525013,
+            "precision": 0.409091,
+            "recall": 0.818182,
+            "f1": 0.545455,
+            "brier": 0.18555,
+            "threshold": 0.203292,
+            "confusion_matrix": {
+                "tn": 122,
+                "fp": 117,
+                "fn": 18,
+                "tp": 81
+            }
+        },
+        "test_metrics": {
+            "roc_auc": 0.766602,
+            "pr_auc": 0.567363,
+            "precision": 0.366972,
+            "recall": 0.816327,
+            "f1": 0.506329,
+            "brier": 0.171026,
+            "threshold": 0.203292,
+            "confusion_matrix": {
+                "tn": 57,
+                "fp": 69,
+                "fn": 9,
+                "tp": 40
+            }
+        }
+    },
+    "clustering": {
+        "path": "models/clustering/dbscan.joblib",
+        "n_clusters": 4
+    },
+    "selected_at": "2026-08-07T10:38:48.406646+00:00",
+    "dataset_version": "ames-1.0",
+    "feature_version": "9b0f8ba4201c",
+    "n_features": 94,
+    "rationale": "Regression champion = ridge: best validation RMSLE (0.1354 vs runner-up xgboost 0.1398); the paired bootstrap (2000 resamples, seed 42) 95% CI for RMSLE(champion)-RMSLE(runner-up) is [-0.0133, 0.0060] \u00e2\u20ac\u201d the gap is not statistically decisive (95% CI includes 0). ridge also posts the best val RMSE ($21,673 vs $23,460 runner-up), MAE and R\u00c2\u00b2 (0.9280), and as a regularised linear model it is fully interpretable (signed coefficients), tiny on disk (~21 KB vs ~25 MB for the forest) and the fastest to serve, so it wins on performance + interpretability + latency; XGBoost offers no compensating gain. Classification champion = calibrated random_forest: best calibrated val PR-AUC (0.5250) AND best calibrated Brier (0.1856), so probabilities are both ranking-strong and well calibrated; sigmoid calibration (cv=5) was fitted on train only. Operating threshold 0.2033 maximises val F1 (precision 0.4091, recall 0.8182); SPEC \u00c2\u00a714 \u00e2\u20ac\u201d not 0.5, since calibrated probabilities sit near the ~25% prevalence. Classification target is SIMULATED (ADR-3) \u00e2\u20ac\u201d not a real-world performance claim.",
+    "headline_metrics": {
+        "regression": {
+            "val_rmsle": 0.135437,
+            "val_rmse": 21672.72103,
+            "val_mae": 14526.572418,
+            "val_r2": 0.927982,
+            "test_rmsle": 0.118689
+        },
+        "classification": {
+            "val_pr_auc": 0.525013,
+            "val_roc_auc": 0.721778,
+            "val_brier": 0.18555,
+            "val_f1": 0.545455,
+            "threshold": 0.203292,
+            "simulated_target": true
+        }
+    }
+}

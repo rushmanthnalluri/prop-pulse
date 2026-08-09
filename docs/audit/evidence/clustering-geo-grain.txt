@@ -1,0 +1,17 @@
+=== property_geo.csv presence ===
+exists: False
+
+=== train.csv: 945 rows, 25 neighborhoods ===
+max unique (lat,long) pairs per neighborhood: 1
+neighborhoods with >1 unique coord pair: NONE
+
+=== val.csv: 338 rows, 24 neighborhoods ===
+max unique (lat,long) pairs per neighborhood: 1
+neighborhoods with >1 unique coord pair: NONE
+
+=== test.csv: 175 rows, 23 neighborhoods ===
+max unique (lat,long) pairs per neighborhood: 1
+neighborhoods with >1 unique coord pair: NONE
+
+train rows whose (lat,long) != neighborhood centroid: 0
+total unique (lat,long) in train: 25

@@ -1,0 +1,18 @@
+--- GET /market/clusters c=50 x200 (wave-9b: cached payload, no per-request file I/O) ---
+GET /market/clusters  concurrency=50
+  requests=200 errors=0 (0.00%) statuses={'200': 200}
+  latency ms: min=79.03 mean=862.23 p50=518.29 p90=2074.7 p95=2322.89 p99=2907.77 max=3429.61
+  wall=4.197s throughput=47.65 req/s
+{"method": "GET", "endpoint": "/market/clusters", "concurrency": 50, "requests": 200, "errors": 0, "error_rate": 0.0, "throughput_rps": 47.65, "wall_seconds": 4.197, "latency_ms": {"min": 79.03, "mean": 862.23, "p50": 518.29, "p90": 2074.7, "p95": 2322.89, "p99": 2907.77, "max": 3429.61}, "statuses": {"200": 200}}
+--- GET /model/importance c=50 x200 ---
+GET /model/importance  concurrency=50
+  requests=200 errors=0 (0.00%) statuses={'200': 200}
+  latency ms: min=86.14 mean=557.0 p50=391.43 p90=1157.85 p95=1474.67 p99=2113.16 max=2460.02
+  wall=2.879s throughput=69.47 req/s
+{"method": "GET", "endpoint": "/model/importance", "concurrency": 50, "requests": 200, "errors": 0, "error_rate": 0.0, "throughput_rps": 69.47, "wall_seconds": 2.879, "latency_ms": {"min": 86.14, "mean": 557.0, "p50": 391.43, "p90": 1157.85, "p95": 1474.67, "p99": 2113.16, "max": 2460.02}, "statuses": {"200": 200}}
+--- GET /model/info c=50 x200 (bonus) ---
+GET /model/info  concurrency=50
+  requests=200 errors=0 (0.00%) statuses={'200': 200}
+  latency ms: min=81.64 mean=552.61 p50=528.74 p90=1059.5 p95=1246.38 p99=1786.08 max=2128.73
+  wall=2.734s throughput=73.16 req/s
+{"method": "GET", "endpoint": "/model/info", "concurrency": 50, "requests": 200, "errors": 0, "error_rate": 0.0, "throughput_rps": 73.16, "wall_seconds": 2.734, "latency_ms": {"min": 81.64, "mean": 552.61, "p50": 528.74, "p90": 1059.5, "p95": 1246.38, "p99": 1786.08, "max": 2128.73}, "statuses": {"200": 200}}

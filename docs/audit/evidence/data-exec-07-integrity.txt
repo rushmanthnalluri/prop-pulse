@@ -1,0 +1,30 @@
+== 1. Id integrity ==
+raw: unique Ids: True | range 1..1460: True
+train: Id unique: True | Id dtype: int64 | min=1 max=1460
+val: Id unique: True | Id dtype: int64 | min=6 max=1455
+test: Id unique: True | Id dtype: int64 | min=17 max=1459
+all-splits union unique: True | n: 1458
+train: full-row duplicates: 0
+val: full-row duplicates: 0
+test: full-row duplicates: 0
+duplicate rows across all splits ignoring Id: 0
+
+== 2. Coordinate bounds (schema lat_range/long_range) ==
+schema lat_range: [41.98, 42.09] long_range: [-93.72, -93.55]
+train: lat in range: True (min=41.992, max=42.0627) | long in range: True (min=-93.6868, max=-93.6033)
+val: lat in range: True (min=41.992, max=42.0627) | long in range: True (min=-93.6868, max=-93.6033)
+test: lat in range: True (min=41.992, max=42.0627) | long in range: True (min=-93.6868, max=-93.6033)
+geo lookup rows: 25 | neighborhoods covered: 25
+all rows' lat/long == neighborhood centroid lookup: True
+centroid bounds from data/external/neighborhood_geo.csv: lat (np.float64(41.992), np.float64(42.0627)) long (np.float64(-93.6868), np.float64(-93.6033))
+
+== 3. days_on_market / sells_within_30_days consistency ==
+train: DOM in [1,365]: True (min=8, max=141, median=41.0) | flag==(dom<=30): True | int dtypes: True | fast-sale rate: 0.2529
+val: DOM in [1,365]: True (min=12, max=151, median=39.0) | flag==(dom<=30): True | int dtypes: True | fast-sale rate: 0.2929
+test: DOM in [1,365]: True (min=15, max=112, median=37.0) | flag==(dom<=30): True | int dtypes: True | fast-sale rate: 0.2800
+train: simulated DOM reproduces stored values exactly (seed 42): True
+val: simulated DOM reproduces stored values exactly (seed 42): True
+test: simulated DOM reproduces stored values exactly (seed 42): True
+simulator fitted on train only: neighborhood medians count: 25 == train neighborhoods: 25
+simulator medians == train-split medians: True
+simulator uses row SalePrice (documented simplification, ADR-3): True

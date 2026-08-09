@@ -1,0 +1,7 @@
+in-distribution control @ n=300:
+  status=ok n=300
+  per_feature_psi={'GrLivArea': 0.064343, 'OverallQual': 0.006271}
+  max_psi=0.064343
+  drift_detected=False  retraining_recommended=False
+  text: No significant drift across monitored features (max PSI 0.064 < 0.1). No action needed.
+CONTROL PASS: no drift -> no retraining flag even at n=300 >= 200

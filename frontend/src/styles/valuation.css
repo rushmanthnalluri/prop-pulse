@@ -1,0 +1,313 @@
+/* ==========================================================================
+   Valuation page (SPEC §5.2) — structured form + sticky result rail.
+   Tokens and primitives live in styles.css (single owner); this file owns
+   only valuation-specific layout and components. Imported from
+   pages/Valuation.jsx. Hairlines over shadows; nothing below 11px.
+   ========================================================================== */
+
+/* Layout: form 1.15 / rail 0.85 (SPEC §5.2); the rail sticks via the global
+   .sticky-rail (top: 24px) and goes static ≤1024px. */
+.valuation-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 36px;
+  align-items: start;
+}
+.valuation-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* Grid items default to min-width:auto — without this the comps table's
+     min-content (~573px) propagates up and stretches the whole single-column
+     track, pushing the page ~235px past a 390px viewport (WP-7c). */
+  min-width: 0;
+}
+.rail-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0; /* same shrink allowance inside the rail (flex item of it) */
+  transition: opacity 0.15s ease;
+}
+/* Dimmed stale result — while re-estimating and after a failed re-submit
+   (the previous estimate is kept, never wiped). */
+.rail-stack--dim {
+  opacity: 0.55;
+}
+.rail-error-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.rail-empty-actions {
+  margin-top: 14px;
+}
+
+/* Restore-last-valuation bar (SPEC §5.2.2: URL params win, else this). */
+.restore-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+.restore-text {
+  flex: 1;
+  min-width: 180px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.restore-summary {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-3);
+}
+.restore-dismiss {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  font-size: 15px;
+  line-height: 1.2;
+  color: var(--text-3);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.restore-dismiss:hover {
+  color: var(--text);
+}
+
+/* Form */
+.valuation-form .alert {
+  margin-bottom: 16px;
+}
+.valuation-submit {
+  width: 100%;
+}
+.form-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.form-actions .btn {
+  flex: 1;
+}
+/* Warn-not-block tier (SPEC §5.2.1): pre-announces reduced confidence. */
+.field-warn {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--warn);
+}
+.check-field {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding-top: 24px; /* aligns the checkbox with the labeled inputs */
+}
+.check-input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.adv-intro {
+  margin-bottom: 12px;
+}
+.adv-group + .adv-group {
+  margin-top: 18px;
+}
+.adv-group-title {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 10px;
+}
+
+/* THE ESTIMATE — the only accent-bordered panel on the page. */
+.panel--hero {
+  border-color: var(--accent-border);
+}
+.hero-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.result-price--empty {
+  color: var(--text-3);
+}
+/* Range-band fill animates on a new estimate (SPEC §2.4). */
+.band-fill {
+  transition: left var(--dur-emphasis), right var(--dur-emphasis);
+}
+.hero-confidence {
+  margin-top: 14px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+.hero-confidence-reasons {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+.hero-confidence-mae {
+  margin-top: 8px;
+}
+
+/* Factor bars: up = accent, down = danger (SPEC §2.1 semantics). The value
+   column widens for the ↑/↓ share format; scoped media rule keeps the mobile
+   adaptation from styles.css working. */
+.factor-fill--neg {
+  background: var(--danger);
+}
+.factor-row {
+  grid-template-columns: 150px 1fr 56px;
+}
+@media (max-width: 640px) {
+  .factor-row {
+    grid-template-columns: 110px 1fr 52px;
+  }
+}
+
+/* Micro-market */
+.mm-label {
+  font-weight: 600;
+  text-transform: capitalize;
+  margin-bottom: 8px;
+}
+.mm-note {
+  margin-top: 10px;
+}
+/* Warn dot on the simulated sale-velocity stat (SPEC §5.2.2-3). */
+.dot-warn {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--warn);
+  margin-right: 6px;
+}
+
+/* Comparable sales — sortable columns + expandable comparison rows (§6.4). */
+.comps-tags {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.comp-expander {
+  width: 28px;
+}
+.comp-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: var(--radius-sm);
+}
+.comp-toggle:hover {
+  color: var(--text);
+}
+.comp-detail > td {
+  background: var(--bg);
+  white-space: normal;
+}
+.cmp {
+  display: grid;
+  grid-template-columns: minmax(110px, 1fr) auto auto;
+  gap: 5px 18px;
+  font-size: 12px;
+  padding: 4px 0;
+}
+.cmp-head {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  text-align: right;
+}
+.cmp-head:first-child {
+  text-align: left;
+}
+.cmp-label {
+  color: var(--text-3);
+}
+.cmp-value {
+  font-family: var(--font-mono);
+  text-align: right;
+  color: var(--text-2);
+}
+.cmp-value--subject {
+  color: var(--text);
+}
+
+/* What-if scenarios: slider + numeric entry per lever. */
+.lever-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.lever-head {
+  margin-bottom: 6px;
+}
+.lever-controls {
+  display: grid;
+  grid-template-columns: 1fr 84px;
+  gap: 10px;
+  align-items: center;
+}
+.lever-input {
+  padding: 6px 9px;
+  font-size: 12px;
+}
+.lever-retry {
+  padding: 3px 8px;
+}
+/* Delta colors outside table scope (the scenario kv list). */
+.kv dd.pos {
+  color: var(--success);
+}
+.kv dd.neg {
+  color: var(--danger);
+}
+
+/* Provenance footer (SPEC §5.2.2-8). */
+.provenance {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-3);
+  line-height: 1.6;
+}
+
+/* Responsive (SPEC §8): ≤1024 single column with the rail static below the
+   form; ≤768 fieldset grids collapse to one column; ≤420 the submit row
+   goes full-width. (Rail de-stick and hero-price steps live in styles.css.) */
+@media (max-width: 1024px) {
+  .valuation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 768px) {
+  .valuation-form .field-row {
+    grid-template-columns: 1fr;
+  }
+  .check-field {
+    padding-top: 0;
+  }
+}
+@media (max-width: 420px) {
+  .form-actions {
+    flex-direction: column;
+  }
+}

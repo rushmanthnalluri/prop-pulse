@@ -1,0 +1,7 @@
+--- /predict c=10 x200 (claim p50~2406.6 ms, 4.15 rps) ---
+POST /predict  concurrency=10
+  requests=200 errors=0 (0.00%) statuses={'200': 200}
+  latency ms: min=1620.75 mean=3754.11 p50=3792.39 p90=4846.64 p95=5069.0 p99=5476.57 max=6000.31
+  wall=75.534s throughput=2.65 req/s
+{"method": "POST", "endpoint": "/predict", "concurrency": 10, "requests": 200, "errors": 0, "error_rate": 0.0, "throughput_rps": 2.65, "wall_seconds": 75.534, "latency_ms": {"min": 1620.75, "mean": 3754.11, "p50": 3792.39, "p90": 4846.64, "p95": 5069.0, "p99": 5476.57, "max": 6000.31}, "statuses": {"200": 200}}
+ambient_during: n=60 mean=25.8% median=23.4% max=53.4%

@@ -1,0 +1,18 @@
+payload base bytes: 261
+===================== body exactly 65535 bytes =====================
+actual bytes: 65535
+$ curl -s -o /dev/null -w "%{http_code}" -X POST /predict --data-binary @body (Content-Length: 65535)
+HTTP 200
+{"estimated_price":151147.74,"price_range":{"low":131276.1,"high":169846.06},"sale_probability":{"probability":0.216313,"sells_within_30_days":true,"threshold":0.203292},"micro_market":{"cluster_id":0,"label":"mid northwest","neighborhoods":["Blmngtn","BrDale","BrkSide","Crawfor","Gilbert","IDOTRR",
+===================== body exactly 65536 bytes =====================
+actual bytes: 65536
+$ curl -s -o /dev/null -w "%{http_code}" -X POST /predict --data-binary @body (Content-Length: 65536)
+HTTP 200
+{"estimated_price":151147.74,"price_range":{"low":131276.1,"high":169846.06},"sale_probability":{"probability":0.216313,"sells_within_30_days":true,"threshold":0.203292},"micro_market":{"cluster_id":0,"label":"mid northwest","neighborhoods":["Blmngtn","BrDale","BrkSide","Crawfor","Gilbert","IDOTRR",
+===================== body exactly 65537 bytes =====================
+actual bytes: 65537
+$ curl -s -o /dev/null -w "%{http_code}" -X POST /predict --data-binary @body (Content-Length: 65537)
+HTTP 413
+{"detail":"Request body too large; limit is 65536 bytes"}
+
+===================== CHUNKED bypass: 200KB body, Transfer-Encoding: chunked, NO Content-Length =====================

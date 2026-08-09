@@ -1,0 +1,17 @@
+=== lasso ===  estimator: Lasso(alpha=0.004641588833612777, max_iter=10000)
+  mae      recomputed=15354.721969452747 recorded=15354.721969452745 match=True
+  rmse     recomputed=23297.755241759762 recorded=23297.755241759754 match=True
+  r2       recomputed=0.916777480083 recorded=0.916777480083 match=True
+  rmsle    recomputed=0.140724466475 recorded=0.140724466475 match=True
+  rmse_log recomputed=0.140724466475 recorded=0.140724466475 match=True
+  test recomputed: mae=15696.73 rmse=23674.99 r2=0.9129 rmsle=0.1247
+=== random_forest ===  estimator: RandomForestRegressor(max_depth=20, max_features=0.5, n_estimators=300,
+                      n_jobs=-1, random_state=42)
+  mae      recomputed=18279.468166708455 recorded=18279.468166708441 match=True
+  rmse     recomputed=27698.449669574846 recorded=27698.449669574795 match=True
+  r2       recomputed=0.882368501902 recorded=0.882368501902 match=True
+  rmsle    recomputed=0.158973838177 recorded=0.158973838177 match=True
+  rmse_log recomputed=0.158973838177 recorded=0.158973838177 match=True
+  test recomputed: mae=15402.03 rmse=24762.65 r2=0.9047 rmsle=0.1224
+
+xgboost params of interest: enable_categorical = True | reg_lambda = 1.0 | min_child_weight = 1 | max_depth = 3 | n_estimators = 500 | learning_rate = 0.05 | random_state = 42

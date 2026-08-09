@@ -1,0 +1,21 @@
+== NaN / Inf / empty-string scan (read with keep_default_na=False) ==
+train: rows=945 NaN_cells=0 empty_strings={} Inf={}
+   string (non-numeric) columns: 43
+val: rows=338 NaN_cells=0 empty_strings={} Inf={}
+   string (non-numeric) columns: 43
+test: rows=175 NaN_cells=0 empty_strings={} Inf={}
+   string (non-numeric) columns: 43
+train: whitespace-only string cells: {}
+val: whitespace-only string cells: {}
+test: whitespace-only string cells: {}
+
+== RAW NaN counts (pre-clean, legit) ==
+{'LotFrontage': 259, 'Alley': 1369, 'MasVnrType': 872, 'MasVnrArea': 8, 'BsmtQual': 37, 'BsmtCond': 37, 'BsmtExposure': 38, 'BsmtFinType1': 37, 'BsmtFinType2': 38, 'Electrical': 1, 'FireplaceQu': 690, 'GarageType': 81, 'GarageYrBlt': 81, 'GarageFinish': 81, 'GarageQual': 81, 'GarageCond': 81, 'PoolQC': 1453, 'Fence': 1179, 'MiscFeature': 1406}
+
+== NA-absent categorical columns: raw NaN total vs processed 'None' token totals ==
+raw NaN in those cols: 7480 -> processed 'None' tokens per split: {'train': 4823, 'val': 1743, 'test': 907} sum: 7473 match: False
+train: suspect literal strings {}
+val: suspect literal strings {}
+test: suspect literal strings {}
+
+FEATURE_DEFAULTS['MSSubClass'] = 50 (median-as-numeric, not mode -> confirms CSV round-trip int64)

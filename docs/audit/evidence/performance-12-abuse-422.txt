@@ -1,0 +1,30 @@
+rss_before_abuse:
+342.7 MB
+--- 422 battery: 5 payload classes x 20 = 100 invalid requests, c=10 ---
+[1] missing required fields:
+POST /predict  concurrency=10
+  requests=20 errors=20 (100.00%) statuses={'422': 20}
+  latency ms: min=69.18 mean=130.87 p50=147.33 p90=160.2 p95=161.19 p99=161.25 max=161.27
+  wall=0.336s throughput=0.0 req/s
+[2] wrong type (bedrooms=string):
+POST /predict  concurrency=10
+  requests=20 errors=20 (100.00%) statuses={'422': 20}
+  latency ms: min=87.86 mean=156.78 p50=159.49 p90=189.59 p95=191.78 p99=194.52 max=195.2
+  wall=0.382s throughput=0.0 req/s
+[3] out of range (bedrooms=99):
+POST /predict  concurrency=10
+  requests=20 errors=20 (100.00%) statuses={'422': 20}
+  latency ms: min=66.79 mean=87.78 p50=86.24 p90=103.56 p95=109.7 p99=118.65 max=120.89
+  wall=0.219s throughput=0.0 req/s
+[4] invalid literal (house_style=Castle):
+POST /predict  concurrency=10
+  requests=20 errors=20 (100.00%) statuses={'422': 20}
+  latency ms: min=34.84 mean=68.06 p50=65.65 p90=93.46 p95=94.07 p99=103.12 max=105.38
+  wall=0.166s throughput=0.0 req/s
+[5] unknown neighborhood + extra field:
+POST /predict  concurrency=10
+  requests=20 errors=20 (100.00%) statuses={'422': 20}
+  latency ms: min=38.45 mean=63.78 p50=63.03 p90=84.22 p95=85.17 p99=98.68 max=102.06
+  wall=0.16s throughput=0.0 req/s
+rss_after_422_battery:
+343.2 MB

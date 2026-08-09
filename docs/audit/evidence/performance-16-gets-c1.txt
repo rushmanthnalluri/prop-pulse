@@ -1,0 +1,9 @@
+--- c=1 x100 baselines ---
+GET /market/clusters  concurrency=1
+  requests=100 errors=0 (0.00%) statuses={'200': 100}
+  latency ms: min=5.82 mean=10.62 p50=9.17 p90=14.81 p95=17.15 p99=19.55 max=26.97
+  wall=1.063s throughput=94.1 req/s
+GET /model/importance  concurrency=1
+  requests=100 errors=0 (0.00%) statuses={'200': 100}
+  latency ms: min=4.76 mean=7.03 p50=6.14 p90=8.87 p95=11.12 p99=18.4 max=24.02
+  wall=0.703s throughput=142.24 req/s

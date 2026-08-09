@@ -1,0 +1,15 @@
+== duplicate run groups: metric equality ==
+exp 28940381 'champion_selection_v1' x2: metrics_identical=True  [79a90e77(status=3,stage=active,metrics=19); df99aa9d(status=3,stage=active,metrics=19)]
+exp 31307840 'linear_v1' x3: metrics_identical=True  [0cbe411d(status=3,stage=active,metrics=7); 1ce16e7a(status=4,stage=active,metrics=7); 65771084(status=3,stage=active,metrics=7)]
+exp 31307840 'ridge_v1' x2: metrics_identical=True  [3143ed47(status=3,stage=active,metrics=8); d9e58fd5(status=3,stage=active,metrics=8)]
+exp 31307840 'lasso_v1' x2: metrics_identical=True  [ccec2601(status=3,stage=active,metrics=8); d19a8b58(status=3,stage=active,metrics=8)]
+exp 47375559 'logistic_v1' x4: metrics_identical=True  [0b307016(status=3,stage=active,metrics=14); 445a0d46(status=4,stage=deleted,metrics=14); e6d885eb(status=3,stage=active,metrics=14); ff1129c9(status=4,stage=deleted,metrics=14)]
+exp 49352253 'dbscan_v1' x3: metrics_identical=True  [0a946a4f(status=3,stage=active,metrics=4); 3776b7d4(status=3,stage=active,metrics=4); 5294692f(status=3,stage=active,metrics=4)]
+
+== evaluation runs vs models/champion.json ==
+models/champion.json md5=4232b3c5c132ab5b2a5951a91774cfc3 size=3153
+  run 79a90e77: artifact champion.json md5=27862307f5ad07e0fae9e8ae3e59376e size=3153 identical_to_disk=False
+  run 79a90e77: trained_at=2026-08-07T07:09:22.399901+00:00
+  run df99aa9d: artifact champion.json md5=4232b3c5c132ab5b2a5951a91774cfc3 size=3153 identical_to_disk=True
+  run df99aa9d: trained_at=2026-08-07T10:38:54.370983+00:00
+  champion.json selected_at=2026-08-07T10:38:48.406646+00:00

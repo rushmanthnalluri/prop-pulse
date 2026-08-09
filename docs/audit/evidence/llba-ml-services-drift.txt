@@ -1,0 +1,16 @@
+features with <3 bins: {'BsmtFinSF2': 2, 'LowQualFinSF': 1, 'BsmtFullBath': 2, 'BsmtHalfBath': 1, 'HalfBath': 2, 'KitchenAbvGr': 2, 'Fireplaces': 2, 'EnclosedPorch': 2, '3SsnPorch': 1, 'ScreenPorch': 1, 'PoolArea': 1, 'MiscVal': 1, 'YrSold': 2, 'sale_year': 2}
+PoolArea edges: [0.0, 738.0] PSI(all-500 prod): 0.0
+valid: 3 invalid: 4 (expect 3 valid, 4 invalid; blank skipped)
+window=3 keeps last 3: [7, 8, 9]
+200k-line log: valid=500 peak mem=0.3 MB (bounded by window)
+coerced: [1.0, 2.5, 1.0]
+n=199: drift=True retraining=False max_psi=3.869805 drifted=['GrLivArea']
+n=200: drift=True retraining=True max_psi=3.875831 drifted=['GrLivArea']
+nodrift: drift= False max_psi= 0.001014 warn= []
+prediction_psi (in-range spread): {'estimated_price': 1.271817519693703, 'probability': 12.419831088250895}
+prediction_psi (all above range): {'estimated_price': 12.419831088250895, 'probability': 12.419831088250895}
+prediction_psi (no prediction key): None
+missing log: no_data exit-safe n: 0
+empty log: no_data
+garbage log: no_data n_invalid: 2
+corrupt reference -> uncaught ValueError: bin edges must be strictly increasing

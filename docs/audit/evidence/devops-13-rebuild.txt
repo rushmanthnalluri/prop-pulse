@@ -1,0 +1,21 @@
+=== down (as-built stack) ===
+ Container proppulse-backend-1 Removing 
+ Container proppulse-backend-1 Removed 
+ Network proppulse_default Removing 
+ Network proppulse_default Removed 
+
+=== rebuild with CURRENT source (timed) ===
+19:41:33
+build exit: 0
+19:41:53
+#32 DONE 0.9s
+
+#34 [frontend] resolving provenance for metadata file
+#34 DONE 0.0s
+ Image proppulse-backend:latest Built 
+ Image proppulse-frontend:latest Built 
+
+=== new image IDs ===
+backend  sha256:d67923e8f282a98976583a96399ffbd224b526afb48429a563d81d1f217067f0  Created=2026-08-07T14:11:46.904851673Z
+frontend sha256:1a585b0256a9208f88b1397db6b7253a7c06caaedbe99317f82cab960a520fb3  Created=2026-08-07T14:11:51.688970609Z
+(old IDs ffed0840ebb8 / 9c67c5dc5742 remain as dangling images)

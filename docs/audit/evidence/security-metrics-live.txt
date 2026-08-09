@@ -1,0 +1,44 @@
+===================== GET /metrics (live) =====================
+{
+    "requests_total": 11,
+    "errors_total": 0,
+    "requests_by_path": {
+        "/health": 4,
+        "/no-such-route": 1,
+        "/predict": 6
+    },
+    "avg_latency_ms": 97.336,
+    "uptime_seconds": 342.609,
+    "drift": {
+        "timestamp": "2026-08-07T11:15:14.871269+00:00",
+        "window": 500,
+        "log_path": "/app/logs/predictions.jsonl",
+        "psi_threshold": 0.2,
+        "warn_threshold": 0.1,
+        "min_sample_for_retraining": 200,
+        "reference_feature_version": "9b0f8ba4201c",
+        "n_invalid_lines": 0,
+        "status": "ok",
+        "n_predictions": 7,
+        "drift_detected": true,
+        "drifted_features": [
+            "1stFlrSF",
+            "2ndFlrSF",
+            "BedroomAbvGr",
+            "BsmtFinSF1",
+            "BsmtFinSF2",
+            "BsmtFullBath",
+            "BsmtUnfSF",
+            "EnclosedPorch",
+            "Fireplaces",
+            "FullBath",
+            "GarageArea",
+            "GarageCars",
+            "GarageYrBlt",
+            "GrLivArea",
+            "HalfBath",
+            "LotArea",
+            "LotFrontage",
+
+===================== /metrics: does any field echo exception text or absolute paths? =====================
+{"requests_total":12,"errors_total":0,"requests_by_path":{"/health":4,"/no-such-route":1,"/predict":6,"/metrics":1},"avg_latency_ms":89.589,"uptime_seconds":342.989,"drift":{"timestamp":"2026-08-07T11:15:14.871269+00:00","window":500,"log_path":"/app/logs/predictions.jsonl","psi_threshold":0.2,"warn_threshold":0.1,"min_sample_for_retraining":200,"reference_feature_version":"9b0f8ba4201c","n_invalid_lines":0,"status":"ok","n_predictions":7,"drift_detected":true,"drifted_features":["1stFlrSF","2ndFlrSF","BedroomAbvGr","BsmtFinSF1","BsmtFinSF2","BsmtFullBath","BsmtUnfSF","EnclosedPorch","Fireplaces","FullBath","GarageArea","GarageCars","GarageYrBlt","GrLivArea","HalfBath","LotArea","LotFrontage","MSSubClass","MasVnrArea","MoSold","OpenPorchSF","OverallCond","OverallQual","TotRmsAbvGrd","TotalBsmtSF","WoodDeckSF","YearBuilt","YearRemodAdd","YrSold","amenity_count","bathroom_bedroom_ratio","distance_to_city_center_km","lat","living_area_per_bedroom","long","neighborhood_mean_price","neighborhood_median_price","neighborhood_median_price_per_sqft","neighborhood_monthly_sale_velocity","property_age","sale_month","sale_quarter","sale_year","total_bath","total_sf","years_since_remod"],"warn_features":[],"per_feature_psi":{"1stFlrSF":12.371257,"2ndFlrSF":4.809469,"3SsnPorch":0.0,"BedroomAbvGr":3.886647,"BsmtFinSF1":12.975837,"BsmtFinSF2":1.168554,"BsmtFullBath":8.621189,"BsmtHalfBath":0.0,"BsmtUnfSF":12.421274,"EnclosedPorch":1.249661,"Fireplaces":6.335561,"FullBath":6.191856,"GarageArea":12.422445,"GarageCars":5.603226,"GarageYrBlt":12.017906,"GrLivArea":10.491441,"HalfBath":8.888844,"KitchenAbvGr":0.007364,"LotArea":10.51109,"LotFrontage":12.548594,"LowQualFinSF":0.0,"MSSubClass":13.201073,"MasVnrArea":4.809615,"MiscVal":0.0,"MoSold":9.629187,"OpenPorchSF":13.221811,"OverallCond":5.394053,"OverallQual":8.386132,"PoolArea":0.0,"ScreenPorch":0.0,"TotRmsAbvGrd":9.704635,"TotalBsmtSF":10.425565,"WoodDeckSF":5.04235,"YearBuilt":10.568232,"YearRemodAdd":10.515504,"YrSold":4.358638,"amenity_count":10.139015,"bathroom_bedroom_ratio":8.957329,"distance_to_city_center_km":10.962664,"lat":11.904061,"living_area_per_bedroom":10.491016,"long":10.279193,"neighborhood_mean_price":12.167913,"neighborhood_median_price":12.154692,"neighborhood_median_price_per_sqft":11.459926,"neighborhood_monthly_sale_velocity":10.728159,"property_age":12.444389,"sale_month":9.629187,"sale_quarter":1.620271,"sale_year":4.358638,"total_bath":12.826314,"total_sf":10.529348,"years_since_remod":10.904537},"max_psi":13.221811,"prediction_psi":{"estimated_price":10.48874,"probability":10.48874},"retraining_recommended":false,"recommendation_text":"Drift detected in 46 feature(s) (1stFlrSF, 2ndFlrSF, BedroomAbvGr, BsmtFinSF1, BsmtFinSF2, BsmtFullBath, BsmtUnfSF, EnclosedPorch, Fireplaces, FullBath, GarageArea, GarageCars, GarageYrBlt, GrLivArea, HalfBath, LotArea, LotFrontage, MSSubClass, MasVnrArea, MoSold, OpenPorchSF, OverallCond, OverallQual, TotRmsAbvGrd, TotalBsmtSF, WoodDeckSF, YearBuilt, YearRemodAdd, YrSold, amenity_count, bathroom_bedroom_ratio, distance_to_city_center_km, lat, living_area_per_bedroom, long, neighborhood_mean_price, neighborhood_median_price, neighborhood_median_price_per_sqft, neighborhood_monthly_sale_velocity, property_age, sale_month, sale_quarter, sale_year, total_bath, total_sf, years_since_remod) with PSI >= 0.2, but only 7 valid prediction(s) in window (< 200 minimum). Collect more data before acting; no retraining recommended yet."}}

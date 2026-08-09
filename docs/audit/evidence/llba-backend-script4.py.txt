@@ -1,0 +1,83 @@
+"""llba-backend exec check 4: lifespan fail-fast, schema edge bounds, drift-summary branches.
+Run: PYTHONPATH=. .venv/Scripts/python.exe docs/audit/evidence/llba-backend-script4.py.txt
+"""
+import json
+import tempfile
+from pathlib import Path
+
+from backend.app.config import Settings
+from backend.app.main import create_app
+from backend.app.schemas.property import PropertyInput
+from backend.app.services.monitoring_service import MonitoringService
+from fastapi.testclient import TestClient
+
+MIN = {"neighborhood": "NAmes", "bedrooms": 3, "full_bath": 2, "half_bath": 1,
+       "bsmt_full_bath": 1, "bsmt_half_bath": 0, "gr_liv_area": 1500, "lot_area": 9000,
+       "total_bsmt_sf": 900, "year_built": 1995, "overall_qual": 6, "overall_cond": 5,
+       "garage_cars": 2, "fireplaces": 1, "central_air": True}
+
+tmp = Path(tempfile.mkdtemp(prefix="llba_backend4_"))
+
+# --- 1. lifespan fail-fast: champion.json present but artifact paths bogus ---
+fake_dir = tmp / "models"
+fake_dir.mkdir()
+(fake_dir / "champion.json").write_text(json.dumps({
+    "regression": {"name": "r", "version": "v0", "path": "models/registry/NOPE.joblib",
+                   "residual_interval": {"q_low": -0.1, "q_high": 0.1}},
+    "classification": {"name": "c", "version": "v0", "path": "models/registry/NOPE2.joblib",
+                       "threshold": 0.5},
+}))
+try:
+    bad_app = create_app(Settings(model_dir=str(fake_dir),
+                                  prediction_log_path=str(tmp / "x.jsonl")))
+    with TestClient(bad_app):
+        print("lifespan fail-fast: DID NOT RAISE (bad)")
+except RuntimeError as exc:
+    print("lifespan fail-fast: RuntimeError:", exc)
+
+# --- 1b. missing champion.json entirely ---
+try:
+    empty_app = create_app(Settings(model_dir=str(tmp / "empty"),
+                                    prediction_log_path=str(tmp / "x.jsonl")))
+    with TestClient(empty_app):
+        print("missing champion.json: DID NOT RAISE (bad)")
+except Exception as exc:
+    print("missing champion.json -> startup raises:", type(exc).__name__)
+
+# --- 2. sale_date has no bounds (yr_sold is bounded 2006-2026, sale_date is not) ---
+for d in ("2030-12-31", "1800-01-01", "2009-06-15"):
+    try:
+        p = PropertyInput(**{**MIN, "sale_date": d})
+        print(f"sale_date {d}: ACCEPTED -> serving YrSold/MoSold from it")
+    except Exception as exc:
+        print(f"sale_date {d}: rejected ({type(exc).__name__})")
+
+# --- 3. neighborhood case sensitivity ---
+try:
+    PropertyInput(**{**MIN, "neighborhood": "names"})
+    print("neighborhood 'names' (lowercase): ACCEPTED")
+except Exception:
+    print("neighborhood 'names' (lowercase): rejected 422 (case-sensitive, exact match)")
+
+# --- 4. MonitoringService.latest_drift_summary branches ---
+ms = MonitoringService(tmp / "no-such-dir" / "latest.json")
+print("drift missing ->", ms.latest_drift_summary()["status"])
+bad = tmp / "bad.json"
+bad.write_text("{not json")
+ms2 = MonitoringService(bad)
+print("drift malformed ->", ms2.latest_drift_summary())
+arr = tmp / "arr.json"
+arr.write_text("[1,2,3]")
+ms3 = MonitoringService(arr)
+print("drift non-dict json ->", ms3.latest_drift_summary())
+ok = tmp / "ok.json"
+ok.write_text(json.dumps({"status": "ok", "drift_detected": False}))
+ms4 = MonitoringService(ok)
+print("drift ok ->", ms4.latest_drift_summary())
+print("real reports/drift/latest.json exists:",
+      (Path("reports/drift/latest.json")).exists())
+
+# --- 5. metrics snapshot shape when zero requests ---
+snap = MonitoringService(tmp / "none.json").snapshot()
+print("fresh snapshot:", {k: snap[k] for k in ("requests_total", "errors_total", "avg_latency_ms")})
+print("SCRIPT 4 DONE")

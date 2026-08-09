@@ -1,0 +1,27 @@
+=== EVIDENCE llba-frontend-infra-06: infra execution checks ===
+--- 1. docker compose version ---
+Docker Compose version v5.1.1
+
+--- 2. docker compose config -q (base + AUTO-MERGED override, as CI runs it) ---
+config -q exit=0
+
+--- 3. effective published ports in merged config (proves override auto-applies) ---
+        published: "18000"
+        published: "18080"
+
+--- 4. base file ONLY (what DEPLOYMENT.md documents) ---
+        published: "8000"
+        published: "8080"
+
+--- 5. .gitignore mention of docker-compose.override.yml ---
+0
+0 — override NOT gitignored (would ship in a commit)
+
+--- 6. nginx:alpine live mime.types check (gzip_types correctness) ---
+nginx version: nginx/1.31.3
+    text/css                                         css;
+    application/javascript                           js;
+    image/svg+xml                                    svg svgz;
+
+--- 7. requirements.txt pins vs installed .venv versions ---
+21 pins checked against .venv: all match

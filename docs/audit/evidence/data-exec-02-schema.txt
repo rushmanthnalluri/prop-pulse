@@ -1,0 +1,39 @@
+== schema.json top-level ==
+{'dataset_version': 'ames-1.0', 'source': 'Kaggle House Prices: Advanced Regression Techniques (Ames, IA)', 'lat_range': '<list len=2>', 'long_range': '<list len=2>', 'splits': '<dict len=3>', 'simulated_target': 'SIMULATED TARGET - NOT FOR MODEL PERFORMANCE CLAIMS'}
+schema splits block: {'train': {'rows': 945, 'yr_sold': '2006-2008'}, 'val': {'rows': 338, 'yr_sold': '2009'}, 'test': {'rows': 175, 'yr_sold': '2010 (sealed)'}}
+
+== columns ==
+schema column count: 85
+train: csv cols=85 match_schema_order=True match_schema_set=True
+val: csv cols=85 match_schema_order=True match_schema_set=True
+test: csv cols=85 match_schema_order=True match_schema_set=True
+
+== dtypes: schema (in-memory at write time) vs pandas CSV round-trip inference ==
+dtype mismatches (schema vs CSV round-trip): 1
+  MSSubClass: schema=object csv_read=int64
+  MSSubClass: non-numeric strings when coerced: 0 ; sample values: [60, 20, 70, 50, 190]
+
+== categorical sets: observed-in-CSVs vs schema.categories ==
+all observed categorical values are within schema sets: True
+
+== 5-column deep spot check (observed per split vs schema) ==
+--- Neighborhood: schema allows ['Blmngtn', 'Blueste', 'BrDale', 'BrkSide', 'ClearCr', 'CollgCr', 'Crawfor', 'Edwards', 'Gilbert', 'IDOTRR', 'MeadowV', 'Mitchel', 'NAmes', 'NPkVill', 'NWAmes', 'NoRidge', 'NridgHt', 'OldTown', 'SWISU', 'Sawyer', 'SawyerW', 'Somerst', 'StoneBr', 'Timber', 'Veenker']
+    train: n_unique=25 subset_of_schema=True observed=['Blmngtn', 'Blueste', 'BrDale', 'BrkSide', 'ClearCr', 'CollgCr', 'Crawfor', 'Edwards', 'Gilbert', 'IDOTRR', 'MeadowV', 'Mitchel', 'NAmes', 'NPkVill', 'NWAmes', 'NoRidge', 'NridgHt', 'OldTown', 'SWISU', 'Sawyer', 'SawyerW', 'Somerst', 'StoneBr', 'Timber', 'Veenker']
+    val: n_unique=24 subset_of_schema=True observed=['Blmngtn', 'Blueste', 'BrDale', 'BrkSide', 'ClearCr', 'CollgCr', 'Crawfor', 'Edwards', 'Gilbert', 'IDOTRR', 'MeadowV', 'Mitchel', 'NAmes', 'NPkVill', 'NWAmes', 'NoRidge', 'NridgHt', 'OldTown', 'SWISU', 'Sawyer', 'SawyerW', 'Somerst', 'StoneBr', 'Timber']
+    test: n_unique=23 subset_of_schema=True observed=['Blmngtn', 'BrDale', 'BrkSide', 'ClearCr', 'CollgCr', 'Crawfor', 'Edwards', 'Gilbert', 'IDOTRR', 'MeadowV', 'Mitchel', 'NAmes', 'NPkVill', 'NWAmes', 'NoRidge', 'NridgHt', 'OldTown', 'SWISU', 'Sawyer', 'SawyerW', 'Somerst', 'StoneBr', 'Timber']
+--- MSZoning: schema allows ['A', 'C (all)', 'FV', 'I', 'RH', 'RL', 'RM', 'RP']
+    train: n_unique=5 subset_of_schema=True observed=['C (all)', 'FV', 'RH', 'RL', 'RM']
+    val: n_unique=5 subset_of_schema=True observed=['C (all)', 'FV', 'RH', 'RL', 'RM']
+    test: n_unique=4 subset_of_schema=True observed=['C (all)', 'FV', 'RL', 'RM']
+--- BldgType: schema allows ['1Fam', '2FmCon', '2fmCon', 'Duplex', 'Duplx', 'Twnhs', 'TwnhsE', 'TwnhsI']
+    train: n_unique=5 subset_of_schema=True observed=['1Fam', '2fmCon', 'Duplex', 'Twnhs', 'TwnhsE']
+    val: n_unique=5 subset_of_schema=True observed=['1Fam', '2fmCon', 'Duplex', 'Twnhs', 'TwnhsE']
+    test: n_unique=5 subset_of_schema=True observed=['1Fam', '2fmCon', 'Duplex', 'Twnhs', 'TwnhsE']
+--- SaleCondition: schema allows ['Abnorml', 'AdjLand', 'Alloca', 'Family', 'Normal', 'Partial']
+    train: n_unique=6 subset_of_schema=True observed=['Abnorml', 'AdjLand', 'Alloca', 'Family', 'Normal', 'Partial']
+    val: n_unique=5 subset_of_schema=True observed=['Abnorml', 'Alloca', 'Family', 'Normal', 'Partial']
+    test: n_unique=5 subset_of_schema=True observed=['Abnorml', 'Alloca', 'Family', 'Normal', 'Partial']
+--- GarageType: schema allows ['2Types', 'Attchd', 'Basment', 'BuiltIn', 'CarPort', 'Detchd', 'None']
+    train: n_unique=7 subset_of_schema=True observed=['2Types', 'Attchd', 'Basment', 'BuiltIn', 'CarPort', 'Detchd', 'None']
+    val: n_unique=6 subset_of_schema=True observed=['Attchd', 'Basment', 'BuiltIn', 'CarPort', 'Detchd', 'None']
+    test: n_unique=6 subset_of_schema=True observed=['Attchd', 'Basment', 'BuiltIn', 'CarPort', 'Detchd', 'None']

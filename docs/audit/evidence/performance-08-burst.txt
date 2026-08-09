@@ -1,0 +1,31 @@
+--- 20 rapid bursts of 25 concurrent /predict (500 total) ---
+burst_1: p50=9835.12 max=10176.55 errors=0 statuses={'200': 25}
+burst_2: p50=8115.91 max=8529.09 errors=0 statuses={'200': 25}
+burst_3: p50=14168.66 max=14719.3 errors=0 statuses={'200': 25}
+burst_4: p50=10778.02 max=10925.75 errors=0 statuses={'200': 25}
+burst_5: p50=7393.08 max=7525.84 errors=0 statuses={'200': 25}
+burst_6: p50=10968.48 max=11261.76 errors=0 statuses={'200': 25}
+burst_7: p50=21903.39 max=22579.7 errors=0 statuses={'200': 25}
+burst_8: p50=7750.08 max=7953.56 errors=0 statuses={'200': 25}
+burst_9: p50=9661.49 max=10289.48 errors=0 statuses={'200': 25}
+burst_10: p50=9553.09 max=9629.1 errors=0 statuses={'200': 25}
+burst_11: p50=15899.02 max=16442.58 errors=0 statuses={'200': 25}
+burst_12: p50=10809.03 max=11024.97 errors=0 statuses={'200': 25}
+burst_13: p50=17855.81 max=18280.72 errors=0 statuses={'200': 25}
+burst_14: p50=8674.21 max=8791.53 errors=0 statuses={'200': 25}
+burst_15: p50=10500.66 max=10639.16 errors=0 statuses={'200': 25}
+burst_16: p50=5306.98 max=5337.14 errors=25 statuses={}
+burst_17: p50=2057.2 max=2085.4 errors=25 statuses={}
+burst_18: p50=2066.25 max=2086.64 errors=25 statuses={}
+burst_19: p50=2083.28 max=2104.46 errors=25 statuses={}
+burst_20: p50=2060.22 max=2083.71 errors=25 statuses={}
+--- RSS after bursts ---
+Traceback (most recent call last):
+  File "<string>", line 3, in <module>
+    p = psutil.Process(31320)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\psutil\__init__.py", line 314, in __init__
+    self._init(pid)
+    ~~~~~~~~~~^^^^^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\psutil\__init__.py", line 360, in _init
+    raise NoSuchProcess(pid, msg=msg) from None
+psutil.NoSuchProcess: process PID not found (pid=31320)

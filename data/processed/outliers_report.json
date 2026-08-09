@@ -1,0 +1,15 @@
+{
+  "partial_sale_grlivarea_gt_4000": {
+    "removed_ids": [
+      524,
+      1299
+    ],
+    "n_removed": 2,
+    "justification": "Known Ames caveat: ``GrLivArea > 4000`` sqft with a low price."
+  },
+  "summary": {
+    "rows_before": 947,
+    "rows_after": 945,
+    "applied_to": "train split only"
+  }
+}

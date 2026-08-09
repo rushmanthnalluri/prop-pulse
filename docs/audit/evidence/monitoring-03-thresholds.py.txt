@@ -1,0 +1,75 @@
+"""Task 3 — threshold constants vs docs + retraining-guard boundary (n=199/200).
+
+Everything runs in a tempfile.TemporaryDirectory — the repo's
+logs/predictions.jsonl and reports/drift/latest.json are NOT touched.
+"""
+import json
+import tempfile
+from pathlib import Path
+
+from ml.monitoring.psi import PSI_DRIFT_THRESHOLD, PSI_WARN_THRESHOLD
+from ml.monitoring.drift_check import (
+    MIN_SAMPLE_FOR_RETRAINING,
+    run_drift_check,
+)
+
+print("=== A. Constants vs docs ===")
+print(f"PSI_WARN_THRESHOLD = {PSI_WARN_THRESHOLD}  (SPEC §10 + DEPLOYMENT.md: warn >= 0.1)")
+print(f"PSI_DRIFT_THRESHOLD = {PSI_DRIFT_THRESHOLD}  (SPEC §10 + DEPLOYMENT.md: drift >= 0.2)")
+print(f"MIN_SAMPLE_FOR_RETRAINING = {MIN_SAMPLE_FOR_RETRAINING}  (SPEC §10: >= 200)")
+assert PSI_WARN_THRESHOLD == 0.1 and PSI_DRIFT_THRESHOLD == 0.2 and MIN_SAMPLE_FOR_RETRAINING == 200
+
+
+def make_log(path: Path, n: int, drifted: bool) -> None:
+    """n valid records; drifted -> GrLivArea far above train max (4476)."""
+    value = 99999.0 if drifted else 1500.0
+    with path.open("w", encoding="utf-8") as fh:
+        for _ in range(n):
+            rec = {
+                "timestamp": "2026-08-07T00:00:00+00:00",
+                "payload": {},
+                "features": {"GrLivArea": value, "OverallQual": 5.0},
+                "prediction": {"estimated_price": 200000.0, "probability": 0.5, "cluster_id": 0},
+                "model_version": "test",
+            }
+            fh.write(json.dumps(rec) + "\n")
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    tmp = Path(tmp)
+    print(f"\n=== B. Boundary test in temp dir: {tmp} ===")
+    for n, drifted, label in [
+        (199, True, "drift @ n=199 (below min sample)"),
+        (200, True, "drift @ n=200 (AT min sample)"),
+        (201, True, "drift @ n=201 (above)"),
+        (300, False, "NO drift @ n=300 (control)"),
+    ]:
+        log = tmp / f"log_{n}_{drifted}.jsonl"
+        out = tmp / f"report_{n}_{drifted}.json"
+        make_log(log, n, drifted)
+        report = run_drift_check(log_path=log, output_path=out)
+        assert out.exists(), "report not written"
+        on_disk = json.loads(out.read_text())
+        assert on_disk["retraining_recommended"] == report["retraining_recommended"]
+        print(f"\n{label}")
+        print(f"  status={report['status']} n={report['n_predictions']}")
+        print(f"  GrLivArea PSI={report['per_feature_psi'].get('GrLivArea')}")
+        print(f"  drift_detected={report['drift_detected']}  retraining_recommended={report['retraining_recommended']}")
+        print(f"  text: {report['recommendation_text'][:130]}...")
+    print("\nExpected: retraining False/True/True/False; drift_detected True/True/True/False")
+
+print("\n=== C. Threshold comparison operators (static, drift_check.py) ===")
+print("drift: `psi >= PSI_DRIFT_THRESHOLD`  (drift_check.py:304)")
+print("warn:  `PSI_WARN_THRESHOLD <= psi < PSI_DRIFT_THRESHOLD` (drift_check.py:309)")
+print("retrain: `drift_detected and n >= MIN_SAMPLE_FOR_RETRAINING` (drift_check.py:316)")
+print("-> match SPEC §10 'warn >= 0.1, drift >= 0.2', 'drift + sufficient sample >= 200'")
+
+print("\n=== D. DRIFT_PSI_THRESHOLD env wire check ===")
+import subprocess
+hits = subprocess.run(
+    ["grep", "-rn", "drift_psi_threshold", "backend/", "ml/", "--include=*.py"],
+    capture_output=True, text=True,
+).stdout
+print(hits)
+print("-> setting parsed in config.py but referenced nowhere else: DEAD WIRE if only config.py lines above")
+print("\nALL TASK-3 CHECKS DONE")

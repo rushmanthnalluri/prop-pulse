@@ -1,0 +1,11 @@
+NaNs in NA-absent categorical cols for removed outlier rows:
+  Id  n_na
+ 524     4
+1299     3
+total: 7
+raw kept-rows NaN in those cols: 7473
+7480 - 7 = 7473 == 7473 -> True
+raw MasVnrArea NaN Ids: [235, 530, 651, 937, 974, 978, 1244, 1279] -> processed values: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+raw LotFrontage NaN rows: 259 ; all present in processed: True
+imputed LotFrontage == train neighborhood median for all 259 rows: True
+global train LotFrontage median (fallback): 69.0

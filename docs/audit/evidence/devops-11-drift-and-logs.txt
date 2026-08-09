@@ -1,0 +1,21 @@
+=== host log line count (was 19 at backup) ===
+20 logs/predictions.jsonl
+--- last line (truncated) ---
+{"timestamp": "2026-08-07T14:09:51.440322+00:00", "payload": {"neighborhood": "StoneBr", "house_style": "2Story", "bldg_type": "1Fam", "ms_zoning": "RL", "bedro
+
+=== drift latest.json BEFORE (mtime + md5) ===
+2026-08-07 19:28:49.404947400 +0530 3951
+34d643185f775ca91362a68ea1f46356 *reports/drift/latest.json
+
+=== in-container drift check ===
+<frozen runpy>:128: RuntimeWarning: 'ml.monitoring.drift_check' found in sys.modules after import of package 'ml.monitoring', but prior to execution of 'ml.monitoring.drift_check'; this may result in unpredictable behaviour
+INFO __main__: drift check: status=ok n=20 drift=True drifted=['1stFlrSF', '2ndFlrSF', 'BedroomAbvGr', 'BsmtFinSF1', 'BsmtFinSF2', 'BsmtFullBath', 'BsmtUnfSF', 'EnclosedPorch', 'Fireplaces', 'FullBath', 'GarageArea', 'GarageCars', 'GarageYrBlt', 'GrLivArea', 'LotArea', 'LotFrontage', 'MSSubClass', 'MasVnrArea', 'MoSold', 'OpenPorchSF', 'OverallCond', 'OverallQual', 'TotRmsAbvGrd', 'TotalBsmtSF', 'WoodDeckSF', 'YearBuilt', 'YearRemodAdd', 'YrSold', 'amenity_count', 'bathroom_bedroom_ratio', 'distance_to_city_center_km', 'lat', 'living_area_per_bedroom', 'long', 'neighborhood_mean_price', 'neighborhood_median_price', 'neighborhood_median_price_per_sqft', 'neighborhood_monthly_sale_velocity', 'property_age', 'sale_month', 'sale_quarter', 'sale_year', 'total_bath', 'total_sf', 'years_since_remod'] -> /app/reports/drift/latest.json
+drift_check exit: 0
+
+=== drift latest.json AFTER (host volume write) ===
+2026-08-07 19:40:34.568770600 +0530 3912
+916173c8e2b14db9d733f20651d3ee40 *reports/drift/latest.json
+{'status': 'ok', 'drift_detected': True, 'n_predictions': 20, 'retraining_recommended': False, 'timestamp': '2026-08-07T14:10:34.538387+00:00'}
+
+=== /metrics on container serves the drift summary ===
+{"requests_total":13,"errors_total":0,"requests_by_path":{"/health":8,"/predict":3,"/market/clusters":1,"/model/importance":1},"avg_latency_ms":97.967,"uptime_seconds":68.28,"drift":{"timestamp":"2026-08-07T14:10:34.538387+00:00","window":500,"log_path":"/app/logs/predictions.jsonl","psi_threshold":0.2,"warn_threshold":0.1,"min_sample_for_retraining":200,"reference_feature_version":"9b0f8ba4201c",

@@ -1,0 +1,6 @@
+call 1: 0 warnings, predict took 461.8 ms
+call 2: 0 warnings, predict took 463.8 ms
+call 3: 0 warnings, predict took 539.7 ms
+predict_price: 0 warnings
+UNPINNED predict_proba: 0 warnings, 835.3 ms
+PINNED predict_proba: 0 warnings, 480.1 ms

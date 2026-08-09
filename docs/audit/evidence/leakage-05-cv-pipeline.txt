@@ -1,0 +1,19 @@
+=== CHECK D1: champion artifacts are self-contained Pipelines (preprocess fit inside CV/training) ===
+regression champion type: Pipeline | steps: ['preprocess', 'model']
+preprocess is ColumnTransformer: True
+num pipe steps: ['imputer', 'scaler']
+cat pipe steps: ['imputer', 'onehot']
+classification champion type: CalibratedClassifierCV
+inner estimator steps: ['preprocess', 'model'] | model: RandomForestClassifier
+
+=== CHECK D2: training metrics.json files contain ONLY val metrics (test never scored at training time) ===
+regression/linear: keys=['best_params', 'cv_best_score', 'val']
+regression/ridge: keys=['best_params', 'cv_best_score', 'val']
+regression/lasso: keys=['best_params', 'cv_best_score', 'val']
+regression/random_forest: keys=['best_params', 'cv_best_score', 'val']
+regression/xgboost: keys=['best_params', 'cv_best_score', 'val']
+classification/logistic: keys=['best_params', 'val', 'val_calibrated']
+classification/decision_tree: keys=['best_params', 'val', 'val_calibrated']
+classification/random_forest: keys=['best_params', 'val', 'val_calibrated']
+classification/xgboost: keys=['best_params', 'val', 'val_calibrated']
+any 'test' key in training metrics: NONE

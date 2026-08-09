@@ -1,0 +1,83 @@
+# PropPulse — full-stack compose file (SPEC §12, ADR-7/ADR-8).
+#
+#   cp .env.example .env                 # required: compose reads env_file .env
+#   docker compose up --build            # backend + frontend
+#   docker compose --profile mlflow up   # + optional MLflow tracking server
+#
+# Builds VERIFIED on Docker Server 29.4.0 (2026-08-07) — full smoke evidence in
+# reports/DOCKER_SMOKE.md. Default host ports: backend :8000, frontend :8080,
+# mlflow :5000. Where those are occupied, docker-compose.alt-ports.yml remaps
+# to 18000/18080/15000 — opt-in only, compose never merges it automatically:
+#   docker compose -f docker-compose.yml -f docker-compose.alt-ports.yml up --build
+# See docker/README.md.
+name: proppulse
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    image: proppulse-backend:latest
+    env_file: .env
+    environment:
+      # A container must listen on all interfaces; .env.example defaults to
+      # 127.0.0.1 for bare-metal dev, so override it here. `environment`
+      # takes precedence over `env_file`. Uvicorn also gets --host 0.0.0.0.
+      API_HOST: 0.0.0.0
+    ports:
+      - "8000:8000"
+    volumes:
+      # Prediction JSONL log persists on the host (SPEC §10 schema) so the
+      # scheduled drift check can read the same window the API writes.
+      - ./logs:/app/logs
+      # Drift report (reports/drift/latest.json) persists too — /metrics
+      # surfaces whatever the last scheduled drift check wrote.
+      - ./reports/drift:/app/reports/drift
+    healthcheck:
+      # python:3.12-slim ships no curl/wget; urllib is always available.
+      # Non-2xx or a connection failure raises -> non-zero exit -> unhealthy.
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=5)"
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # Model artifacts (incl. the calibrated RF) load in the lifespan startup;
+      # allow ample warm-up before failures count.
+      start_period: 40s
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        # Baked into the bundle by Vite at build time (SPEC §9). The browser
+        # resolves this against the HOST, so it is the published backend port.
+        VITE_API_URL: http://localhost:8000
+    image: proppulse-frontend:latest
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mlflow:
+    # Opt-in tracking UI over the local file store (ADR-8). Start with:
+    #   docker compose --profile mlflow up mlflow
+    image: ghcr.io/mlflow/mlflow:latest
+    command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri /mlruns
+    environment:
+      # MLflow 3.15 refuses file-store URIs unless this is set (SPEC §14);
+      # ml/tracking.py only sets it for in-process imports, not the server CLI.
+      MLFLOW_ALLOW_FILE_STORE: "true"
+    volumes:
+      - ./mlruns:/mlruns
+    ports:
+      - "5000:5000"
+    profiles:
+      - mlflow
+    restart: unless-stopped

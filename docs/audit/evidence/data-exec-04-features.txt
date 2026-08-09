@@ -1,0 +1,29 @@
+== feature_list.json ==
+n features in file: 94 | sha1 field: 7601f2f66c747fe43b5900019dd9762ad86ea75f
+recomputed sha1(json.dumps(MODEL_FEATURES)): 7601f2f66c747fe43b5900019dd9762ad86ea75f
+file features == MODEL_FEATURES (order-sensitive): True
+len(MODEL_FEATURES): 94 | RAW: 79
+claim 'EXACTLY 94': True
+
+== build_feature_frame per split ==
+train: shape=(945, 94) cols==94:True order_matches_feature_list:True NaNs=0 dup_cols=False
+val: shape=(338, 94) cols==94:True order_matches_feature_list:True NaNs=0 dup_cols=False
+test: shape=(175, 94) cols==94:True order_matches_feature_list:True NaNs=0 dup_cols=False
+
+dtypes per split (unique dtype sets): {'train': {'object', 'float64', 'int64'}, 'val': {'object', 'float64', 'int64'}, 'test': {'object', 'float64', 'int64'}}
+dtype per column identical across splits: True
+engineered dtypes (train): {'property_age': 'float64', 'years_since_remod': 'float64', 'total_bath': 'float64', 'living_area_per_bedroom': 'float64', 'bathroom_bedroom_ratio': 'float64', 'total_sf': 'float64', 'sale_month': 'float64', 'sale_quarter': 'float64', 'sale_year': 'float64', 'distance_to_city_center_km': 'float64', 'amenity_count': 'int64'}
+neighborhood stat dtypes (train): {'neighborhood_median_price': 'float64', 'neighborhood_mean_price': 'float64', 'neighborhood_median_price_per_sqft': 'float64', 'neighborhood_monthly_sale_velocity': 'float64'}
+
+== HAND VERIFICATION of engineered features (3 rows) ==
+Traceback (most recent call last):
+  File "<stdin>", line 43, in <module>
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\pandas\core\indexing.py", line 1192, in __getitem__
+    return self._getitem_axis(maybe_callable, axis=axis)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\pandas\core\indexing.py", line 1753, in _getitem_axis
+    self._validate_integer(key, axis)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\pandas\core\indexing.py", line 1686, in _validate_integer
+    raise IndexError("single positional indexer is out-of-bounds")
+IndexError: single positional indexer is out-of-bounds

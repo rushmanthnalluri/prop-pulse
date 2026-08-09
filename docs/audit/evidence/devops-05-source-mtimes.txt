@@ -1,0 +1,21 @@
+=== 15 newest files among image-input paths ===
+2026-08-07+18:52:13.0256087000 models/classification/xgboost_calibrated_v1.joblib
+2026-08-07+18:52:12.9329312000 models/classification/xgboost_v1.joblib
+2026-08-07+18:49:44.8079225000 models/classification/random_forest_v1.joblib
+2026-08-07+18:48:25.4600362000 models/classification/decision_tree_calibrated_v1.joblib
+2026-08-07+18:48:25.4260280000 models/classification/decision_tree_v1.joblib
+2026-08-07+18:47:30.7935763000 models/classification/logistic_calibrated_v1.joblib
+2026-08-07+18:47:30.7624817000 models/classification/logistic_v1.joblib
+2026-08-07+18:47:15.0247416000 models/regression/xgboost_v1.joblib
+2026-08-07+18:46:50.5553169000 models/regression/random_forest_v1.joblib
+2026-08-07+18:46:18.9773221000 models/regression/lasso_v1.joblib
+2026-08-07+18:46:10.0684522000 models/regression/ridge_v1.joblib
+2026-08-07+18:45:49.0132848000 models/regression/linear_v1.joblib
+2026-08-07+18:45:42.5623894000 models/feature_list.json
+2026-08-07+18:45:42.5613711000 models/feature_defaults.json
+2026-08-07+18:45:42.5523686000 models/neighborhood_stats.json
+
+=== 5 oldest (reference) ===
+2026-08-07+10:48:59.9311647000 ml/__init__.py
+2026-08-07+10:49:00.0572241000 ml/paths.py
+2026-08-07+10:51:54.9089411000 backend/__init__.py

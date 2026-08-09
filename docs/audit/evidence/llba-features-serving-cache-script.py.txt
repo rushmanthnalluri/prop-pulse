@@ -1,0 +1,197 @@
+"""llba-features serving-mapping + cache/edge-case probes (output -> llba-features-serving-cache.txt)."""
+import json
+import datetime as dt
+from pathlib import Path
+
+import pandas as pd
+
+from ml.features.pipeline import (
+    RAW_INPUT_COLUMNS, MODEL_FEATURES, build_feature_frame,
+    neighborhood_coordinates, _geo_lookup, _property_geo_lookup,
+)
+from ml.features.serving import API_TO_RAW, _SPECIAL_KEYS, serving_payload_to_raw, _central_air_token, _parse_sale_date
+from ml.features.defaults import FEATURE_DEFAULTS
+from ml.features.stats import fit_neighborhood_stats
+from ml.paths import PROCESSED_DIR, EXTERNAL_DIR
+from ml.tracking import feature_version
+from ml.paths import FEATURE_LIST_PATH, CHAMPION_PATH
+from backend.app.schemas.property import PropertyInput
+
+train = pd.read_csv(PROCESSED_DIR / "train.csv", keep_default_na=False)
+stats = fit_neighborhood_stats(train)
+
+print("== A. PropertyInput schema fields vs serving API_TO_RAW (both directions) ==")
+schema_fields = set(PropertyInput.model_fields)
+mapped = set(API_TO_RAW) | set(_SPECIAL_KEYS)
+print("schema field count:", len(schema_fields), "| serving-mapped count:", len(mapped))
+print("schema fields NOT mapped by serving:", sorted(schema_fields - mapped) or "NONE")
+print("serving-mapped fields NOT in schema:", sorted(mapped - schema_fields) or "NONE")
+print("API_TO_RAW values not in RAW_INPUT_COLUMNS:", sorted(set(API_TO_RAW.values()) - set(RAW_INPUT_COLUMNS)) or "NONE")
+dup_targets = [v for v in set(API_TO_RAW.values()) if list(API_TO_RAW.values()).count(v) > 1]
+print("raw columns targeted by >1 API field:", dup_targets or "NONE")
+
+print("\n== B. Every API field lands on its raw column ==")
+payload = {
+    "neighborhood": "Crawfor", "house_style": "2Story", "bldg_type": "Duplex",
+    "ms_zoning": "RM", "bedrooms": 4, "full_bath": 3, "half_bath": 1,
+    "bsmt_full_bath": 1, "bsmt_half_bath": 1, "gr_liv_area": 2100, "lot_area": 11000,
+    "lot_frontage": 85.0, "total_bsmt_sf": 1200, "year_built": 1988,
+    "year_remod_add": 2001, "overall_qual": 7, "overall_cond": 6, "garage_cars": 3,
+    "garage_area": 700.0, "fireplaces": 2, "central_air": False, "pool_area": 500,
+    "wood_deck_sf": 200, "open_porch_sf": 50, "screen_porch": 120,
+    "sale_date": "2008-11-20",
+    "bsmt_qual": "Gd", "kitchen_qual": "Ex", "exter_qual": "Gd", "heating_qc": "TA",
+    "garage_type": "Detchd", "garage_finish": "Fin", "foundation": "CBlock",
+    "electrical": "FuseA", "functional": "Min1", "fireplace_qu": "Gd",
+    "lot_shape": "IR1", "lot_config": "Corner", "land_slope": "Mod",
+    "condition1": "Feedr", "roof_style": "Hip", "exterior1st": "BrkFace",
+    "mas_vnr_area": 300.0, "kitchen_abv_gr": 2, "tot_rms_abvgrd": 9,
+    "bsmt_fin_sf1": 800, "bsmt_unf_sf": 400, "first_flr_sf": 1200,
+    "second_flr_sf": 900, "enclosed_porch": 100, "misc_val": 500,
+    "paved_drive": "P", "street": "Grvl", "mo_sold": 4, "yr_sold": 2007,
+}
+raw = serving_payload_to_raw(payload)
+errs = []
+for api, rawcol in API_TO_RAW.items():
+    if api in ("mo_sold", "yr_sold"):
+        continue  # handled specially, checked below
+    if raw[rawcol] != payload[api]:
+        errs.append((api, rawcol, payload[api], raw[rawcol]))
+print("direct-mapping mismatches:", errs or "NONE")
+print("central_air False ->", raw["CentralAir"], "(expect N)")
+print("mo_sold/yr_sold overrides beat sale_date:", raw["MoSold"] == 4, raw["YrSold"] == 2007)
+print("raw row covers exactly RAW_INPUT_COLUMNS:", set(raw) == set(RAW_INPUT_COLUMNS))
+print("no None values in raw row:", all(v is not None for v in raw.values()))
+ff = build_feature_frame(pd.DataFrame([raw]), stats)
+print("full payload -> frame: cols==MODEL_FEATURES:", list(ff.columns) == MODEL_FEATURES,
+      "| NaNs:", int(ff.isna().sum().sum()))
+print("lat/long == Crawfor centroid:", (raw["lat"], raw["long"]) == neighborhood_coordinates("Crawfor"))
+print("neighborhood_median_price == Crawfor stats:", ff.iloc[0]["neighborhood_median_price"] == stats.neighborhoods["Crawfor"]["median_price"])
+
+print("\n== C. Sale-date default & year_remod default ==")
+raw2 = serving_payload_to_raw({"neighborhood": "NAmes", "bedrooms": 3, "full_bath": 2,
+    "half_bath": 0, "bsmt_full_bath": 0, "bsmt_half_bath": 0, "gr_liv_area": 1500,
+    "lot_area": 8000, "total_bsmt_sf": 900, "year_built": 1995, "overall_qual": 6,
+    "overall_cond": 5, "garage_cars": 2, "fireplaces": 1, "central_air": True})
+today = dt.date.today()
+print("no sale_date -> YrSold/MoSold = today:", (raw2["YrSold"], raw2["MoSold"]) == (today.year, today.month))
+print("year_remod_add omitted -> YearRemodAdd == year_built:", raw2["YearRemodAdd"] == 1995)
+
+print("\n== D. Special-value parsing ==")
+for v in ["Y", "n", "true", "0", "yes", "NO", True, False, 1]:
+    print(f"  _central_air_token({v!r}) = {_central_air_token(v)}")
+try:
+    _central_air_token("maybe")
+    print("  _central_air_token('maybe') -> NO ERROR (unexpected)")
+except ValueError as e:
+    print("  _central_air_token('maybe') -> ValueError OK")
+for v in ["2009-06-15", "2009-06", dt.date(2010, 1, 20), dt.datetime(2007, 12, 1, 9, 30)]:
+    print(f"  _parse_sale_date({v!r}) = {_parse_sale_date(v)}")
+for v in ["2009-13", "garbage", "2009"]:
+    try:
+        _parse_sale_date(v)
+        print(f"  _parse_sale_date({v!r}) -> NO ERROR (unexpected)")
+    except ValueError:
+        print(f"  _parse_sale_date({v!r}) -> ValueError OK")
+
+print("\n== E. Error handling: unknown keys / missing defaults ==")
+try:
+    serving_payload_to_raw({"neighborhood": "NAmes", "bogus_field": 1})
+    print("unknown key -> NO ERROR (unexpected)")
+except ValueError as e:
+    print("unknown key -> ValueError OK:", str(e)[:70])
+saved = FEATURE_DEFAULTS.pop("GrLivArea")
+try:
+    build_feature_frame(train.head(2).drop(columns=["GrLivArea"]), stats)
+    print("missing col w/o default -> NO ERROR (unexpected)")
+except ValueError as e:
+    print("missing col w/o default -> ValueError OK:", str(e)[:80])
+finally:
+    FEATURE_DEFAULTS["GrLivArea"] = saved
+
+print("\n== F. Unseen neighborhood end-to-end ==")
+r = serving_payload_to_raw({"neighborhood": "NoSuchPlace", "bedrooms": 3, "full_bath": 2,
+    "half_bath": 0, "bsmt_full_bath": 0, "bsmt_half_bath": 0, "gr_liv_area": 1500,
+    "lot_area": 8000, "total_bsmt_sf": 900, "year_built": 1995, "overall_qual": 6,
+    "overall_cond": 5, "garage_cars": 2, "fireplaces": 1, "central_air": True})
+ff2 = build_feature_frame(pd.DataFrame([r]), stats)
+print("NaNs:", int(ff2.isna().sum().sum()))
+print("stats == global fallback:",
+      all(ff2.iloc[0][f] == stats.global_fallback[g] for f, g in zip(
+          ["neighborhood_median_price", "neighborhood_mean_price",
+           "neighborhood_median_price_per_sqft", "neighborhood_monthly_sale_velocity"],
+          ["median_price", "mean_price", "median_price_per_sqft", "monthly_sale_velocity"])))
+print("lat/long == FEATURE_DEFAULTS lat/long:",
+      (ff2.iloc[0]["lat"], ff2.iloc[0]["long"]) == (FEATURE_DEFAULTS["lat"], FEATURE_DEFAULTS["long"]))
+
+print("\n== G. Serving row without lat/long (geo fill path in build_feature_frame) ==")
+r3 = {c: FEATURE_DEFAULTS[c] for c in RAW_INPUT_COLUMNS if c not in ("lat", "long")}
+r3["Neighborhood"] = "StoneBr"
+ff3 = build_feature_frame(pd.DataFrame([r3]), stats)
+print("lat/long filled from StoneBr centroid:",
+      (ff3.iloc[0]["lat"], ff3.iloc[0]["long"]) == neighborhood_coordinates("StoneBr"),
+      "| NaNs:", int(ff3.isna().sum().sum()))
+
+print("\n== H. 25-neighborhood coordinate lookup vs CSV ==")
+geo = pd.read_csv(EXTERNAL_DIR / "neighborhood_geo.csv", keep_default_na=False)
+ok = all(neighborhood_coordinates(str(row["Neighborhood"])) == (float(row["lat"]), float(row["long"]))
+         for _, row in geo.iterrows())
+print("all 25 centroids match CSV:", ok, "| rows:", len(geo))
+
+print("\n== I. feature_version plumbing (SPEC §14: 12-char sha1 of file bytes) ==")
+fv = feature_version(FEATURE_LIST_PATH)
+champ = json.loads(CHAMPION_PATH.read_text())
+print("ml.tracking.feature_version(feature_list.json):", fv)
+print("champion.json feature_version:", champ.get("feature_version"), "| match:", champ.get("feature_version") == fv)
+print("(feature_list.json internal 'sha1' field is a different, 40-char hash of the JSON list — distinct purpose)")
+
+print("\n== J. Cache semantics probes (temp files inside docs/audit/evidence only) ==")
+tmp = Path("docs/audit/evidence/llba-features-tmp-geo.csv")
+tmp.write_text("Id,lat,long\n1,42.03,-93.61\n", encoding="utf-8")
+first = _property_geo_lookup(tmp)
+tmp.write_text("Id,lat,long\n1,42.05,-93.62\n2,42.04,-93.60\n", encoding="utf-8")
+second = _property_geo_lookup(tmp)
+print("_property_geo_lookup same-path after rewrite returns STALE first content:", first == second, "|", first)
+tmp.unlink()
+third = _property_geo_lookup(tmp)
+print("_property_geo_lookup same-path after DELETE returns STALE content (should be None, got):", third)
+print("-> cache is keyed on path only; content/mtime changes are invisible within a process")
+print("_geo_lookup cacheinfo:", _geo_lookup.cache_info())
+print("_property_geo_lookup cacheinfo:", _property_geo_lookup.cache_info())
+
+print("\n== K. Edge cases reachable via API schema ranges ==")
+neg = serving_payload_to_raw({"neighborhood": "NAmes", "bedrooms": 3, "full_bath": 2,
+    "half_bath": 0, "bsmt_full_bath": 0, "bsmt_half_bath": 0, "gr_liv_area": 1500,
+    "lot_area": 8000, "total_bsmt_sf": 900, "year_built": 2026, "overall_qual": 6,
+    "overall_cond": 5, "garage_cars": 2, "fireplaces": 1, "central_air": True,
+    "yr_sold": 2006, "mo_sold": 1})
+ff4 = build_feature_frame(pd.DataFrame([neg]), stats)
+print("year_built=2026 + yr_sold=2006 (both schema-legal) -> property_age:", ff4.iloc[0]["property_age"])
+neg2 = dict(neg); neg2["MoSold"] = 13
+ff5 = build_feature_frame(pd.DataFrame([neg2]), stats)
+print("MoSold=13 (blocked by API schema, NOT by pipeline) -> sale_quarter:", ff5.iloc[0]["sale_quarter"])
+try:
+    serving_payload_to_raw({"neighborhood": "NAmes", "yr_sold": None})
+    print("yr_sold=None direct call -> NO ERROR (unexpected)")
+except TypeError as e:
+    print("yr_sold=None direct call -> TypeError (not ValueError):", str(e)[:60])
+except ValueError as e:
+    print("yr_sold=None direct call -> ValueError:", str(e)[:60])
+
+print("\n== L. Serving-vs-training path parity ==")
+row = train.iloc[0]
+p = {"neighborhood": row["Neighborhood"], "bedrooms": int(row["BedroomAbvGr"]),
+     "full_bath": int(row["FullBath"]), "half_bath": int(row["HalfBath"]),
+     "bsmt_full_bath": int(row["BsmtFullBath"]), "bsmt_half_bath": int(row["BsmtHalfBath"]),
+     "gr_liv_area": int(row["GrLivArea"]), "lot_area": int(row["LotArea"]),
+     "total_bsmt_sf": int(row["TotalBsmtSF"]), "year_built": int(row["YearBuilt"]),
+     "overall_qual": int(row["OverallQual"]), "overall_cond": int(row["OverallCond"]),
+     "garage_cars": int(row["GarageCars"]), "fireplaces": int(row["Fireplaces"]),
+     "central_air": row["CentralAir"] == "Y",
+     "mo_sold": int(row["MoSold"]), "yr_sold": int(row["YrSold"])}
+raw_train_path = serving_payload_to_raw(p)
+f_serv = build_feature_frame(pd.DataFrame([raw_train_path]), stats)
+f_train = build_feature_frame(train.head(1), stats)
+same_geo = (f_serv.iloc[0]["lat"], f_serv.iloc[0]["long"]) == (f_train.iloc[0]["lat"], f_train.iloc[0]["long"])
+same_stats = f_serv.iloc[0]["neighborhood_median_price"] == f_train.iloc[0]["neighborhood_median_price"]
+print("serving-built row geo == training row geo:", same_geo, "| joined stats equal:", same_stats)

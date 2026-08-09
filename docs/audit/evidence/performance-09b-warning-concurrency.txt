@@ -1,0 +1,4 @@
+sequential baseline: 0 warnings
+8 concurrent threads, warnings per thread: [0, 0, 0, 0, 0, 0, 0, 0]
+total: 0
+wave 2, warnings per thread: [0, 0, 0, 0, 0, 0, 0, 0] total: 0

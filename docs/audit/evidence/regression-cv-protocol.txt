@@ -1,0 +1,46 @@
+CV object: KFold(n_splits=5, random_state=42, shuffle=True) | SCORING: neg_root_mean_squared_error
+train shape: (945, 94) | target is log1p: sample [12.2477, 12.109, 12.3172]
+
+=== ridge GridSearchCV rerun (7.5s) ===
+         alpha  mean_neg_rmse        std
+         0.001    -0.12541949   0.014903
+    0.00316228    -0.12528715   0.014691
+          0.01    -0.12505173   0.014241
+     0.0316228    -0.12412775   0.013589
+           0.1    -0.12191788   0.012395
+      0.316228    -0.11820612   0.010965
+             1    -0.11437087   0.011009
+       3.16228    -0.11195880   0.011798
+            10    -0.11038554   0.011694
+       31.6228    -0.10950413   0.010918
+           100    -0.11061228   0.010070
+       316.228    -0.11534810   0.009856
+          1000    -0.12728126   0.011150
+  grid best alpha = 31.6228 (mean 0.10950413)
+  1-SE threshold = -0.11438685
+  one_se_alpha -> 100   claimed shipped alpha = 100.0  MATCH=True
+  -mean_test_score[alpha_1se] = 0.11061228193506771  claimed cv_best_score = 0.11061228193506771  MATCH=True
+
+=== lasso GridSearchCV rerun (3.3s) ===
+         alpha  mean_neg_rmse        std
+        0.0001    -0.11544575   0.010838
+   0.000215443    -0.11035557   0.011198
+   0.000464159    -0.10924434   0.012444
+         0.001    -0.10971448   0.011788
+    0.00215443    -0.11253253   0.010551
+    0.00464159    -0.11478372   0.009814
+          0.01    -0.11728845   0.008630
+     0.0215443    -0.12686874   0.008082
+     0.0464159    -0.14726953   0.007582
+           0.1    -0.18592444   0.009124
+      0.215443    -0.29231547   0.013897
+      0.464159    -0.39095139   0.012165
+             1    -0.39095139   0.012165
+  grid best alpha = 0.000464159 (mean 0.10924434)
+  1-SE threshold = -0.11480929
+  one_se_alpha -> 0.00464158883361   claimed shipped alpha = 0.004641588833612777  MATCH=True
+  -mean_test_score[alpha_1se] = 0.11478372444017348  claimed cv_best_score = 0.11478372444017348  MATCH=True
+
+=== refit ridge(alpha=100) vs shipped ridge_v1 ===
+  coef max abs diff: 0.0 | allclose: True
+  val pred max abs diff: 0.0

@@ -1,0 +1,139 @@
+== 0. environment / versions / split sizes ==
+feature_version = 9b0f8ba4201c (champion.json says 9b0f8ba4201c)
+split train: 945 rows x 85 cols
+split val: 338 rows x 85 cols
+split test: 175 rows x 85 cols
+== 1. regression val metrics recomputed from saved pipelines ==
+[PASS] reg.val.linear.mae recomputed=15888.10377097 recorded=15888.10377097
+[PASS] reg.val.linear.rmse recomputed=22809.02045896 recorded=22809.02045896
+[PASS] reg.val.linear.r2 recomputed=0.92023250 recorded=0.92023250
+[PASS] reg.val.linear.rmsle recomputed=0.14246255 recorded=0.14246255
+[PASS] reg.val.linear.rmsle_hand hand=0.1424625465
+[PASS] reg.val.linear.rmse_log==rmsle rmse_log=0.1424625465 rmsle=0.1424625465
+[PASS] reg.val.linear.residual_interval recomputed=(-0.14493167,0.12124568) recorded=(-0.14493167,0.12124568)
+[PASS] reg.val.ridge.mae recomputed=14526.57241844 recorded=14526.57241844
+[PASS] reg.val.ridge.rmse recomputed=21672.72103039 recorded=21672.72103039
+[PASS] reg.val.ridge.r2 recomputed=0.92798224 recorded=0.92798224
+[PASS] reg.val.ridge.rmsle recomputed=0.13543667 recorded=0.13543667
+[PASS] reg.val.ridge.rmsle_hand hand=0.1354366692
+[PASS] reg.val.ridge.rmse_log==rmsle rmse_log=0.1354366692 rmsle=0.1354366692
+[PASS] reg.val.ridge.residual_interval recomputed=(-0.14095418,0.11663421) recorded=(-0.14095418,0.11663421)
+[PASS] reg.val.lasso.mae recomputed=15354.72196945 recorded=15354.72196945
+[PASS] reg.val.lasso.rmse recomputed=23297.75524176 recorded=23297.75524176
+[PASS] reg.val.lasso.r2 recomputed=0.91677748 recorded=0.91677748
+[PASS] reg.val.lasso.rmsle recomputed=0.14072447 recorded=0.14072447
+[PASS] reg.val.lasso.rmsle_hand hand=0.1407244665
+[PASS] reg.val.lasso.rmse_log==rmsle rmse_log=0.1407244665 rmsle=0.1407244665
+[PASS] reg.val.lasso.residual_interval recomputed=(-0.16029201,0.11624742) recorded=(-0.16029201,0.11624742)
+[PASS] reg.val.random_forest.mae recomputed=18279.46816671 recorded=18279.46816671
+[PASS] reg.val.random_forest.rmse recomputed=27698.44966957 recorded=27698.44966957
+[PASS] reg.val.random_forest.r2 recomputed=0.88236850 recorded=0.88236850
+[PASS] reg.val.random_forest.rmsle recomputed=0.15897384 recorded=0.15897384
+[PASS] reg.val.random_forest.rmsle_hand hand=0.1589738382
+[PASS] reg.val.random_forest.rmse_log==rmsle rmse_log=0.1589738382 rmsle=0.1589738382
+[PASS] reg.val.random_forest.residual_interval recomputed=(-0.17820818,0.14000213) recorded=(-0.17820818,0.14000213)
+[PASS] reg.val.xgboost.mae recomputed=15461.46413807 recorded=15461.46413807
+[PASS] reg.val.xgboost.rmse recomputed=23459.53657149 recorded=23459.53657149
+[PASS] reg.val.xgboost.r2 recomputed=0.91561766 recorded=0.91561766
+[PASS] reg.val.xgboost.rmsle recomputed=0.13977720 recorded=0.13977720
+[PASS] reg.val.xgboost.rmsle_hand hand=0.1397772049
+[PASS] reg.val.xgboost.rmse_log==rmsle rmse_log=0.1397772049 rmsle=0.1397772049
+[PASS] reg.val.xgboost.residual_interval recomputed=(-0.14572083,0.12676452) recorded=(-0.14572083,0.12676452)
+== 2. 1-SE rule: rerun Ridge/Lasso GridSearchCV on train only ==
+[PASS] ridge.grid_order cv_results_ param order == grid order (one_se_alpha zip assumption)
+[PASS] ridge.one_se_alpha rerun one-SE alpha=100.0 recorded=100.0 (grid best=31.6228)
+[PASS] ridge.cv_best_score rerun=0.1106122819 recorded=0.1106122819
+    ridge: grid best alpha=31.6228 mean=-0.109504; one-SE alpha=100
+[PASS] lasso.grid_order cv_results_ param order == grid order (one_se_alpha zip assumption)
+[PASS] lasso.one_se_alpha rerun one-SE alpha=0.004641588833612777 recorded=0.004641588833612777 (grid best=0.000464159)
+[PASS] lasso.cv_best_score rerun=0.1147837244 recorded=0.1147837244
+    lasso: grid best alpha=0.000464159 mean=-0.109244; one-SE alpha=0.00464159
+== 3. classification val metrics recomputed from saved pipelines ==
+val positive rate = 0.29289940828402367
+[PASS] cls.logistic.val.roc_auc recomputed=0.6955749968 recorded=0.6955749968
+[PASS] cls.logistic.val.pr_auc recomputed=0.5047125065 recorded=0.5047125065
+[PASS] cls.logistic.val.precision recomputed=0.4555555556 recorded=0.4555555556
+[PASS] cls.logistic.val.recall recomputed=0.4141414141 recorded=0.4141414141
+[PASS] cls.logistic.val.f1 recomputed=0.4338624339 recorded=0.4338624339
+[PASS] cls.logistic.val.brier recomputed=0.1983249817 recorded=0.1983249817
+[PASS] cls.logistic.val.threshold recomputed=0.5000000000 recorded=0.5000000000
+[PASS] cls.logistic.val.cm recomputed={'tn': 190, 'fp': 49, 'fn': 58, 'tp': 41} recorded={'tn': 190, 'fp': 49, 'fn': 58, 'tp': 41}
+[PASS] cls.logistic.val_calibrated.roc_auc recomputed=0.6995900427 recorded=0.6995900427
+[PASS] cls.logistic.val_calibrated.pr_auc recomputed=0.5088930903 recorded=0.5088930903
+[PASS] cls.logistic.val_calibrated.precision recomputed=0.8000000000 recorded=0.8000000000
+[PASS] cls.logistic.val_calibrated.recall recomputed=0.0404040404 recorded=0.0404040404
+[PASS] cls.logistic.val_calibrated.f1 recomputed=0.0769230769 recorded=0.0769230769
+[PASS] cls.logistic.val_calibrated.brier recomputed=0.1913092863 recorded=0.1913092863
+[PASS] cls.logistic.val_calibrated.threshold recomputed=0.5000000000 recorded=0.5000000000
+[PASS] cls.logistic.val_calibrated.cm recomputed={'tn': 238, 'fp': 1, 'fn': 95, 'tp': 4} recorded={'tn': 238, 'fp': 1, 'fn': 95, 'tp': 4}
+[PASS] cls.decision_tree.val.roc_auc recomputed=0.6006085964 recorded=0.6006085964
+[PASS] cls.decision_tree.val.pr_auc recomputed=0.3688992107 recorded=0.3688992107
+[PASS] cls.decision_tree.val.precision recomputed=0.3237410072 recorded=0.3237410072
+[PASS] cls.decision_tree.val.recall recomputed=0.4545454545 recorded=0.4545454545
+[PASS] cls.decision_tree.val.f1 recomputed=0.3781512605 recorded=0.3781512605
+[PASS] cls.decision_tree.val.brier recomputed=0.2741459158 recorded=0.2741459158
+[PASS] cls.decision_tree.val.threshold recomputed=0.5000000000 recorded=0.5000000000
+[PASS] cls.decision_tree.val.cm recomputed={'tn': 145, 'fp': 94, 'fn': 54, 'tp': 45} recorded={'tn': 145, 'fp': 94, 'fn': 54, 'tp': 45}
+[PASS] cls.decision_tree.val_calibrated.roc_auc recomputed=0.7013439838 recorded=0.7013439838
+[PASS] cls.decision_tree.val_calibrated.pr_auc recomputed=0.4666302261 recorded=0.4666302261
+[PASS] cls.decision_tree.val_calibrated.precision recomputed=0.0000000000 recorded=0.0000000000
+[PASS] cls.decision_tree.val_calibrated.recall recomputed=0.0000000000 recorded=0.0000000000
+[PASS] cls.decision_tree.val_calibrated.f1 recomputed=0.0000000000 recorded=0.0000000000
+[PASS] cls.decision_tree.val_calibrated.brier recomputed=0.1973025741 recorded=0.1973025741
+[PASS] cls.decision_tree.val_calibrated.threshold recomputed=0.5000000000 recorded=0.5000000000
+[PASS] cls.decision_tree.val_calibrated.cm recomputed={'tn': 239, 'fp': 0, 'fn': 99, 'tp': 0} recorded={'tn': 239, 'fp': 0, 'fn': 99, 'tp': 0}
+[PASS] cls.random_forest.val.roc_auc recomputed=0.7291745911 recorded=0.7291745911
+[PASS] cls.random_forest.val.pr_auc recomputed=0.5368371024 recorded=0.5368371024
+[PASS] cls.random_forest.val.precision recomputed=0.4659090909 recorded=0.4659090909
+[PASS] cls.random_forest.val.recall recomputed=0.4141414141 recorded=0.4141414141
+[PASS] cls.random_forest.val.f1 recomputed=0.4385026738 recorded=0.4385026738
+[PASS] cls.random_forest.val.brier recomputed=0.1934790587 recorded=0.1934790587
+[PASS] cls.random_forest.val.threshold recomputed=0.5000000000 recorded=0.5000000000
+[PASS] cls.random_forest.val.cm recomputed={'tn': 192, 'fp': 47, 'fn': 58, 'tp': 41} recorded={'tn': 192, 'fp': 47, 'fn': 58, 'tp': 41}
+[PASS] cls.random_forest.val_calibrated.roc_auc recomputed=0.7217784540 recorded=0.7217784540
+[PASS] cls.random_forest.val_calibrated.pr_auc recomputed=0.5250128464 recorded=0.5250128464
+[PASS] cls.random_forest.val_calibrated.precision recomputed=0.8888888889 recorded=0.8888888889
+[PASS] cls.random_forest.val_calibrated.recall recomputed=0.0808080808 recorded=0.0808080808
+[PASS] cls.random_forest.val_calibrated.f1 recomputed=0.1481481481 recorded=0.1481481481
+[PASS] cls.random_forest.val_calibrated.brier recomputed=0.1855502446 recorded=0.1855502446
+[PASS] cls.random_forest.val_calibrated.threshold recomputed=0.5000000000 recorded=0.5000000000
+[PASS] cls.random_forest.val_calibrated.cm recomputed={'tn': 238, 'fp': 1, 'fn': 91, 'tp': 8} recorded={'tn': 238, 'fp': 1, 'fn': 91, 'tp': 8}
+[PASS] cls.xgboost.val.roc_auc recomputed=0.7254976544 recorded=0.7254976544
+[PASS] cls.xgboost.val.pr_auc recomputed=0.5147525345 recorded=0.5147525345
+[PASS] cls.xgboost.val.precision recomputed=0.5573770492 recorded=0.5573770492
+[PASS] cls.xgboost.val.recall recomputed=0.3434343434 recorded=0.3434343434
+[PASS] cls.xgboost.val.f1 recomputed=0.4250000000 recorded=0.4250000000
+[PASS] cls.xgboost.val.brier recomputed=0.1942101590 recorded=0.1942101590
+[PASS] cls.xgboost.val.threshold recomputed=0.5000000000 recorded=0.5000000000
+[PASS] cls.xgboost.val.cm recomputed={'tn': 212, 'fp': 27, 'fn': 65, 'tp': 34} recorded={'tn': 212, 'fp': 27, 'fn': 65, 'tp': 34}
+[PASS] cls.xgboost.val_calibrated.roc_auc recomputed=0.7186932082 recorded=0.7186932082
+[PASS] cls.xgboost.val_calibrated.pr_auc recomputed=0.5031633316 recorded=0.5031633316
+[PASS] cls.xgboost.val_calibrated.precision recomputed=0.7272727273 recorded=0.7272727273
+[PASS] cls.xgboost.val_calibrated.recall recomputed=0.0808080808 recorded=0.0808080808
+[PASS] cls.xgboost.val_calibrated.f1 recomputed=0.1454545455 recorded=0.1454545455
+[PASS] cls.xgboost.val_calibrated.brier recomputed=0.1903826624 recorded=0.1903826624
+[PASS] cls.xgboost.val_calibrated.threshold recomputed=0.5000000000 recorded=0.5000000000
+[PASS] cls.xgboost.val_calibrated.cm recomputed={'tn': 236, 'fp': 3, 'fn': 91, 'tp': 8} recorded={'tn': 236, 'fp': 3, 'fn': 91, 'tp': 8}
+== 4. selection functions on recorded metrics ==
+[PASS] select.regression ranking=['ridge', 'xgboost', 'lasso', 'linear', 'random_forest']
+[PASS] select.classification ranking=['random_forest', 'logistic', 'xgboost', 'decision_tree'] brier_gap=0.000000 sane=True
+== 5. F1 threshold on val calibrated champion probas ==
+[FAIL] threshold.value recomputed=0.203292242 champion.json=0.203292
+[PASS] threshold.semantics_p conf-based P=0.409091 curve P=0.409091
+[PASS] threshold.semantics_r conf-based R=0.818182 curve R=0.818182
+[PASS] champion.cls.val.roc_auc recomputed=0.72177845 recorded=0.72177800
+[PASS] champion.cls.val.pr_auc recomputed=0.52501285 recorded=0.52501300
+[PASS] champion.cls.val.precision recomputed=0.40909091 recorded=0.40909100
+[PASS] champion.cls.val.recall recomputed=0.81818182 recorded=0.81818200
+[PASS] champion.cls.val.f1 recomputed=0.54545455 recorded=0.54545500
+[PASS] champion.cls.val.brier recomputed=0.18555024 recorded=0.18555000
+[PASS] champion.cls.val.cm {'tn': 122, 'fp': 117, 'fn': 18, 'tp': 81} vs {'tn': 122, 'fp': 117, 'fn': 18, 'tp': 81}
+== 6. paired bootstrap rerun (seed 42, 2000 resamples) ==
+[PASS] bootstrap.observed -0.00434054 vs -0.004341
+[PASS] bootstrap.ci [-0.01333595,0.00598533] vs [-0.013336, 0.005985]
+[PASS] bootstrap.prob 0.192500 vs 0.1925
+[PASS] bootstrap.meta n=2000 seed=42 significant=False
+== 7. sealed-test metrics recomputed from registry champions ==
+Traceback (most recent call last):
+  File "<stdin>", line 119, in <module>
+NameError: name 'load_eval_fr' is not defined. Did you mean: 'load_eval_frame'?

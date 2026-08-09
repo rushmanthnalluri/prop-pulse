@@ -1,0 +1,22 @@
+=== EVIDENCE llba-frontend-infra-04: scripts/load_test.py execution checks ===
+percentile() vs numpy linear method:
+  p  0: load_test=1.0000 numpy=1.0000 OK
+  p  1: load_test=1.0900 numpy=1.0900 OK
+  p 25: load_test=3.2500 numpy=3.2500 OK
+  p 50: load_test=5.5000 numpy=5.5000 OK
+  p 90: load_test=9.1000 numpy=9.1000 OK
+  p 95: load_test=9.5500 numpy=9.5500 OK
+  p 99: load_test=9.9100 numpy=9.9100 OK
+  p100: load_test=10.0000 numpy=10.0000 OK
+single-element p50: 42.0
+empty list p50: nan
+zero-request RunStats.summary() (div-by-zero guard): {'requests': 0, 'errors': 0, 'error_rate': 0.0, 'throughput_rps': 0.0, 'wall_seconds': 0.0, 'latency_ms': {'min': None, 'mean': None, 'p50': nan, 'p90': nan, 'p95': nan, 'p99': nan, 'max': None}, 'statuses': {}}
+mixed 200/500 summary: {'requests': 3, 'errors': 1, 'error_rate': 0.333333, 'throughput_rps': 1.33, 'wall_seconds': 1.5, 'latency_ms': {'min': 10.0, 'mean': 20.0, 'p50': 20.0, 'p90': 28.0, 'p95': 29.0, 'p99': 29.8, 'max': 30.0}, 'statuses': {'200': 2, '500': 1}}
+_load_payload_arg(None, "/predict") -> built-in default with 18 keys
+_load_payload_arg(None, "/metrics") -> None
+_load_payload_arg(inline json) -> {'a': 1}
+bad inline JSON raises JSONDecodeError
+
+--- Git Bash path-rewrite guard: --endpoint "C:/predict" ---
+load_test.py: error: endpoint was rewritten by the shell (Git Bash POSIX-to-Windows path conversion); pass it as --endpoint=/predict instead
+guard exit code=2

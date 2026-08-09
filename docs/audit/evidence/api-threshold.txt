@@ -1,0 +1,44 @@
+COMMAND: .venv/Scripts/python.exe C:/tmp/api_audit.py threshold
+DATE: Fri Aug  7 13:49:16 UTC 2026
+
+served threshold: 0.203292 (champion.json claim 0.203292) -> MATCH
+knob lot_frontage: p(min)=0.222307 bool=True | p(max)=0.211117 bool=True
+knob garage_area: p(min)=0.216244 bool=True | p(max)=0.213386 bool=True
+knob mas_vnr_area: p(min)=0.216313 bool=True | p(max)=0.214079 bool=True
+NO single knob straddles threshold — fallback: grid scan over gr_liv_area x overall_qual
+closest below threshold: (0.174869, False, 7, 2000)
+closest above threshold: (0.238623, True, 1, 1200)
+bool != (p>=threshold) violations across 80 samples: 0
+  CHECK boolean flip consistency (grid): PASS
+
+COMMAND: .venv/Scripts/python.exe C:/tmp/api_threshold2.py  (tight straddle search)
+DATE: Fri Aug  7 13:51:02 UTC 2026
+
+base qual=6 gr=1500: p=0.216313
+base qual=6 gr=2000: p=0.174116
+base qual=6 gr=2500: p=0.15432
+base qual=6 gr=3000: p=0.140816
+base qual=7 gr=1500: p=0.218619
+base qual=7 gr=2000: p=0.174869
+base qual=7 gr=2500: p=0.154816
+base qual=7 gr=3000: p=0.140877
+base qual=8 gr=1500: p=0.216944
+base qual=8 gr=2000: p=0.173404
+base qual=8 gr=2500: p=0.153478
+base qual=8 gr=3000: p=0.139684
+no continuous straddle found around grid bases
+
+COMMAND: .venv/Scripts/python.exe C:/tmp/api_threshold3.py  (gr_liv_area 1500..2000 adjacent-int scan, overall_qual=6)
+DATE: Fri Aug  7 13:52:07 UTC 2026
+
+crossing between gr_liv_area=1648 and 1649 (overall_qual=6, all else = base payload)
+payload A (gr_liv_area=1648): probability=0.203514 -> sells_within_30_days=True
+payload B (gr_liv_area=1649): probability=0.203109 -> sells_within_30_days=False
+
+STRADDLE around threshold 0.203292:
+  below: gr_liv_area=1649 p=0.203109 bool=False (distance 0.00018300 below)
+  above: gr_liv_area=1648 p=0.203514 bool=True (distance 0.00022200 above)
+
+full response below: {"probability": 0.203109, "sells_within_30_days": false, "threshold": 0.203292, "model_version": {"regression": "ridge_v1", "classification": "random_forest_v1", "feature_version": "9b0f8ba4201c"}}
+full response above: {"probability": 0.203514, "sells_within_30_days": true, "threshold": 0.203292, "model_version": {"regression": "ridge_v1", "classification": "random_forest_v1", "feature_version": "9b0f8ba4201c"}}
+VERDICT: PASS - sells_within_30_days flips exactly at champion threshold 0.203292

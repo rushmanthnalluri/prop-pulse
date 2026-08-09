@@ -1,0 +1,35 @@
+=== EVIDENCE llba-frontend-infra-05: audit_reproducibility.py read-only steps (executed) ===
+NOTE: steps 1-3 re-run pipelines / retrain models (mutating) â€” NOT re-run by this report-only audit.
+Prior full-run evidence: reports/REPRODUCIBILITY.md (exit 0, all PASS). Steps 4 + 6 are read-only; run here:
+
+--- 4. seed_audit -> PASS
+  seeded/42-anchored usages verified: 19
+  exceptions: 0
+detail: all randomness anchored to RANDOM_SEED=42 (19 usages, 0 exceptions)
+
+--- 6. dependency_pins -> PASS
+  requirements.txt: 21 requirements, 0 unpinned
+  backend/requirements.txt: 14 requirements, 0 unpinned
+  pip check: exit 0 — No broken requirements found.
+detail: all requirements ==-pinned; pip check clean
+
+--- non-cp1252 chars in ml//backend//scripts/ source (Windows pipe-encoding risk scan) ---
+files containing non-cp1252 chars: 16
+  ml\clustering\serve.py -> U+2192(RIGHTWARDS ARROW)
+  ml\clustering\train.py -> U+2192(RIGHTWARDS ARROW), U+2248(ALMOST EQUAL TO), U+2264(LESS-THAN OR EQUAL TO)
+  ml\data\sale_speed.py -> U+2192(RIGHTWARDS ARROW)
+  ml\evaluation\evaluate.py -> U+2190(LEFTWARDS ARROW), U+2192(RIGHTWARDS ARROW), U+2212(MINUS SIGN), U+2248(ALMOST EQUAL TO), U+2264(LESS-THAN OR EQUAL TO)
+  ml\explainability\__init__.py -> U+2192(RIGHTWARDS ARROW)
+  ml\explainability\build_artifacts.py -> U+2192(RIGHTWARDS ARROW)
+  ml\explainability\explainer.py -> U+2192(RIGHTWARDS ARROW)
+  ml\explainability\service.py -> U+2264(LESS-THAN OR EQUAL TO)
+  ml\features\serving.py -> U+2192(RIGHTWARDS ARROW)
+  ml\monitoring\psi.py -> U+03A3(GREEK CAPITAL LETTER SIGMA), U+2192(RIGHTWARDS ARROW), U+2212(MINUS SIGN), U+2264(LESS-THAN OR EQUAL TO), U+2265(GREATER-THAN OR EQUAL TO)
+  ml\training\common.py -> U+2192(RIGHTWARDS ARROW)
+  backend\app\schemas\property.py -> U+2192(RIGHTWARDS ARROW)
+  backend\app\services\prediction_service.py -> U+2192(RIGHTWARDS ARROW)
+  backend\tests\test_api.py -> U+2192(RIGHTWARDS ARROW)
+  backend\tests\test_latency_fixes.py -> U+2192(RIGHTWARDS ARROW)
+  backend\tests\test_security.py -> U+2192(RIGHTWARDS ARROW), U+1F4A3(BOMB)
+
+non-cp1252 chars inside print()/logger lines (would actually hit the pipe): 0 verified separately

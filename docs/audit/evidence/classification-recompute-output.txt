@@ -1,0 +1,90 @@
+=== 1. Target derivation & distribution per split ===
+train: n=945 positives=239 rate=0.252910 target==(days_on_market<=30) for all rows: True dom dtype=int64 range=(8,141) median=41.0
+val: n=338 positives=99 rate=0.292899 target==(days_on_market<=30) for all rows: True dom dtype=int64 range=(12,151) median=39.0
+test: n=175 positives=49 rate=0.280000 target==(days_on_market<=30) for all rows: True dom dtype=int64 range=(15,112) median=37.0
+train neg/pos ratio = 2.953975
+
+=== 1b. Re-derive days_on_market with the documented simulator (fit on train split) ===
+simulator vs train.days_on_market: 945/945 rows exactly reproduced
+simulator vs val.days_on_market: 338/338 rows exactly reproduced
+simulator vs test.days_on_market: 175/175 rows exactly reproduced
+
+=== 1c. schema.json provenance note ===
+[
+ "days_on_market / sells_within_30_days are SIMULATED (ml/data/sale_speed.py, seed 42).",
+ "lat/long are approximate neighborhood centroids (data/external/neighborhood_geo.csv, ADR-2).",
+ "LotFrontage imputed with train-split neighborhood medians.",
+ "Outlier rules applied to train only; see data/processed/outliers_report.json.",
+ "Absent features are stored as the literal string 'None' with no NaNs anywhere; readers should use pd.read_csv(..., keep_default_na=False) to preserve this."
+]
+
+=== 2. Artifact identity (sha256) ===
+registry/classification_champion.joblib      : d9004a2f6b925c296a8961ec8392921793ef7191aeee577505ff347d048811e7
+classification/random_forest_calibrated_v1   : d9004a2f6b925c296a8961ec8392921793ef7191aeee577505ff347d048811e7
+identical: True
+
+=== 3. Recompute champion metrics on val + test (current artifacts) ===
+feature_list: 94 features; matches MODEL_FEATURES: True
+claimed operating threshold: 0.203292
+
+[val] recomputed @ threshold 0.203292: roc_auc=0.721778 pr_auc=0.525013 precision=0.409091 recall=0.818182 f1=0.545455 brier=0.185550 tn=122 fp=117 fn=18 tp=81
+[val] champion.json claim        : {"roc_auc": 0.721778, "pr_auc": 0.525013, "precision": 0.409091, "recall": 0.818182, "f1": 0.545455, "brier": 0.18555, "threshold": 0.203292, "confusion_matrix": {"tn": 122, "fp": 117, "fn": 18, "tp": 81}}
+[val] MATCH within 5e-7: YES
+
+[test] recomputed @ threshold 0.203292: roc_auc=0.766602 pr_auc=0.567363 precision=0.366972 recall=0.816327 f1=0.506329 brier=0.171026 tn=57 fp=69 fn=9 tp=40
+[test] champion.json claim        : {"roc_auc": 0.766602, "pr_auc": 0.567363, "precision": 0.366972, "recall": 0.816327, "f1": 0.506329, "brier": 0.171026, "threshold": 0.203292, "confusion_matrix": {"tn": 57, "fp": 69, "fn": 9, "tp": 40}}
+[test] MATCH within 5e-7: YES
+
+=== 4. Max-F1 threshold re-selection on VAL probabilities ===
+pick_f1_threshold(val): threshold=0.203292 P=0.409091 R=0.818182 F1=0.545455
+claimed threshold     : 0.203292  (reproduces: True)
+manual argmax cross-check: threshold=0.203292 F1=0.545455
+
+=== 4b. TEST-optimal threshold (demonstrates val-only selection) ===
+test-optimal: threshold=0.258531 F1=0.606557 P=0.506849 R=0.755102
+F1 on test at val-chosen 0.203292: 0.506329
+
+=== 5. Calibration on TEST (quantile bins) + ECE ===
+[val] ECE(10 quantile bins)=0.0799  prevalence=0.2929  mean_pred=0.2417
+    mean_pred=0.100 frac_pos=0.000
+    mean_pred=0.130 frac_pos=0.088
+    mean_pred=0.160 frac_pos=0.235
+    mean_pred=0.187 frac_pos=0.212
+    mean_pred=0.212 frac_pos=0.265
+    mean_pred=0.239 frac_pos=0.441
+    mean_pred=0.269 frac_pos=0.273
+    mean_pred=0.305 frac_pos=0.382
+    mean_pred=0.355 frac_pos=0.382
+    mean_pred=0.459 frac_pos=0.647
+[test] ECE(10 quantile bins)=0.0856  prevalence=0.2800  mean_pred=0.2543
+    mean_pred=0.097 frac_pos=0.056
+    mean_pred=0.139 frac_pos=0.118
+    mean_pred=0.169 frac_pos=0.167
+    mean_pred=0.196 frac_pos=0.176
+    mean_pred=0.221 frac_pos=0.000
+    mean_pred=0.249 frac_pos=0.294
+    mean_pred=0.274 frac_pos=0.471
+    mean_pred=0.315 frac_pos=0.333
+    mean_pred=0.387 frac_pos=0.471
+    mean_pred=0.494 frac_pos=0.722
+
+=== 5b. Raw RF vs calibrated RF Brier (val + test) ===
+[val] raw brier=0.193479 raw ROC-AUC=0.729175 raw PR-AUC=0.536837 | calibrated brier=0.185550 cal ROC-AUC=0.721778 cal PR-AUC=0.525013
+[test] raw brier=0.191553 raw ROC-AUC=0.750891 raw PR-AUC=0.551442 | calibrated brier=0.171026 cal ROC-AUC=0.766602 cal PR-AUC=0.567363
+
+=== 5c. Cross-check: current joblibs vs models/classification/metrics.json (val, thr=0.5) ===
+logistic/val: roc_auc 0.695575 vs 0.695575 | pr_auc 0.504713 vs 0.504713 | brier 0.198325 vs 0.198325 -> MATCH
+logistic/val_calibrated: roc_auc 0.699590 vs 0.699590 | pr_auc 0.508893 vs 0.508893 | brier 0.191309 vs 0.191309 -> MATCH
+decision_tree/val: roc_auc 0.600609 vs 0.600609 | pr_auc 0.368899 vs 0.368899 | brier 0.274146 vs 0.274146 -> MATCH
+decision_tree/val_calibrated: roc_auc 0.701344 vs 0.701344 | pr_auc 0.466630 vs 0.466630 | brier 0.197303 vs 0.197303 -> MATCH
+random_forest/val: roc_auc 0.729175 vs 0.729175 | pr_auc 0.536837 vs 0.536837 | brier 0.193479 vs 0.193479 -> MATCH
+random_forest/val_calibrated: roc_auc 0.721778 vs 0.721778 | pr_auc 0.525013 vs 0.525013 | brier 0.185550 vs 0.185550 -> MATCH
+xgboost/val: roc_auc 0.725498 vs 0.725498 | pr_auc 0.514753 vs 0.514753 | brier 0.194210 vs 0.194210 -> MATCH
+xgboost/val_calibrated: roc_auc 0.718693 vs 0.718693 | pr_auc 0.503163 vs 0.503163 | brier 0.190383 vs 0.190383 -> MATCH
+
+=== 6. Determinism of predict_proba ===
+two full-test predict_proba calls bit-identical: False
+single-row predict_proba twice bit-identical: True
+single-row vs batch row-0 probability equal: True
+
+DONE

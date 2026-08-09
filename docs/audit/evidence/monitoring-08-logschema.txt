@@ -1,0 +1,42 @@
+MODEL_FEATURES count: 94
+
+--- POST /predict ---
+top-level keys exact SPEC §10 match: True -> ['features', 'model_version', 'payload', 'prediction', 'timestamp']
+prediction keys exact match: True
+prediction values: estimated_price=151147.74 probability=0.216313 cluster_id=0
+model_version: 'ridge_v1+random_forest_v1'
+timestamp: 2026-08-07T13:57:40.888683+00:00
+features count: 94 | == MODEL_FEATURES set: True
+null feature values: []
+payload keys (posted input echo): ['bedrooms', 'bldg_type', 'bsmt_full_bath', 'bsmt_half_bath', 'central_air', 'fireplaces', 'full_bath', 'garage_cars', 'gr_liv_area', 'half_bath', 'house_style', 'lot_area', 'ms_zoning', 'neighborhood', 'open_porch_sf', 'overall_cond', 'overall_qual', 'pool_area', 'screen_porch', 'total_bsmt_sf', 'wood_deck_sf', 'year_built']
+payload YrSold/sale_date related: yr_sold=None sale_date=None
+features YrSold=2026 sale_year=2026.0 MoSold=8
+
+--- POST /predict/price ---
+top-level keys exact SPEC §10 match: True -> ['features', 'model_version', 'payload', 'prediction', 'timestamp']
+prediction keys exact match: True
+prediction values: estimated_price=151147.74 probability=None cluster_id=0
+model_version: 'ridge_v1+random_forest_v1'
+timestamp: 2026-08-07T13:57:41.069831+00:00
+features count: 94 | == MODEL_FEATURES set: True
+null feature values: []
+payload keys (posted input echo): ['bedrooms', 'bldg_type', 'bsmt_full_bath', 'bsmt_half_bath', 'central_air', 'fireplaces', 'full_bath', 'garage_cars', 'gr_liv_area', 'half_bath', 'house_style', 'lot_area', 'ms_zoning', 'neighborhood', 'open_porch_sf', 'overall_cond', 'overall_qual', 'pool_area', 'screen_porch', 'total_bsmt_sf', 'wood_deck_sf', 'year_built']
+payload YrSold/sale_date related: yr_sold=None sale_date=None
+features YrSold=2026 sale_year=2026.0 MoSold=8
+
+--- POST /predict/sale-probability ---
+top-level keys exact SPEC §10 match: True -> ['features', 'model_version', 'payload', 'prediction', 'timestamp']
+prediction keys exact match: True
+prediction values: estimated_price=None probability=0.216313 cluster_id=0
+model_version: 'ridge_v1+random_forest_v1'
+timestamp: 2026-08-07T13:57:41.765040+00:00
+features count: 94 | == MODEL_FEATURES set: True
+null feature values: []
+payload keys (posted input echo): ['bedrooms', 'bldg_type', 'bsmt_full_bath', 'bsmt_half_bath', 'central_air', 'fireplaces', 'full_bath', 'garage_cars', 'gr_liv_area', 'half_bath', 'house_style', 'lot_area', 'ms_zoning', 'neighborhood', 'open_porch_sf', 'overall_cond', 'overall_qual', 'pool_area', 'screen_porch', 'total_bsmt_sf', 'wood_deck_sf', 'year_built']
+payload YrSold/sale_date related: yr_sold=None sale_date=None
+features YrSold=2026 sale_year=2026.0 MoSold=8
+
+--- drift_check over the 3 real API lines ---
+status=ok n=3 n_invalid_lines=0
+YrSold PSI=4.358638 sale_year PSI=4.358638
+drifted=True retraining=False

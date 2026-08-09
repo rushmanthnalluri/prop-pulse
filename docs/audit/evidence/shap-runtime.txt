@@ -1,0 +1,9 @@
+COMMAND: .venv/Scripts/python.exe - <<EOF (cold singleton build + warm explain_instance x20 latency)
+DATE: Fri Aug  7 13:04:13 UTC 2026
+NOTE: other audit agents run concurrently on this host; ambient CPU load possible.
+---OUTPUT---
+cold first explain_instance call (singleton build incl. lazy shap import): 1768.0 ms
+warm explain_instance x20: p50=30.21 ms  mean=32.04 ms  min=24.76  max=45.54  p95=44.96
+claim under audit: ~50 ms warm
+RUNTIME: PASS
+individual ms: 44.9, 45.5, 40.7, 33.0, 32.0, 35.6, 43.2, 31.0, 29.4, 31.2, 27.2, 37.5, 27.3, 26.2, 24.8, 25.5, 27.8, 27.0, 26.0, 24.9

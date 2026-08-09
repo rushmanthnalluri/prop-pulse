@@ -1,0 +1,12 @@
+=== CHECK C2: FEATURE_DEFAULTS computed from train only ===
+columns compared: 79
+mismatches vs TRAIN-only recompute: NONE
+entries that WOULD differ if computed on train+val: 10
+   e.g. ('LotArea', 9500, 9480)
+   e.g. ('YearBuilt', 1972, 1973)
+   e.g. ('YearRemodAdd', 1993, 1994)
+   e.g. ('BsmtFinSF1', 384, 381)
+   e.g. ('BsmtUnfSF', 485, 482)
+   e.g. ('TotalBsmtSF', 991, 990)
+   e.g. ('1stFlrSF', 1088, 1090)
+   e.g. ('GrLivArea', 1456, 1466)

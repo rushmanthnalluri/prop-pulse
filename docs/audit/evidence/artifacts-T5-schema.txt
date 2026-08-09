@@ -1,0 +1,18 @@
+MODEL_FEATURES n=94
+models\regression\lasso_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\regression\linear_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\regression\random_forest_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\regression\ridge_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\regression\xgboost_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\classification\decision_tree_calibrated_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\classification\decision_tree_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\classification\logistic_calibrated_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\classification\logistic_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\classification\random_forest_calibrated_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\classification\random_forest_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\classification\xgboost_calibrated_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\classification\xgboost_v1.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\registry\regression_champion.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+models\registry\classification_champion.joblib: pipeline.feature_names_in_ == MODEL_FEATURES -> True; ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> True (n_pipe=94, n_ct=94)
+SUMMARY: 15/15 artifacts have EXACT (names+order) schema match on BOTH levels
+RESULT=OK

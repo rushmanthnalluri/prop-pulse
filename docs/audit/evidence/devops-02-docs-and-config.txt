@@ -1,0 +1,33 @@
+=== override mentions in docs ===
+--- DEPLOYMENT.md ---
+11:> `docker-compose.override.yml`) still apply.
+24:| `API_HOST` | `127.0.0.1` | Uvicorn bind address (containers must use `0.0.0.0` — compose overrides this) |
+--- docker/README.md ---
+19:>    drop a `docker-compose.override.yml` next to the base file remapping
+20:>    `ports` (use the `!override` tag — Compose v2 *appends* port mappings
+73:below via `ENV`; compose's `env_file: .env` overrides them, and the compose
+74:`environment:` block overrides `env_file` (used to force `API_HOST=0.0.0.0`).
+--- README.md ---
+29:| Docker build + smoke | **Verified** — both images build (backend 1.77 GB, frontend 93.9 MB) and pass an in-compose smoke test (`/predict`, `/market/clusters`, CORS preflight, in-container drift check); local ports 18000/18080 via `docker-compose.override.yml` | `reports/DOCKER_SMOKE.md` |
+140:   through when present. A per-property override is also wired: drop
+338:machine), the repo carries an optional **`docker-compose.override.yml`** —
+416:│                       # (+ local docker-compose.override.yml port remap)
+431:  (override ready: `data/external/property_geo.csv` — `docs/GEOGRAPHY.md`)
+--- FINAL-RELEASE.md ---
+20:| Docker | **Build + in-compose smoke PASS** (backend 1.77 GB, frontend 93.9 MB; override ports 18000/18080; mlflow profile 200) | `reports/DOCKER_SMOKE.md` |
+35:docker compose up --build                        # or with override ports 18000/18080
+45:- **Property-level geo override** — optional `data/external/property_geo.csv`
+63:  per-property coordinates; `property_geo.csv` override now supported.
+
+=== .gitignore: override excluded? ===
+docker-compose.override.yml NOT in .gitignore
+
+=== pytest.ini ===
+[pytest]
+pythonpath = .
+testpaths = tests backend/tests
+markers =
+    integration: end-to-end integration tests (require processed data / trained artifacts)
+
+=== frontend/package-lock.json exists? ===
+-rw-r--r-- 1 RUSHMANTH 197609 116208 Aug  7 15:26 frontend/package-lock.json

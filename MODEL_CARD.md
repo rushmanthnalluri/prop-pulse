@@ -1,0 +1,179 @@
+# Model Card — PropPulse
+
+Artifacts: `models/registry/` + `models/champion.json` · dataset version
+`ames-1.0` · feature version `9b0f8ba4201c` (12-char sha1 of
+`models/feature_list.json`) · seed 42 throughout · champions selected
+2026-08-07. Every metric below is quoted from
+`reports/MODEL_EVALUATION.md`; design decisions from `docs/DECISIONS.md`
+(ADR-1…ADR-11); methodology detail in `docs/METHODOLOGY.md`.
+
+## Model overview
+
+PropPulse combines three model components trained on the Ames, Iowa housing
+dataset (residential sales, 2006–2010):
+
+1. **Price regression — ridge (v1)** on `log1p(SalePrice)`; dollar outputs
+   via `expm1`, with an additive log-space ~80% interval built from
+   validation residuals.
+2. **Sale-speed classification — sigmoid-calibrated random forest (v1)**,
+   predicting `sells_within_30_days` at operating threshold 0.203292
+   (chosen on validation F1). The target is **simulated** (ADR-3) — see
+   Limitations.
+3. **Micro-market segmentation — DBSCAN** (eps 1.317, min_samples 2) over
+   the 25 Ames neighborhoods on scaled `[lat, long,
+   median_price_per_sqft, monthly_sale_velocity]` (train-split statistics),
+   yielding 4 micro-markets plus 3 noise neighborhoods. At serving time,
+   noise or unseen neighborhoods map to the nearest cluster centroid and
+   the response is flagged `fallback: true`.
+
+All three consume a single feature pipeline (`ml/features/`, 94 model
+features); preprocessing is embedded inside each sklearn Pipeline, so every
+served model is one self-contained joblib.
+
+## Intended use
+
+- Education and demonstration of leakage-safe ML valuation methodology:
+  time-based splits, train-only statistics, calibrated probabilities,
+  statistical champion selection, SHAP explainability, drift monitoring.
+- A portfolio/reference implementation of ML engineering practice.
+- Demonstration on **historical** data only.
+
+## Out-of-scope uses
+
+- Real pricing, appraisal, listing, lending, or investment decisions.
+- Current-market estimates: the training data end in 2010 and no current
+  market conditions are represented anywhere in the system.
+- Any use requiring live or recent data — the platform has no live feed.
+- Any decision affecting individuals (credit, underwriting, tenant
+  screening) — see Ethical considerations.
+
+## Training data and provenance
+
+- Source: Kaggle "House Prices: Advanced Regression Techniques" — the Ames
+  dataset compiled by Dean De Cock (De Cock 2011, *Journal of Statistics
+  Education* 19(3), doi:10.1080/10691898.2011.11889627). The competition
+  archive is vendored at the repo root; only the labeled `train.csv`
+  (1,460 rows × 81 columns) is used — Kaggle's `test.csv` has no
+  `SalePrice`.
+- License: Kaggle competition terms — free for non-commercial
+  educational/research use with attribution; raw files are not to be
+  redistributed outside this project (`data/README.md`).
+- Time-based split (ADR-4): train = YrSold ≤ 2008 (945 rows), val = 2009
+  (338 rows), test = 2010 (175 rows, sealed — read exactly once, after
+  champion selection).
+- Two documented data fallbacks ship with the repo: approximate
+  neighborhood centroids (`data/external/neighborhood_geo.csv`, ADR-2) and
+  the simulated days-on-market target (`ml/data/sale_speed.py`, ADR-3, with
+  a `DOM_PROVIDER=csv` adapter for real observed DOM).
+
+## Evaluation summary
+
+Champion selection used the **validation split only** (regression: RMSLE
+primary; classification: PR-AUC primary among calibrated variants, Brier
+sanity check). The sealed test split was read once for the final report.
+
+**Regression champion — ridge** (dollar metrics via `expm1`):
+
+| split | MAE | RMSE | R² | RMSLE |
+|---|---|---|---|---|
+| val (2009, 338 rows) | $14,527 | $21,673 | 0.9280 | 0.1354 |
+| test (2010, 175 rows) | $15,075 | $21,152 | 0.9305 | 0.1187 |
+
+- Prediction interval: nominal ~80% from validation residual quantiles;
+  empirical coverage on the sealed test split 0.783.
+- Champion margin: paired bootstrap (2,000 val resamples, seed 42) 95% CI
+  for RMSLE(ridge) − RMSLE(xgboost) = [−0.0133, +0.0060] — **not
+  statistically decisive**; ridge carries the decision on interpretability,
+  size (~21 KB), and latency. On the sealed test split XGBoost posts the
+  lower RMSLE (0.1051 vs 0.1187); selection is locked to validation by
+  design.
+
+**Classification champion — calibrated random forest @ threshold 0.2033**
+(SIMULATED target — not real-world performance):
+
+| split | ROC-AUC | PR-AUC | F1 | precision | recall | Brier |
+|---|---|---|---|---|---|---|
+| val | 0.7218 | 0.5250 | 0.5455 | 0.4091 | 0.8182 | 0.1856 |
+| test | 0.7666 | 0.5674 | 0.5063 | 0.3670 | 0.8163 | 0.1710 |
+
+Test confusion matrix @ 0.2033: TP 40, FP 69, FN 9, TN 57.
+
+## Limitations
+
+### Simulated classification target (ADR-3)
+
+The Ames dataset has no days-on-market field. `days_on_market` — and
+therefore `sells_within_30_days` — is generated by a transparent, seeded
+formula of real features (0.9·log of price vs neighborhood median, quality
+and condition terms, a month-of-sale season term, plus per-property
+N(0, 0.35) noise; exact formula in ADR-3 and `ml/data/sale_speed.py`). The
+classification metrics above measure how well the model recovers that
+formula under noise — **they are not real-world sale-speed performance and
+must not be quoted as such**. The overlap is structural: every
+deterministic simulator input except the realized sale price is itself a
+model feature, and `log(SalePrice)` is recoverable from the feature block
+at R² ≈ 0.93 (`docs/METHODOLOGY.md` §10), so the scores are expected by
+construction. A `DOM_PROVIDER=csv` adapter accepts observed DOM data;
+retraining with it is required before any real sale-speed claim.
+
+### Neighborhood-grain geography (ADR-2)
+
+The dataset carries no per-property coordinates; `lat`/`long` are
+approximate neighborhood centroids. Micro-markets are therefore
+neighborhood-grain with no street-level signal, and rare neighborhoods
+(Blueste n=1, NPkVill n=3, MeadowV n=9) have noisy statistics.
+
+### Calendar support window
+
+Training covers sales through 2008 (validation 2009, test 2010; data span
+2006–2010). Calendar-derived features (`YrSold`, `MoSold`,
+`sale_year/month/quarter`, `property_age`, `years_since_remod`) have no
+support outside that window. At serving time the backend **defaults/clamps
+sale dates to the training window**: an omitted `sale_date` falls back to
+the window boundary and an explicit out-of-window date is clamped to it, so
+calendar features never extrapolate beyond the training support — read
+estimates as "as if sold within the training window".
+
+### Other limitations
+
+- 1,460 labeled rows from one city in 2006–2010; nothing transfers to
+  another market or period without retraining.
+- Three of the top-20 SHAP features are train-fit target-encoded
+  neighborhood statistics — benchmark comparisons against models without
+  target encoding should account for this (`docs/METHODOLOGY.md` §8).
+- The price interval is a nominal empirical ~80% interval, not
+  conformalized; per-row coverage is not guaranteed.
+- `MSSubClass` is modeled as a scaled numeric rather than the categorical
+  code it semantically is (ADR-11).
+
+## Ethical considerations
+
+- **Single city, dated period.** Trained on Ames, Iowa sales from
+  2006–2010 only; the data are not representative of other markets or of
+  the present day.
+- **Not fair-lending grade.** No fairness audit has been performed. The
+  system must not be used for lending, underwriting, tenant screening, or
+  any decision that affects individuals.
+- **No protected-class features.** The 94 model features are physical,
+  locational, and temporal attributes; the dataset contains no race, sex,
+  religion, familial-status, disability, or national-origin variables.
+  Neighborhood-level aggregates can still proxy for socio-economic
+  composition — a further reason real-world decisions are out of scope.
+- **Disclosure by design.** The simulated-target caveat travels with the
+  API responses, the UI, and every report; the geography approximation and
+  calendar clamp are documented in the ADRs and API reference.
+
+## Versioning and reproducibility
+
+- `feature_version` = 12-char sha1 of `models/feature_list.json`
+  (`9b0f8ba4201c` at selection); `dataset_version` = `ames-1.0`. Both are
+  logged on every MLflow run and returned by `GET /model/info`.
+- Champions live in `models/registry/`; `models/champion.json` carries
+  versions, val/test metrics, the operating threshold, the residual
+  interval, bootstrap statistics, and the selection rationale.
+- Experiment tracking: MLflow over a local file store (`./mlruns`;
+  `MLFLOW_TRACKING_URI` can point to a server). MLflow 3.15 requires
+  `MLFLOW_ALLOW_FILE_STORE=true` for file stores — set by `ml/tracking.py`.
+- Reproducibility: the processed data and feature artifacts are
+  byte-identical on pipeline re-run, and a full retrain reproduces the
+  committed champions (`reports/REPRODUCIBILITY.md`).

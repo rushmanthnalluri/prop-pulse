@@ -1,0 +1,13 @@
+=== logs/ + reports/ + docs/audit leak scan: absolute paths with usernames, IPs, secrets-looking values ===
+--- absolute user paths (C:\Users\... or /c/Users or /home/) in served/logged artifacts ---
+      1 docs/audit/evidence/security-leak-scan.txt:2:C:\Users\...
+
+--- prediction log sample keys (first line only, structure check) ---
+{"timestamp": "2026-08-07T11:06:11.346209+00:00", "payload": {"neighborhood": "NridgHt", "house_style": "2Story", "bldg_type": "1Fam", "ms_zoning": "RL", "bedrooms": 4, "full_bath": 2, "half_bath": 1, "bsmt_full_bath": 1, "bsmt_half_bath": 0, "gr_liv_area": 2200, "lot_area": 11000, "total_bsmt_sf": 1200, "year_built": 2003, "overall_qual": 8, "overall_cond": 5, "garage_cars": 2, "fireplaces": 1, "central_air": true, "pool_area": 0, "wood_deck_sf": 0, "open_porch_sf": 0, "screen_porch": 0}, "features": {"MSSubClass": 50, "MSZoning": "RL", "LotFrontage": 70.0, "LotArea": 11000, "Street": "Pave",
+
+--- drift report latest.json presence ---
+latest.json
+
+--- any IP addresses other than localhost/0.0.0.0 in configs/logs ---
+     24 127.0.0.1
+     22 0.0.0.0

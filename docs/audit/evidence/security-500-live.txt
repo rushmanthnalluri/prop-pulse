@@ -1,0 +1,17 @@
+===================== DEEP NESTING: 5000-deep JSON array as body =====================
+bytes: 10000
+$ curl -si -X POST /predict --data-binary @deep.json
+HTTP/1.1 500 Internal Server Error
+date: Fri, 07 Aug 2026 13:06:21 GMT
+server: uvicorn
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+content-length: 34
+content-type: application/json
+
+{"detail":"Internal server error"}
+
+===================== DEEP NESTING: 200-deep nested object in unknown field (extra=forbid path) =====================
+HTTP 422

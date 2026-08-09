@@ -1,0 +1,57 @@
+=== port check 18000/18080/15000 (expect no listeners) ===
+all three ports FREE
+
+=== newest mtimes: backend/app, ml, docker, frontend/src (local IST; backend image built 16:43:48 IST) ===
+2026-08-07+18:05:51.0201478000 frontend/src/pages/Valuation.jsx
+2026-08-07+17:55:01.1846632000 backend/app/services/__pycache__/prediction_service.cpython-314.pyc
+2026-08-07+17:51:12.6436566000 backend/app/services/prediction_service.py
+2026-08-07+17:35:57.7056082000 backend/app/api/__pycache__/model.cpython-314.pyc
+2026-08-07+17:35:47.0102302000 backend/app/api/model.py
+2026-08-07+17:34:12.1681549000 backend/app/api/__pycache__/predict.cpython-314.pyc
+2026-08-07+17:34:12.1601315000 backend/app/api/__pycache__/market.cpython-314.pyc
+2026-08-07+17:34:11.6262034000 backend/app/__pycache__/main.cpython-314.pyc
+
+=== count of image-input files NEWER than backend image build (2026-08-07 16:43:48 IST) ===
+backend/README.md
+backend/app/__pycache__/main.cpython-314.pyc
+backend/app/__pycache__/security.cpython-314.pyc
+backend/app/api/__pycache__/market.cpython-314.pyc
+backend/app/api/__pycache__/model.cpython-314.pyc
+backend/app/api/__pycache__/predict.cpython-314.pyc
+backend/app/api/market.py
+backend/app/api/model.py
+backend/app/api/predict.py
+backend/app/main.py
+backend/app/services/__pycache__/monitoring_service.cpython-314.pyc
+backend/app/services/__pycache__/prediction_service.cpython-314.pyc
+backend/app/services/prediction_service.py
+backend/tests/__pycache__/test_api.cpython-314-pytest-9.1.1.pyc
+backend/tests/__pycache__/test_latency_fixes.cpython-314-pytest-9.1.1.pyc
+backend/tests/__pycache__/test_security.cpython-314-pytest-9.1.1.pyc
+backend/tests/test_api.py
+backend/tests/test_latency_fixes.py
+backend/tests/test_security.py
+data/processed/train.csv
+ml/data/__pycache__/pipeline.cpython-314.pyc
+ml/data/__pycache__/sale_speed.cpython-314.pyc
+ml/data/pipeline.py
+models/classification/decision_tree_calibrated_v1.joblib
+models/classification/decision_tree_v1.joblib
+models/classification/logistic_calibrated_v1.joblib
+models/classification/logistic_v1.joblib
+models/classification/random_forest_v1.joblib
+models/classification/xgboost_calibrated_v1.joblib
+models/classification/xgboost_v1.joblib
+models/feature_defaults.json
+models/feature_list.json
+models/neighborhood_stats.json
+models/regression/lasso_v1.joblib
+models/regression/linear_v1.joblib
+models/regression/random_forest_v1.joblib
+models/regression/ridge_v1.joblib
+models/regression/xgboost_v1.joblib
+=== frontend inputs newer than frontend image build (2026-08-07 16:36:55 IST) ===
+2026-08-07+18:05:51.0201478000 frontend/src/pages/Valuation.jsx
+
+=== Valuation.jsx: what changed? (look for step= attrs — llba F7 area) ===
+108:              step={1}

@@ -1,0 +1,25 @@
+--- 20 rapid bursts of 25 concurrent /predict (server2, output-to-file) ---
+burst: p50=10001.53 max=10376.68 errors=0 statuses={'200': 25}
+burst: p50=11096.33 max=11432.69 errors=0 statuses={'200': 25}
+burst: p50=13009.62 max=13373.62 errors=0 statuses={'200': 25}
+burst: p50=10005.61 max=10268.42 errors=0 statuses={'200': 25}
+burst: p50=15449.63 max=16060.83 errors=0 statuses={'200': 25}
+burst: p50=9515.41 max=9738.77 errors=0 statuses={'200': 25}
+burst: p50=14477.55 max=15063.45 errors=0 statuses={'200': 25}
+burst: p50=8966.86 max=9485.71 errors=0 statuses={'200': 25}
+burst: p50=9780.34 max=10075.12 errors=0 statuses={'200': 25}
+burst: p50=10473.42 max=10525.36 errors=0 statuses={'200': 25}
+burst: p50=8587.35 max=9306.59 errors=0 statuses={'200': 25}
+burst: p50=11904.7 max=11977.8 errors=0 statuses={'200': 25}
+burst: p50=8977.35 max=9131.68 errors=0 statuses={'200': 25}
+burst: p50=16001.29 max=16443.54 errors=0 statuses={'200': 25}
+burst: p50=16493.02 max=16823.09 errors=0 statuses={'200': 25}
+burst: p50=9081.26 max=9381.89 errors=0 statuses={'200': 25}
+burst: p50=11733.16 max=12328.3 errors=0 statuses={'200': 25}
+burst: p50=9291.33 max=9383.03 errors=0 statuses={'200': 25}
+burst: p50=6138.95 max=6259.91 errors=0 statuses={'200': 25}
+burst: p50=7708.13 max=8483.78 errors=0 statuses={'200': 25}
+--- server alive check + RSS ---
+alive=True rss_mb=342.5 peak_wset_mb=351.2
+--- warnings in server2 output so far ---
+65592

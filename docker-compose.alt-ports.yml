@@ -1,0 +1,42 @@
+# Alternative host-port mapping — committed but OPT-IN: this file is NOT named
+# `docker-compose.override.yml`, so plain `docker compose ...` commands always
+# use the base file's defaults (backend :8000, frontend :8080, mlflow :5000).
+# Merge it explicitly only on hosts where those defaults are occupied:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.alt-ports.yml up --build
+#
+# On this machine the default host ports are already bound by unrelated Docker
+# projects (`showcase-gateway` on 8000, `showcase-frontend` on 8080,
+# `showcase-backend` on 5000 — verified via `docker ps` / netstat,
+# 2026-08-07). Compose v2 APPENDS `ports` mappings on merge (it does not
+# replace by target), so each remapped service uses the `!override` tag to
+# drop the base mapping entirely. Foreign containers are left untouched.
+#
+#   backend  : 18000 -> 8000
+#   frontend : 18080 -> 80
+#   mlflow   : 15000 -> 5000
+#
+# Browser consequences (see reports/DOCKER_SMOKE.md):
+#   - VITE_API_URL is baked into the frontend bundle at build time → must point
+#     at the published backend port (18000), so the build ARG is overridden too.
+#   - The browser origin of the composed frontend becomes http://localhost:18080
+#     → backend CORS_ORIGINS must allow it (`environment` overrides env_file).
+name: proppulse
+
+services:
+  backend:
+    environment:
+      CORS_ORIGINS: http://localhost:5173,http://localhost:18080
+    ports: !override
+      - "18000:8000"
+
+  frontend:
+    build:
+      args:
+        VITE_API_URL: http://localhost:18000
+    ports: !override
+      - "18080:80"
+
+  mlflow:
+    ports: !override
+      - "15000:5000"

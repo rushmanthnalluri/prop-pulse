@@ -1,0 +1,22 @@
+flat knee idx: 5 (expect 5 = n//2)
+tiny curve n=2: 1 (expect 1)
+fallback RuntimeError (acceptable loud failure): no (min_samples, eps) candidate produced 3-10 clusters; k-distance rungs exhaust
+parse 'cat__MSZoning_C (all)' -> 'MSZoning'
+parse 'cat__BldgType_2fmCon' -> 'BldgType'
+parse 'cat__Exterior1st_WdShing' -> 'Exterior1st'
+parse 'cat__BsmtFinType1_GLQ' -> 'BsmtFinType1'
+parse 'cat__Condition1_Norm' -> 'Condition1'
+parse 'cat__Condition2_Norm' -> 'Condition2'
+parse 'num__1stFlrSF' -> '1stFlrSF'
+parse 'remainder__x' -> 'remainder__x'
+parse 'cat__MiscFeature_TenC_x_y' -> 'MiscFeature'
+any MODEL_FEATURES underscore-prefix pairs: [('neighborhood_median_price', 'neighborhood_median_price_per_sqft')]
+flat schema: {'estimated_price': 0.00019901975433120784}
+nested schema: {'probability': 12.161428733477615}
+iter specs on real file: [('estimated_price', 11, 10), ('probability', 11, 10)]
+malformed ref: None
+non-dict ref: None
+latest drift report exists: True
+{'status': 'ok', 'n_predictions': 7, 'drift_detected': True, 'retraining_recommended': False, 'n_invalid_lines': 0}
+lazy exports: True MicroMarketLookup True False
+AttributeError OK: module 'ml.clustering' has no attribute 'nope'

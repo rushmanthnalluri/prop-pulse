@@ -1,0 +1,35 @@
+CLI smoke — `python -m ml.monitoring.drift_check` (real module invocation, default reference).
+reports/drift/latest.json was backed up before and restored byte-identical after
+(sha256 eb18910d48f0253c3bed7f5d564cae449e21cc4782811d93219797578d5c5aef before AND after).
+
+--- CLI: missing log (no_data) ---
+$ .venv/Scripts/python.exe -m ml.monitoring.drift_check --log "C:\Users\rushm\AppData\Local\Temp\proppulse-monitoring-audit\nope.jsonl"
+<frozen runpy>:130: RuntimeWarning: 'ml.monitoring.drift_check' found in sys.modules after import of
+package 'ml.monitoring', but prior to execution of 'ml.monitoring.drift_check'; this may result in
+unpredictable behaviour
+INFO __main__: drift check: status=no_data n=0 drift=False drifted=[] -> C:\Machine_Learning\Prop-pulse\reports\drift\latest.json
+exit=0
+report written: status = no_data
+
+--- CLI: the 3 real API lines from the :8350 run (temp PREDICTION_LOG_PATH copy) ---
+$ .venv/Scripts/python.exe -m ml.monitoring.drift_check --log "C:\Users\rushm\AppData\Local\Temp\proppulse-monitoring-audit\predictions.jsonl" --window 500
+INFO __main__: drift check: status=ok n=3 drift=True drifted=['1stFlrSF', '2ndFlrSF', 'BedroomAbvGr',
+'BsmtFinSF1', 'BsmtFinSF2', 'BsmtFullBath', 'BsmtUnfSF', 'EnclosedPorch', 'Fireplaces', 'FullBath',
+'GarageArea', 'GarageCars', 'GarageYrBlt', 'GrLivArea', 'HalfBath', 'LotArea', 'LotFrontage',
+'MSSubClass', 'MasVnrArea', 'MoSold', 'OpenPorchSF', 'OverallCond', 'OverallQual', 'TotRmsAbvGrd',
+'TotalBsmtSF', 'WoodDeckSF', 'YearBuilt', 'YearRemodAdd', 'YrSold', 'amenity_count',
+'bathroom_bedroom_ratio', 'distance_to_city_center_km', 'lat', 'living_area_per_bedroom', 'long',
+'neighborhood_mean_price', 'neighborhood_median_price', 'neighborhood_median_price_per_sqft',
+'neighborhood_monthly_sale_velocity', 'property_age', 'sale_month', 'sale_quarter', 'sale_year',
+'total_bath', 'total_sf', 'years_since_remod'] -> C:\Machine_Learning\Prop-pulse\reports\drift\latest.json
+exit=0
+report written: status = ok | n: 3 | drift: True | retrain: False
+
+Notes:
+- exit 0 on no_data matches the module docstring ("safe to run on a schedule before the backend
+  has logged anything") and DEPLOYMENT.md cron usage.
+- The runpy RuntimeWarning (finding M5) appears on every `python -m ml.monitoring.drift_check`
+  invocation because ml/monitoring/__init__.py:12-21 eagerly imports the drift_check submodule.
+- The n=3 all-features-drifted result is the small-n PSI inflation of finding M4.
+- Exit code 2 on missing reference was verified by wave-A (llba-ml-services) and not re-run here
+  (would require renaming the real reference_stats.json — out of scope for report-only).

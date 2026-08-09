@@ -1,0 +1,1 @@
+{"probability":0.177099,"sells_within_30_days":false,"threshold":0.203292,"confidence":{"level":"typical","reasons":[]},"model_version":{"regression":"ridge_v1","classification":"random_forest_v1","feature_version":"9b0f8ba4201c"}}

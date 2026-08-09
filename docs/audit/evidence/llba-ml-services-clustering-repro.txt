@@ -1,0 +1,46 @@
+matrix shape: (25, 6)
+Neighborhood                                  name     lat     long  median_price_per_sqft  monthly_sale_velocity
+     Blmngtn                   Bloomington Heights 42.0627 -93.6418             138.517118               0.305556
+     Blueste                              Bluestem 42.0094 -93.6457              97.043702               0.027778
+      BrDale                             Briardale 42.0521 -93.6284              90.678825               0.305556
+     BrkSide                             Brookside 42.0324 -93.6251             101.437700               1.083333
+     ClearCr                           Clear Creek 42.0280 -93.6711             121.494501               0.555556
+     CollgCr                         College Creek 42.0193 -93.6868             131.967390               2.722222
+     Crawfor                              Crawford 42.0153 -93.6403             113.674699               1.083333
+     Edwards                               Edwards 42.0220 -93.6667             107.086118               1.666667
+     Gilbert                               Gilbert 42.0602 -93.6398             119.059917               1.472222
+      IDOTRR                Iowa DOT and Rail Road 42.0224 -93.6215              91.894442               0.722222
+     MeadowV                        Meadow Village 41.9920 -93.6033             117.338004               0.250000
+     Mitchel                              Mitchell 41.9920 -93.6049             132.669566               0.888889
+       NAmes                            North Ames 42.0424 -93.6176             122.143420               4.083333
+     NPkVill                       Northpark Villa 42.0504 -93.6259             130.963517               0.083333
+      NWAmes                        Northwest Ames 42.0495 -93.6340             104.901512               1.250000
+     NoRidge                            Northridge 42.0514 -93.6532             129.540862               0.722222
+     NridgHt                    Northridge Heights 42.0600 -93.6539             152.998776               1.305556
+     OldTown                              Old Town 42.0310 -93.6146              94.059406               2.083333
+       SWISU South & West of Iowa State University 42.0200 -93.6510              79.887158               0.388889
+      Sawyer                                Sawyer 42.0333 -93.6703             119.305857               1.305556
+     SawyerW                           Sawyer West 42.0345 -93.6862             116.792562               0.861111
+     Somerst                              Somerset 42.0503 -93.6444             137.672711               1.666667
+     StoneBr                           Stone Brook 42.0603 -93.6306             153.908795               0.416667
+      Timber                            Timberland 41.9964 -93.6489             133.567663               0.694444
+     Veenker                               Veenker 42.0415 -93.6516             143.819334               0.305556
+k=2 curve: [0.811 0.811 0.857 0.857 0.884 0.936 0.944 0.955 0.955 0.96  0.993 0.993
+ 1.035 1.068 1.068 1.088 1.088 1.121 1.121 1.237 1.275 1.317 1.484 1.97
+ 2.724]
+k=2 knee idx=21 eps=1.3170
+k=3 curve: [0.884 0.885 0.885 0.944 0.96  0.993 0.993 1.11  1.11  1.135 1.343 1.343
+ 1.403 1.434 1.436 1.436 1.5   1.5   1.518 1.612 1.918 1.985 2.007 2.184
+ 3.092]
+k=3 knee idx=18 eps=1.5181
+SELECTED: 2 1.3170045189879962
+rationale: k-distance knee accepted: min_samples=2, eps=1.3170 -> 4 clusters, 3 noise (within 3-10 clusters)
+n candidates evaluated: 39 valid: 16
+labels: [0, 1, 0, 0, 2, -1, 0, 2, 0, 0, 3, 3, -1, 0, 0, 0, 0, 0, 1, 2, 2, 0, 0, -1, 0]
+counts: (4, 3)
+label mismatches disk-vs-rerun: {}
+persisted eps: 1.3170045189879962 min_samples: 2 n_clusters: 4
+persisted model eps: 1.317004520305001 min_samples: 2 labels: [0, 1, 0, 0, 2, -1, 0, 2, 0, 0, 3, 3, -1, 0, 0, 0, 0, 0, 1, 2, 2, 0, 0, -1, 0]
+persisted scaler mean close: True scale close: True
+cluster stats recompute: checked 4 clusters
+cluster0 median_price train: 179900.0 val: 178500.0

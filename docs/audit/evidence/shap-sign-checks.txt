@@ -1,0 +1,28 @@
+COMMAND: .venv/Scripts/python.exe - <<EOF (sign checks + manual linear-SHAP recomputation)
+DATE: Fri Aug  7 13:03:00 UTC 2026
+---OUTPUT---
+manual linear-SHAP vs shap.LinearExplainer max abs diff: 0.000e+00
+manual expected value (bg_mean.coef+intercept) = 12.000341430947 vs explainer 12.000341430947
+
+CASE OverallQual: 8 vs 4  (only differing cell verified: True)
+  coef(num__OverallQual) = +0.063049
+  shap(OverallQual=8) = +0.09247997   manual = +0.09247997
+  shap(OverallQual=4) = -0.09577442   manual = -0.09577442
+  pred(8) = 12.192955  pred(4) = 12.004701  (log space; delta=+0.188254)
+  => OverallQual shap positive for qual=8 AND larger than qual=4: True
+
+CASE GrLivArea: 3000 vs 1000  (only differing cell verified: True)
+  coef(num__GrLivArea) = +0.037408
+  shap(GrLivArea=3000) = +0.10720590   manual = +0.10720590
+  shap(GrLivArea=1000) = -0.03501000   manual = -0.03501000
+  pred(3000) = 12.168239  pred(1000) = 12.026023  (log space; delta=+0.142216)
+  => GrLivArea shap positive for 3000 AND larger than 1000: True
+
+CASE property_age: 90 vs 2  (only differing cell verified: True)
+  coef(num__property_age) = -0.016392
+  shap(property_age=90) = -0.02721423   manual = -0.02721423
+  shap(property_age=2) = +0.02019920   manual = +0.02019920
+  pred(90) = 12.011894  pred(2) = 12.059307  (log space; delta=-0.047413)
+  => property_age: new(2) shap positive, old(90) lower: True (old shap -0.027214, new shap +0.020199)
+
+SIGN CHECKS: PASS

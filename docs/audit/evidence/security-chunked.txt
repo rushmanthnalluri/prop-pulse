@@ -1,0 +1,29 @@
+chunked body bytes: 200261
+$ curl -sv --max-time 30 -X POST /predict -H "Transfer-Encoding: chunked" --data-binary @bigbody (200KB, no Content-Length)
+HTTP 200 in 0.401901s
+* using HTTP/1.x
+> POST /predict HTTP/1.1
+> Host: 127.0.0.1:8360
+> User-Agent: curl/8.17.0
+> Accept: */*
+> Content-Type: application/json
+> Transfer-Encoding: chunked
+> 
+< HTTP/1.1 200 OK
+< date: Fri, 07 Aug 2026 13:08:04 GMT
+< server: uvicorn
+< content-length: 1337
+< content-type: application/json
+< x-content-type-options: nosniff
+< x-frame-options: DENY
+< referrer-policy: no-referrer
+< cache-control: no-store
+< 
+--- response body (first 300 chars) ---
+{"estimated_price":151147.74,"price_range":{"low":131276.1,"high":169846.06},"sale_probability":{"probability":0.216313,"sells_within_30_days":true,"threshold":0.203292},"micro_market":{"cluster_id":0,"label":"mid northwest","neighborhoods":["Blmngtn","BrDale","BrkSide","Crawfor","Gilbert","IDOTRR",
+5MB chunked body: 5000261 bytes
+HTTP 200 in 0.505810s
+
+--- junk chunked body (200KB of 'A', no Content-Length) ---
+HTTP 422
+{"detail":[{"type":"json_invalid","loc":["body",0],"msg":"JSON decode error","input":{},"ctx":{"error":"Expecting value"}}]}

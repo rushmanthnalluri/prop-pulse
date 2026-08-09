@@ -1,0 +1,7 @@
+n_clusters: 4 | clusters returned: 4 | points: 25
+cluster entries == cluster_stats.json: True
+25 points cover all geo neighborhoods: True
+fallback points: {'CollgCr': (2, True), 'NAmes': (0, True), 'Timber': (3, True)}
+non-fallback point cluster_ids == assignments csv: True 
+all 3 noise hoods present as fallback points: True
+point coords == neighborhood_geo.csv: True

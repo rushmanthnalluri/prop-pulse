@@ -1,0 +1,15 @@
+2026/08/07 18:53:02 INFO mlflow.tracking.fluent: Experiment with name 'gotcha_probe' does not exist. Creating a new experiment.
+2026/08/07 18:53:04 INFO mlflow.tracking.fluent: Experiment with name 'gotcha_probe' does not exist. Creating a new experiment.
+2026/08/07 18:53:04 INFO mlflow.tracking.fluent: Experiment with name 'gotcha_probe' does not exist. Creating a new experiment.
+case A(exact 'artifacts' component): FAIL
+  uri=file:///C:/Users/rushm/AppData/Local/Temp/artifacts/mlruns
+  error=MlflowException: Run '0084aec6b7384af8ac7cdb3f061f2f01' not found
+case A2(prefix 'artifacts_gotcha' only): OK
+  uri=file:///C:/Users/rushm/AppData/Local/Temp/artifacts_gotcha/mlruns
+case B(control): OK
+  uri=file:///C:/Users/rushm/AppData/Local/Temp/gotcha_control/mlruns
+cleaned C:\Users\rushm\AppData\Local\Temp\artifacts: exists=False
+cleaned C:\Users\rushm\AppData\Local\Temp\artifacts_gotcha: exists=False
+cleaned C:\Users\rushm\AppData\Local\Temp\gotcha_control: exists=False
+GOTCHA_REPRODUCED=True
+RESULT=OK

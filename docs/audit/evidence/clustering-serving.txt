@@ -1,0 +1,26 @@
+meta: {'n_clusters': 4, 'eps': 1.3170045189879962, 'min_samples': 2, 'feature_names': ['lat', 'long', 'median_price_per_sqft', 'monthly_sale_velocity']}
+assignments count: 25
+
+=== noise + unknown lookups ===
+   CollgCr: cluster_id=2 fallback=True label='mid west' n_sales=158 med_price=144000.0
+     NAmes: cluster_id=0 fallback=True label='mid northwest' n_sales=461 med_price=179900.0
+    Timber: cluster_id=3 fallback=True label='mid southeast' n_sales=41 med_price=138000.0
+NoSuchHood: cluster_id=2 fallback=True label='mid west' n_sales=158 med_price=144000.0
+
+=== known clustered lookup (control) ===
+   StoneBr: cluster_id=0 fallback=False label='mid northwest'
+
+=== hand distance math for Timber ===
+Timber unscaled vector: [41.9964, -93.6489, 133.5676625659051, 0.6944444444444444]
+Timber scaled vector: [-1.749898, -0.297426, 0.735508, -0.398076]
+  dist to cluster 0 centroid: 2.505492
+  dist to cluster 1 centroid: 2.541572
+  dist to cluster 2 centroid: 2.172944
+  dist to cluster 3 centroid: 2.083066
+hand-argmin: 3 | lookup() returned: 3
+
+=== unknown-name vector = downtown + global fallback stats ===
+matches CITY_CENTER+global_fallback: True [42.0347, -93.6199, 120.57877813504822, 26.25]
+
+=== whitespace handling ===
+  ' Timber '.strip() lookup -> 3 fallback: True

@@ -1,0 +1,13 @@
+=== val (n=338) ===
+ridge: {'mae': 14526.5724, 'rmse': 21672.721, 'r2': 0.927982, 'rmsle': 0.135437}
+xgboost: {'mae': 15461.4642, 'rmse': 23459.5372, 'r2': 0.915618, 'rmsle': 0.139777}
+=== test (n=175) ===
+ridge: {'mae': 15075.4735, 'rmse': 21151.5417, 'r2': 0.93048, 'rmsle': 0.118689}
+xgboost: {'mae': 12929.2254, 'rmse': 18880.0824, 'r2': 0.94461, 'rmsle': 0.105059}
+=== cls val ===
+{'roc_auc': 0.721778, 'pr_auc': 0.525013, 'f1': 0.545455, 'precision': 0.409091, 'recall': 0.818182, 'brier': 0.18555, 'confusion': {'tp': 81, 'fp': 117, 'fn': 18, 'tn': 122}}
+=== cls test ===
+{'roc_auc': 0.766602, 'pr_auc': 0.567363, 'f1': 0.506329, 'precision': 0.366972, 'recall': 0.816327, 'brier': 0.171026, 'confusion': {'tp': 40, 'fp': 69, 'fn': 9, 'tn': 57}}
+test interval coverage: 0.782857  DOC: 0.782857 / 78.3%
+val residual Q10/Q90: -0.140954 0.116634  DOC: -0.1410 / 0.1166
+val prevalence: 0.2929

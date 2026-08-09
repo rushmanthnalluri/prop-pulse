@@ -1,0 +1,20 @@
+COMMAND: .venv/Scripts/python.exe - <<EOF (aggregation: NridgHt row, independent dummy-sum vs aggregate_shap)
+DATE: Fri Aug  7 13:02:01 UTC 2026
+---OUTPUT---
+NridgHt rows in val: 22
+chosen val index: 3 Id: 26
+cat__Neighborhood_* dummy columns: 25
+active dummies for this row: [('cat__Neighborhood_NridgHt', np.float64(1.0))]
+independent sum of Neighborhood_* dummy shap values: -0.005036476538079
+aggregated 'Neighborhood' shap via explain_one:      -0.005036476538079
+abs diff: 0.000e+00
+NEIGHBORHOOD AGGREGATION: PASS
+independent parser == parse_base_name on all 296 columns: True
+every parsed base in MODEL_FEATURES: True
+base feature count: 94 (MODEL_FEATURES: 94 )
+all 94 base features covered by aggregation: True
+numeric identity-mapping violations: []
+distinct categorical bases: 41
+cat bases not in RAW_INPUT_COLUMNS: []
+Neighborhood-bucket columns parsing to another base: []
+non-Neighborhood columns parsing into Neighborhood: []

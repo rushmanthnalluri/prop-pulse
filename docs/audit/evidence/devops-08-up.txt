@@ -1,0 +1,19 @@
+=== docker compose up -d (no --build: use as-built wave-9 images) ===
+ Network proppulse_default Creating 
+ Network proppulse_default Created 
+ Container proppulse-backend-1 Creating 
+ Container proppulse-backend-1 Created 
+ Container proppulse-frontend-1 Creating 
+ Container proppulse-frontend-1 Created 
+ Container proppulse-backend-1 Starting 
+ Container proppulse-backend-1 Started 
+ Container proppulse-backend-1 Waiting 
+ Container proppulse-backend-1 Healthy 
+ Container proppulse-frontend-1 Starting 
+ Container proppulse-frontend-1 Started 
+
+=== waiting for backend healthy ===
+poll 1: backend health=healthy (19:39:29)
+
+proppulse-backend-1	Up 7 seconds (healthy)	0.0.0.0:18000->8000/tcp, [::]:18000->8000/tcp
+proppulse-frontend-1	Up 1 second	0.0.0.0:18080->80/tcp, [::]:18080->80/tcp

@@ -1,0 +1,14 @@
+WARNING backend.app.services.monitoring_service: unreadable drift report C:\Users\rushm\AppData\Local\Temp\llba_backend4_ntpk97be\bad.json: Expecting property name enclosed in double quotes: line 1 column 2 (char 1)
+lifespan fail-fast: RuntimeError: champion artifacts missing: ['regression', 'classification']
+missing champion.json -> startup raises: FileNotFoundError
+sale_date 2030-12-31: ACCEPTED -> serving YrSold/MoSold from it
+sale_date 1800-01-01: ACCEPTED -> serving YrSold/MoSold from it
+sale_date 2009-06-15: ACCEPTED -> serving YrSold/MoSold from it
+neighborhood 'names' (lowercase): rejected 422 (case-sensitive, exact match)
+drift missing -> no_data
+drift malformed -> {'status': 'no_data', 'detail': 'unreadable drift report'}
+drift non-dict json -> {'status': 'no_data'}
+drift ok -> {'status': 'ok', 'drift_detected': False}
+real reports/drift/latest.json exists: True
+fresh snapshot: {'requests_total': 0, 'errors_total': 0, 'avg_latency_ms': 0.0}
+SCRIPT 4 DONE

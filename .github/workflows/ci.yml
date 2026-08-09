@@ -1,0 +1,95 @@
+# PropPulse CI (SPEC §11/§12).
+# - python:   pinned dev environment on Python 3.12 + strict pip-audit gate
+#             + the full test suite
+# - frontend: install + npm audit gate + production build of the Vite app
+# - docker:   static validation of the compose files — base alone and merged
+#             with docker-compose.alt-ports.yml (no builds/pushes/secrets)
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      # Strict dependency audit: the build fails on any known fixable CVE.
+      # The single accepted exception is cryptography 49.0.0 (CVE-2026-69247 /
+      # PYSEC-2026-3552): the only fix (50.0.0) violates mlflow 3.15.1's
+      # cryptography<50 pin and the vulnerable API is never called here —
+      # see reports/SECURITY.md §1.1. Remove the ignore once mlflow permits
+      # cryptography>=50. The slim backend requirements carry no accepted
+      # findings, so they are audited without any ignore.
+      - name: Audit Python dependencies
+        run: |
+          pip install pip-audit
+          pip-audit --strict --ignore-vuln PYSEC-2026-3552 -r requirements.txt
+          pip-audit --strict -r backend/requirements.txt
+
+      # pytest.ini sets pythonpath=.; testpaths = tests backend/tests.
+      # Integration tests use the committed processed data + champion artifacts.
+      - name: Run tests
+        run: python -m pytest tests backend/tests -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      # Same pattern as docker/frontend.Dockerfile: npm ci when the lock file
+      # is committed (reproducible), npm install while it is absent.
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then npm ci; else npm install; fi
+
+      # Same gate as the Python audit: reports/SECURITY.md §1.2 records zero
+      # accepted npm vulnerabilities, so any new high/critical finding fails.
+      - name: Audit dependencies
+        run: npm audit --audit-level=high
+
+      - name: Build
+        run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # compose reads env_file .env; derive it from the committed example so
+      # validation works on a fresh checkout (no secrets involved).
+      - name: Prepare env file
+        run: cp .env.example .env
+
+      # Base file alone. Plain `config` is deliberate: no
+      # docker-compose.override.yml exists in the tree, so this validates
+      # exactly the default config (ports 8000/8080/5000).
+      - name: Validate base compose configuration
+        run: docker compose config -q
+
+      # Opt-in alternative port mapping (18000/18080/15000) for hosts where
+      # the default ports are occupied; must stay mergeable with the base.
+      - name: Validate merged alt-ports compose configuration
+        run: docker compose -f docker-compose.yml -f docker-compose.alt-ports.yml config -q

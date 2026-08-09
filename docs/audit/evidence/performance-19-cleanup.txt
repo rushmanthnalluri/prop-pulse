@@ -1,0 +1,116 @@
+=== cleanup verification ===
+--- port 8500 listeners (expect none) ---
+PORT 8500 FREE
+--- leftover python processes with uvicorn/prop-pulse 8500 (expect none) ---
+
+
+ProcessId   : 28216
+CommandLine : "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe" --type=renderer --pdf-upsell-enabled 
+              --video-capture-use-gpu-memory-buffer --lang=en-US --js-flags --device-scale-factor=1 
+              --num-raster-threads=4 --enable-main-frame-before-activation --renderer-client-id=104 
+              --time-ticks-at-unix-epoch=-1786074552855431 --launch-time-ticks=39014510525 --skip-read-main-dll 
+              --metrics-shmem-handle=8500,i,145275883188477210,16673592597578810479,2097152 
+              --field-trial-handle=2520,i,12401367911165082042,3728619586314564779,262144 
+              --enable-features=DevToolsEnableDurableMessages --variations-seed-version 
+              --pseudonymization-salt-handle=2540,i,13658133934847254885,14926753007955934007,4 
+              --trace-process-track-uuid=3190709083764223790 --mojo-platform-channel-handle=8152 /prefetch:1
+
+ProcessId   : 20680
+CommandLine : "C:\Program Files\Git\bin\bash.exe" -c "cd '/c/Machine_Learning/Prop-pulse' && sleep 2
+              {
+              echo \"=== cleanup verification ===\"
+              echo \"--- port 8500 listeners (expect none) ---\"
+              netstat -ano | grep -E ':8500\s+.*LISTENING' || echo \"PORT 8500 FREE\"
+              echo \"--- leftover python processes with uvicorn/prop-pulse 8500 (expect none) ---\"
+              powershell -NoProfile -Command \"Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -match 
+              '8500' } | Select-Object ProcessId,CommandLine | Format-List\" 2>/dev/null
+              echo \"--- logs/predictions.jsonl now vs my baselines ---\"
+              echo \"baseline1 (before my server): 08023c86829bec3fc2f471ef2124af76e02f40918e4fe9736f67fbfefde67d83 
+              48266 bytes\"
+              echo \"baseline2 (at env capture):   d3fd2a8c679d3f1b5135881384c1e3a6f13ef95c109622db5112b1255157d7ec 
+              64532 bytes\"
+              sha256sum logs/predictions.jsonl; wc -c logs/predictions.jsonl
+              echo \"(drift between baselines predates my first request => concurrent auditors append to the 
+              production log; my server wrote only to the redirected scratch file)\"
+              echo \"--- my scratch prediction log (records written by MY server only) ---\"
+              wc -l docs/audit/evidence/performance-scratch-predictions.jsonl
+              } 2>&1 | tee docs/audit/evidence/performance-19-cleanup.txt"
+
+ProcessId   : 7280
+CommandLine : "C:\Program Files\Git\bin\..\usr\bin\bash.exe" -c "cd '/c/Machine_Learning/Prop-pulse' && sleep 2
+              {
+              echo \"=== cleanup verification ===\"
+              echo \"--- port 8500 listeners (expect none) ---\"
+              netstat -ano | grep -E ':8500\s+.*LISTENING' || echo \"PORT 8500 FREE\"
+              echo \"--- leftover python processes with uvicorn/prop-pulse 8500 (expect none) ---\"
+              powershell -NoProfile -Command \"Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -match 
+              '8500' } | Select-Object ProcessId,CommandLine | Format-List\" 2>/dev/null
+              echo \"--- logs/predictions.jsonl now vs my baselines ---\"
+              echo \"baseline1 (before my server): 08023c86829bec3fc2f471ef2124af76e02f40918e4fe9736f67fbfefde67d83 
+              48266 bytes\"
+              echo \"baseline2 (at env capture):   d3fd2a8c679d3f1b5135881384c1e3a6f13ef95c109622db5112b1255157d7ec 
+              64532 bytes\"
+              sha256sum logs/predictions.jsonl; wc -c logs/predictions.jsonl
+              echo \"(drift between baselines predates my first request => concurrent auditors append to the 
+              production log; my server wrote only to the redirected scratch file)\"
+              echo \"--- my scratch prediction log (records written by MY server only) ---\"
+              wc -l docs/audit/evidence/performance-scratch-predictions.jsonl
+              } 2>&1 | tee docs/audit/evidence/performance-19-cleanup.txt"
+
+ProcessId   : 12924
+CommandLine : "C:\Program Files\Git\bin\..\usr\bin\bash.exe" -c "cd '/c/Machine_Learning/Prop-pulse' && sleep 2
+              {
+              echo \"=== cleanup verification ===\"
+              echo \"--- port 8500 listeners (expect none) ---\"
+              netstat -ano | grep -E ':8500\s+.*LISTENING' || echo \"PORT 8500 FREE\"
+              echo \"--- leftover python processes with uvicorn/prop-pulse 8500 (expect none) ---\"
+              powershell -NoProfile -Command \"Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -match 
+              '8500' } | Select-Object ProcessId,CommandLine | Format-List\" 2>/dev/null
+              echo \"--- logs/predictions.jsonl now vs my baselines ---\"
+              echo \"baseline1 (before my server): 08023c86829bec3fc2f471ef2124af76e02f40918e4fe9736f67fbfefde67d83 
+              48266 bytes\"
+              echo \"baseline2 (at env capture):   d3fd2a8c679d3f1b5135881384c1e3a6f13ef95c109622db5112b1255157d7ec 
+              64532 bytes\"
+              sha256sum logs/predictions.jsonl; wc -c logs/predictions.jsonl
+              echo \"(drift between baselines predates my first request => concurrent auditors append to the 
+              production log; my server wrote only to the redirected scratch file)\"
+              echo \"--- my scratch prediction log (records written by MY server only) ---\"
+              wc -l docs/audit/evidence/performance-scratch-predictions.jsonl
+              } 2>&1 | tee docs/audit/evidence/performance-19-cleanup.txt"
+
+ProcessId   : 12028
+CommandLine : "C:\Program Files\Git\bin\..\usr\bin\bash.exe" -c "cd '/c/Machine_Learning/Prop-pulse' && sleep 2
+              {
+              echo \"=== cleanup verification ===\"
+              echo \"--- port 8500 listeners (expect none) ---\"
+              netstat -ano | grep -E ':8500\s+.*LISTENING' || echo \"PORT 8500 FREE\"
+              echo \"--- leftover python processes with uvicorn/prop-pulse 8500 (expect none) ---\"
+              powershell -NoProfile -Command \"Get-CimInstance Win32_Process | Where-Object { \$_.CommandLine -match 
+              '8500' } | Select-Object ProcessId,CommandLine | Format-List\" 2>/dev/null
+              echo \"--- logs/predictions.jsonl now vs my baselines ---\"
+              echo \"baseline1 (before my server): 08023c86829bec3fc2f471ef2124af76e02f40918e4fe9736f67fbfefde67d83 
+              48266 bytes\"
+              echo \"baseline2 (at env capture):   d3fd2a8c679d3f1b5135881384c1e3a6f13ef95c109622db5112b1255157d7ec 
+              64532 bytes\"
+              sha256sum logs/predictions.jsonl; wc -c logs/predictions.jsonl
+              echo \"(drift between baselines predates my first request => concurrent auditors append to the 
+              production log; my server wrote only to the redirected scratch file)\"
+              echo \"--- my scratch prediction log (records written by MY server only) ---\"
+              wc -l docs/audit/evidence/performance-scratch-predictions.jsonl
+              } 2>&1 | tee docs/audit/evidence/performance-19-cleanup.txt"
+
+ProcessId   : 27352
+CommandLine : C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -Command "Get-CimInstance 
+              Win32_Process | Where-Object { $_.CommandLine -match '8500' } | Select-Object ProcessId,CommandLine | 
+              Format-List"
+
+
+
+--- logs/predictions.jsonl now vs my baselines ---
+baseline1 (before my server): 08023c86829bec3fc2f471ef2124af76e02f40918e4fe9736f67fbfefde67d83 48266 bytes
+baseline2 (at env capture):   d3fd2a8c679d3f1b5135881384c1e3a6f13ef95c109622db5112b1255157d7ec 64532 bytes
+6972fb1452b45a8ea455dc4a6ecba87dd82aa553478d75747e60349cafafcf1b *logs/predictions.jsonl
+50956 logs/predictions.jsonl
+(drift between baselines predates my first request => concurrent auditors append to the production log; my server wrote only to the redirected scratch file)
+--- my scratch prediction log (records written by MY server only) ---
+2398 docs/audit/evidence/performance-scratch-predictions.jsonl

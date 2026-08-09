@@ -1,0 +1,33 @@
+OK  reg val.mae: round6(recomputed)=14526.572418 stored=14526.572418
+OK  reg test.mae: round6(recomputed)=15075.473458 stored=15075.473458
+OK  reg val.rmse: round6(recomputed)=21672.72103 stored=21672.72103
+OK  reg test.rmse: round6(recomputed)=21151.541687 stored=21151.541687
+OK  reg val.r2: round6(recomputed)=0.927982 stored=0.927982
+OK  reg test.r2: round6(recomputed)=0.93048 stored=0.93048
+OK  reg val.rmsle: round6(recomputed)=0.135437 stored=0.135437
+OK  reg test.rmsle: round6(recomputed)=0.118689 stored=0.118689
+OK  reg val.residual_interval.q_low: round6(recomputed)=-0.140954 stored=-0.140954
+OK  reg val.residual_interval.q_high: round6(recomputed)=0.116634 stored=0.116634
+OK  reg test.interval_coverage: round6(recomputed)=0.782857 stored=0.782857
+OK  cls threshold (pick_f1): round6(recomputed)=0.203292 stored=0.203292
+OK  cls val.roc_auc: round6(recomputed)=0.721778 stored=0.721778
+OK  cls test.roc_auc: round6(recomputed)=0.766602 stored=0.766602
+OK  cls val.pr_auc: round6(recomputed)=0.525013 stored=0.525013
+OK  cls test.pr_auc: round6(recomputed)=0.567363 stored=0.567363
+OK  cls val.precision: round6(recomputed)=0.409091 stored=0.409091
+OK  cls test.precision: round6(recomputed)=0.366972 stored=0.366972
+OK  cls val.recall: round6(recomputed)=0.818182 stored=0.818182
+OK  cls test.recall: round6(recomputed)=0.816327 stored=0.816327
+OK  cls val.f1: round6(recomputed)=0.545455 stored=0.545455
+OK  cls test.f1: round6(recomputed)=0.506329 stored=0.506329
+OK  cls val.brier: round6(recomputed)=0.18555 stored=0.18555
+OK  cls test.brier: round6(recomputed)=0.171026 stored=0.171026
+OK  metrics.json ridge.val.mae == champion val: round6(recomputed)=14526.572418 stored=14526.572418
+OK  metrics.json ridge.val.rmse == champion val: round6(recomputed)=21672.72103 stored=21672.72103
+OK  metrics.json ridge.val.r2 == champion val: round6(recomputed)=0.927982 stored=0.927982
+OK  metrics.json ridge.val.rmsle == champion val: round6(recomputed)=0.135437 stored=0.135437
+OK  metrics.json rf.val_calibrated.roc_auc == champion val: round6(recomputed)=0.721778 stored=0.721778
+OK  metrics.json rf.val_calibrated.pr_auc == champion val: round6(recomputed)=0.525013 stored=0.525013
+OK  metrics.json rf.val_calibrated.brier == champion val: round6(recomputed)=0.18555 stored=0.18555
+
+ALL-ROUND6-CONSISTENT=True (31/31)

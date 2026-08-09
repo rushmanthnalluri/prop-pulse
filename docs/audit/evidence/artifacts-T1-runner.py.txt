@@ -1,0 +1,63 @@
+"""artifacts-audit T1 runner: fresh-process load + predict for one model artifact.
+
+Usage: .venv/Scripts/python.exe docs/audit/evidence/artifacts-T1-runner.py.txt <model_path>
+Builds a FIXED feature frame (first 8 rows of data/processed/val.csv through
+ml.features.pipeline.build_feature_frame, exactly the serving path), loads the
+given joblib artifact in this fresh process, and prints:
+  - sha256 + size of the artifact file
+  - env versions (python/numpy/pandas/sklearn/xgboost)
+  - sha256 of the fixed frame bytes (proves identical input across runs)
+  - predictions (log-space + dollar for regressors, class-1 probability for
+    classifiers), 17-significant-digit repr
+Exit 0 on success; any exception -> traceback + exit 1.
+"""
+import hashlib
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO))
+
+def main() -> int:
+    model_rel = sys.argv[1]
+    model_path = REPO / model_rel
+    import joblib
+    import numpy as np
+    import pandas as pd
+    import sklearn
+    import xgboost
+
+    from ml.features.pipeline import build_feature_frame
+
+    digest = hashlib.sha256(model_path.read_bytes()).hexdigest()
+    print(f"ARTIFACT={model_rel}")
+    print(f"SHA256={digest}")
+    print(f"SIZE={model_path.stat().st_size}")
+    print(
+        "ENV: python=%s numpy=%s pandas=%s sklearn=%s xgboost=%s"
+        % (sys.version.split()[0], np.__version__, pd.__version__, sklearn.__version__, xgboost.__version__)
+    )
+
+    val = pd.read_csv(REPO / "data/processed/val.csv", keep_default_na=False).head(8)
+    frame = build_feature_frame(val)
+    frame_hash = hashlib.sha256(frame.to_csv(index=False).encode()).hexdigest()
+    print(f"FRAME_COLS={len(frame.columns)} FRAME_SHA256={frame_hash}")
+
+    model = joblib.load(model_path)
+    print(f"LOADED type={type(model).__module__}.{type(model).__name__}")
+    np.set_printoptions(precision=17, suppress=False, linewidth=200)
+    if hasattr(model, "predict_proba"):
+        proba = model.predict_proba(frame)
+        classes = list(model.classes_)
+        idx = classes.index(1) if 1 in classes else len(classes) - 1
+        print(f"CLASSES={classes}")
+        print(f"PRED_PROBA_CLASS1={proba[:, idx].tolist()}")
+    else:
+        pred_log = model.predict(frame)
+        print(f"PRED_LOG={np.asarray(pred_log, dtype=float).tolist()}")
+        print(f"PRED_DOLLAR={np.expm1(np.asarray(pred_log, dtype=float)).tolist()}")
+    print("RESULT=OK")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,13 @@
+=== drift json still my container's write? (expect 916173c8...) ===
+916173c8e2b14db9d733f20651d3ee40 *reports/drift/latest.json
+restored drift json:
+34d643185f775ca91362a68ea1f46356 *reports/drift/latest.json
+
+=== restore predictions.jsonl from 19-line backup ===
+19 logs/predictions.jsonl
+f2fef6841259953455a4ebd0fcdbd076 *logs/predictions.jsonl
+(expected: 19 lines, md5 f2fef6841259953455a4ebd0fcdbd076)
+
+=== final container/ports check ===
+0
+no LISTENING on my ports

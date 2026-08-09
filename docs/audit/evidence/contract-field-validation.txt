@@ -1,0 +1,147 @@
+PASS - /predict status 200
+PASS - estimated_price number
+PASS - price_range.low/high numbers
+PASS - estimate inside range
+PASS - probability is JSON number (float)
+PASS - sells_within_30_days bool
+PASS - threshold number
+PASS - flag consistent with threshold
+PASS - micro_market.cluster_id present non-null (0)
+PASS - micro_market.label present non-null ('mid northwest')
+PASS - micro_market.median_price present non-null (179900.0)
+PASS - micro_market.median_price_per_sqft present non-null (119.39218523878436)
+PASS - micro_market.sale_velocity_30d present non-null (0.27765726681127983)
+PASS - micro_market.n_neighborhoods present non-null (14)
+PASS - micro_market.fallback present non-null (True)
+PASS - micro_market.neighborhoods list (used in title attr)
+PASS - micro_market.note str (badge title)
+PASS - top_price_factors non-empty list (n=5)
+PASS - factor[0] shape OverallCond
+PASS - factor[1] shape 2ndFlrSF
+PASS - factor[2] shape YearBuilt
+PASS - factor[3] shape neighborhood_median_price
+PASS - factor[4] shape YrSold
+PASS - model_version.regression/classification/feature_version strings
+PASS - /model/info status 200
+PASS - info.regression.name/version
+PASS - info.classification.name/version
+PASS - headline.regression.val_rmsle number
+PASS - headline.regression.val_rmse number
+PASS - headline.regression.val_r2 number
+PASS - headline.classification.val_pr_auc number
+PASS - headline.classification.val_roc_auc number
+PASS - headline.classification.val_brier number
+PASS - headline.classification.threshold number
+PASS - info.clustering.n_clusters int
+PASS - info.n_features int
+PASS - info.feature_version/dataset_version
+PASS - info.selected_at str
+PASS - info.rationale str
+PASS - /model/importance status 200
+PASS - importance dict (n=94)
+PASS - importance values numeric
+PASS - metadata.units str ('log1p(SalePrice)')
+PASS - /market/clusters status 200
+PASS - n_clusters int
+PASS - clusters list len==n_clusters
+PASS - cluster 0 fields all present
+PASS - cluster 0 n_neighborhoods matches list len
+PASS - cluster 1 fields all present
+PASS - cluster 1 n_neighborhoods matches list len
+PASS - cluster 2 fields all present
+PASS - cluster 2 n_neighborhoods matches list len
+PASS - cluster 3 fields all present
+PASS - cluster 3 n_neighborhoods matches list len
+PASS - points list (n=25)
+PASS - point Blmngtn fields
+PASS - point Blmngtn lat/long numbers
+PASS - point Blmngtn cluster_id 0 in cluster table
+PASS - point Blueste fields
+PASS - point Blueste lat/long numbers
+PASS - point Blueste cluster_id 1 in cluster table
+PASS - point BrDale fields
+PASS - point BrDale lat/long numbers
+PASS - point BrDale cluster_id 0 in cluster table
+PASS - point BrkSide fields
+PASS - point BrkSide lat/long numbers
+PASS - point BrkSide cluster_id 0 in cluster table
+PASS - point ClearCr fields
+PASS - point ClearCr lat/long numbers
+PASS - point ClearCr cluster_id 2 in cluster table
+PASS - point CollgCr fields
+PASS - point CollgCr lat/long numbers
+PASS - point CollgCr fallback cluster_id 2 still in table (colorMap lookup)
+PASS - point Crawfor fields
+PASS - point Crawfor lat/long numbers
+PASS - point Crawfor cluster_id 0 in cluster table
+PASS - point Edwards fields
+PASS - point Edwards lat/long numbers
+PASS - point Edwards cluster_id 2 in cluster table
+PASS - point Gilbert fields
+PASS - point Gilbert lat/long numbers
+PASS - point Gilbert cluster_id 0 in cluster table
+PASS - point IDOTRR fields
+PASS - point IDOTRR lat/long numbers
+PASS - point IDOTRR cluster_id 0 in cluster table
+PASS - point MeadowV fields
+PASS - point MeadowV lat/long numbers
+PASS - point MeadowV cluster_id 3 in cluster table
+PASS - point Mitchel fields
+PASS - point Mitchel lat/long numbers
+PASS - point Mitchel cluster_id 3 in cluster table
+PASS - point NAmes fields
+PASS - point NAmes lat/long numbers
+PASS - point NAmes fallback cluster_id 0 still in table (colorMap lookup)
+PASS - point NPkVill fields
+PASS - point NPkVill lat/long numbers
+PASS - point NPkVill cluster_id 0 in cluster table
+PASS - point NWAmes fields
+PASS - point NWAmes lat/long numbers
+PASS - point NWAmes cluster_id 0 in cluster table
+PASS - point NoRidge fields
+PASS - point NoRidge lat/long numbers
+PASS - point NoRidge cluster_id 0 in cluster table
+PASS - point NridgHt fields
+PASS - point NridgHt lat/long numbers
+PASS - point NridgHt cluster_id 0 in cluster table
+PASS - point OldTown fields
+PASS - point OldTown lat/long numbers
+PASS - point OldTown cluster_id 0 in cluster table
+PASS - point SWISU fields
+PASS - point SWISU lat/long numbers
+PASS - point SWISU cluster_id 1 in cluster table
+PASS - point Sawyer fields
+PASS - point Sawyer lat/long numbers
+PASS - point Sawyer cluster_id 2 in cluster table
+PASS - point SawyerW fields
+PASS - point SawyerW lat/long numbers
+PASS - point SawyerW cluster_id 2 in cluster table
+PASS - point Somerst fields
+PASS - point Somerst lat/long numbers
+PASS - point Somerst cluster_id 0 in cluster table
+PASS - point StoneBr fields
+PASS - point StoneBr lat/long numbers
+PASS - point StoneBr cluster_id 0 in cluster table
+PASS - point Timber fields
+PASS - point Timber lat/long numbers
+PASS - point Timber fallback cluster_id 3 still in table (colorMap lookup)
+PASS - point Veenker fields
+PASS - point Veenker lat/long numbers
+PASS - point Veenker cluster_id 0 in cluster table
+PASS - /metrics status 200
+PASS - metrics.requests_total int
+PASS - metrics.errors_total int
+PASS - metrics.avg_latency_ms number
+PASS - metrics.uptime_seconds number
+PASS - drift.status ('ok')
+PASS - drift.per_feature_psi present
+PASS - drift.warn_threshold present
+PASS - drift.psi_threshold present
+PASS - drift.n_predictions present
+PASS - drift.drifted_features present
+PASS - drift.retraining_recommended present
+PASS - drift.timestamp present
+PASS - drift.drift_detected present
+PASS - /health status ok ({'status': 'ok', 'models_loaded': {'regression': True, 'classification': True}})
+
+ALL_PASS

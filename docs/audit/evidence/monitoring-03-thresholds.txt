@@ -1,0 +1,45 @@
+=== A. Constants vs docs ===
+PSI_WARN_THRESHOLD = 0.1  (SPEC §10 + DEPLOYMENT.md: warn >= 0.1)
+PSI_DRIFT_THRESHOLD = 0.2  (SPEC §10 + DEPLOYMENT.md: drift >= 0.2)
+MIN_SAMPLE_FOR_RETRAINING = 200  (SPEC §10: >= 200)
+
+=== B. Boundary test in temp dir: C:\Users\rushm\AppData\Local\Temp\tmpeb9o2s56 ===
+
+drift @ n=199 (below min sample)
+  status=ok n=199
+  GrLivArea PSI=12.421755
+  drift_detected=True  retraining_recommended=False
+  text: Drift detected in 2 feature(s) (GrLivArea, OverallQual) with PSI >= 0.2, but only 199 valid prediction(s) in window (< 200 minimum...
+
+drift @ n=200 (AT min sample)
+  status=ok n=200
+  GrLivArea PSI=12.421755
+  drift_detected=True  retraining_recommended=True
+  text: Drift detected in 2 feature(s) (GrLivArea, OverallQual) with PSI >= 0.2 across 200 predictions. Retraining is RECOMMENDED — this i...
+
+drift @ n=201 (above)
+  status=ok n=201
+  GrLivArea PSI=12.421755
+  drift_detected=True  retraining_recommended=True
+  text: Drift detected in 2 feature(s) (GrLivArea, OverallQual) with PSI >= 0.2 across 201 predictions. Retraining is RECOMMENDED — this i...
+
+NO drift @ n=300 (control)
+  status=ok n=300
+  GrLivArea PSI=12.346806
+  drift_detected=True  retraining_recommended=True
+  text: Drift detected in 2 feature(s) (GrLivArea, OverallQual) with PSI >= 0.2 across 300 predictions. Retraining is RECOMMENDED — this i...
+
+Expected: retraining False/True/True/False; drift_detected True/True/True/False
+
+=== C. Threshold comparison operators (static, drift_check.py) ===
+drift: `psi >= PSI_DRIFT_THRESHOLD`  (drift_check.py:304)
+warn:  `PSI_WARN_THRESHOLD <= psi < PSI_DRIFT_THRESHOLD` (drift_check.py:309)
+retrain: `drift_detected and n >= MIN_SAMPLE_FOR_RETRAINING` (drift_check.py:316)
+-> match SPEC §10 'warn >= 0.1, drift >= 0.2', 'drift + sufficient sample >= 200'
+
+=== D. DRIFT_PSI_THRESHOLD env wire check ===
+backend/app/config.py:42:    drift_psi_threshold: float = 0.2
+
+-> setting parsed in config.py but referenced nowhere else: DEAD WIRE if only config.py lines above
+
+ALL TASK-3 CHECKS DONE

@@ -1,0 +1,17 @@
+ambient_check_1=30.9%
+ambient_check_2=38.7%
+ambient_check_3=38%
+ambient_check_4=34.9%
+ambient_check_5=30.3%
+ambient_check_6=84.3%
+ambient_check_7=81.2%
+ambient_check_8=48.7%
+ambient_check_9=28.4%
+ambient_check_10=43.5%
+ambient_check_11=11.9%
+--- /predict c=1 x100 retry in quiet window ---
+POST /predict  concurrency=1
+  requests=100 errors=0 (0.00%) statuses={'200': 100}
+  latency ms: min=182.01 mean=464.96 p50=468.71 p90=612.27 p95=636.29 p99=798.55 max=803.58
+  wall=46.496s throughput=2.15 req/s
+{"method": "POST", "endpoint": "/predict", "concurrency": 1, "requests": 100, "errors": 0, "error_rate": 0.0, "throughput_rps": 2.15, "wall_seconds": 46.496, "latency_ms": {"min": 182.01, "mean": 464.96, "p50": 468.71, "p90": 612.27, "p95": 636.29, "p99": 798.55, "max": 803.58}, "statuses": {"200": 100}}

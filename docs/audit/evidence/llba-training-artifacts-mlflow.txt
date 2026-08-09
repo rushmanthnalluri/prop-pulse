@@ -1,0 +1,83 @@
+=== md5 registry vs candidates ===
+eee200e5d969dbc83c9e5a86869a5999 *models/registry/regression_champion.joblib
+eee200e5d969dbc83c9e5a86869a5999 *models/regression/ridge_v1.joblib
+cfd06a159c0503d60eb999b9a8dcc64b *models/registry/classification_champion.joblib
+cfd06a159c0503d60eb999b9a8dcc64b *models/classification/random_forest_calibrated_v1.joblib
+
+=== ridge MLflow logged-model serialization (regression run 3143ed47) ===
+
+=== classification RF run logged models ===
+
+=== figures + report ===
+-rw-r--r-- 1 RUSHMANTH 197609 100122 Aug  7 17:09 figures/classification_calibration.png
+-rw-r--r-- 1 RUSHMANTH 197609  99636 Aug  7 17:09 figures/classification_curves.png
+-rw-r--r-- 1 RUSHMANTH 197609   8895 Aug  7 16:08 reports/MODEL_EVALUATION.md
+
+=== mlflow file-store env enforcement point ===
+48:from mlflow.environment_variables import MLFLOW_ALLOW_FILE_STORE, MLFLOW_TRACKING_DIR
+224:        if not MLFLOW_ALLOW_FILE_STORE.get():
+233:                "workflow, set `MLFLOW_ALLOW_FILE_STORE=true` to opt out of this exception.",
+        """
+        Create a new FileStore with the given root directory and a given default artifact root URI.
+        """
+        super().__init__()
+        if not MLFLOW_ALLOW_FILE_STORE.get():
+            raise MlflowException(
+                "The filesystem tracking backend (e.g., './mlruns') is in maintenance mode "
+                "and will not receive further updates. Please migrate to a "
+                "database backend (e.g., 'sqlite:///mlflow.db') to access the latest MLflow "
+                "features. The `mlflow migrate-filestore` tool migrates your existing data "
+                "losslessly. See "
+                "https://mlflow.org/docs/latest/self-hosting/migrate-from-file-store "
+                "for migration guidance. If the filesystem backend is required for your "
+                "workflow, set `MLFLOW_ALLOW_FILE_STORE=true` to opt out of this exception.",
+                error_code=INVALID_PARAMETER_VALUE,
+            )
+
+=== prediction_reference threshold precision ===
+pref: 0.20329224173900778
+champion: 0.203292
+
+=== artifact mtimes (ambient retrain note) ===
+-rw-r--r-- 1 RUSHMANTH 197609   124770 17:05 decision_tree_calibrated_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609    26548 17:05 decision_tree_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609   108767 17:04 logistic_calibrated_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609    21818 17:04 logistic_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609     3453 12:15 metrics.json
+-rw-r--r-- 1 RUSHMANTH 197609 14630853 12:12 random_forest_calibrated_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609  3439723 17:06 random_forest_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609  3460485 17:08 xgboost_calibrated_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609   712982 17:08 xgboost_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609    21569 17:02 lasso_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609    23906 17:01 linear_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609     2256 12:02 metrics.json
+-rw-r--r-- 1 RUSHMANTH 197609 25168259 17:03 random_forest_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609    21490 17:02 ridge_v1.joblib
+-rw-r--r-- 1 RUSHMANTH 197609   600365 17:04 xgboost_v1.joblib
+=== ridge regression logged model ===
+mlruns/313078409984191284/3143ed47ab7a4cb3b540a73e28cc3d2e/outputs/m-e16b7bc62ba145c5a4d1d77870c33223
+meta.yaml
+
+=== classification random_forest run logged models ===
+-- mlruns/473755598599804231/370a922f7d534618b38403b6674ff6fb/outputs/m-54cc9211b44a44f398ec497a01b54668/
+-- mlruns/473755598599804231/370a922f7d534618b38403b6674ff6fb/outputs/m-786129290fc3402f8d547f7077c2d7df/
+=== ridge logged model MLmodel (serialization) ===
+    loader_module: mlflow.sklearn
+    serialization_format: cloudpickle
+    skops_trusted_types: null
+
+=== classification RF run: both logged models ===
+-- m-54cc9211b44a44f398ec497a01b54668
+    loader_module: mlflow.sklearn
+    model_path: model.skops
+    pickled_model: model.skops
+    serialization_format: skops
+    skops_trusted_types:
+MLmodel conda.yaml model.skops python_env.yaml requirements.txt 
+-- m-786129290fc3402f8d547f7077c2d7df
+    loader_module: mlflow.sklearn
+    model_path: model.skops
+    pickled_model: model.skops
+    serialization_format: skops
+    skops_trusted_types:
+MLmodel conda.yaml model.skops python_env.yaml requirements.txt 

@@ -1,0 +1,9 @@
+written: ['t_date.json', 't_inf_float.json', 't_nan_float.json', 't_nan_int.json', 't_negzero.json', 't_nul.json', 't_sql.json', 't_unicode.json']
+nan_int      -> HTTP 500 | {"detail":"Internal server error"}
+nan_float    -> HTTP 500 | {"detail":"Internal server error"}
+inf_float    -> HTTP 500 | {"detail":"Internal server error"}
+unicode      -> HTTP 422 | {"detail":[{"type":"value_error","loc":["body","neighborhood"],"msg":"Value error, unknown neighborhood '💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣💣�
+nul          -> HTTP 422 | {"detail":[{"type":"value_error","loc":["body","neighborhood"],"msg":"Value error, unknown neighborhood 'NAmes\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00
+sql          -> HTTP 422 | {"detail":[{"type":"literal_error","loc":["body","ms_zoning"],"msg":"Input should be 'C (all)', 'FV', 'RH', 'RL' or 'RM'","input":"RL'; DROP TABLE properties; --","ctx":{"expected":"'C (all)', 'FV', 'RH', 'RL' or 'RM'"}}]}
+date         -> HTTP 422 | {"detail":[{"type":"date_from_datetime_parsing","loc":["body","sale_date"],"msg":"Input should be a valid date or datetime, invalid character in year","input":"not-a-date","ctx":{"error":"invalid character in year"}}]}
+negzero      -> HTTP 200 | {"estimated_price":146681.53,"price_range":{"low":127397.07,"high":164827.34},"sale_probability":{"probability":0.216244,"sells_within_30_days":true,"threshold":0.203292},"micro_market":{"cluster_id":0,"label":"mid northwest","neighborhoods":["Blmngtn","BrDale","BrkSide","Crawfor","Gilbert","IDOTRR"

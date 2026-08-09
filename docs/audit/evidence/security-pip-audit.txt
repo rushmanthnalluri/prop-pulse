@@ -1,0 +1,15 @@
+=== pip-audit: live venv ===
+$ .venv/Scripts/python.exe -m pip_audit
+Found 1 known vulnerability in 1 package
+Name         Version ID              Fix Versions
+------------ ------- --------------- ------------
+cryptography 49.0.0  PYSEC-2026-3552 50.0.0
+
+=== pip-audit: requirements.txt ===
+Found 1 known vulnerability in 1 package
+Name         Version ID              Fix Versions
+------------ ------- --------------- ------------
+cryptography 49.0.0  PYSEC-2026-3552 50.0.0
+
+=== pip-audit: backend/requirements.txt ===
+No known vulnerabilities found

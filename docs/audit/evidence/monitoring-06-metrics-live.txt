@@ -1,0 +1,9 @@
+top-level keys: ['avg_latency_ms', 'drift', 'errors_total', 'requests_by_path', 'requests_total', 'uptime_seconds']
+requests_total: 1 errors_total: 0
+requests_by_path: {'/health': 1}
+drift keys: ['drift_detected', 'drifted_features', 'log_path', 'max_psi', 'min_sample_for_retraining', 'n_invalid_lines', 'n_predictions', 'per_feature_psi', 'prediction_psi', 'psi_threshold', 'recommendation_text', 'reference_feature_version', 'retraining_recommended', 'status', 'timestamp', 'warn_features', 'warn_threshold', 'window']
+drift.status: ok | n_predictions: 7 | drift_detected: True
+retraining_recommended: False
+per_feature_psi entries: 53 | max_psi: 13.221811
+thresholds: 0.1 0.2 | min_sample: 200
+prediction_psi: {'estimated_price': 10.48874, 'probability': 10.48874}

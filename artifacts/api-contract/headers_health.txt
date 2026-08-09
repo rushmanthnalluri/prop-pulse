@@ -1,0 +1,10 @@
+HTTP/1.1 200 OK
+date: Sat, 08 Aug 2026 16:25:10 GMT
+server: uvicorn
+content-length: 73
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+

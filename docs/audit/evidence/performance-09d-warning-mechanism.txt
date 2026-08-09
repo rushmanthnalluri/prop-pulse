@@ -1,0 +1,5 @@
+python 3.14.5 (tags/v3.14.5:5607950, May 10 2026, 10:43:50) [MSC v.1944 64 bit (AMD64)]
+has _get_filters: True
+default _get_filters() len: 12
+after resetwarnings, _get_filters() len: 0
+predict with emptied caller filters: 0 warnings

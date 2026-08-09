@@ -1,0 +1,17 @@
+== 1. models/**/*.json ==
+(no hits)
+scanned=10 hits=0
+== 2. models/**/*.joblib (raw bytes incl. pickle stream) ==
+HIT models\classification\xgboost_v1.joblib: pattern 'C:/' at byte 188593: ...b'\x00L\x00\x00\x00\x00\x00\x00\x00\x0bsum_hessian[$d#L\x00\x00\x00\x00\x00\x00\x00!C\x80}\x87C{\x8f\\@\xadv@B\x82\xbf\xa1C:/\x8b?\xb5\x9c\x1d@\x80\x0f9B]\xb6\x99A\x1f"\xa2Az\xd3"C*\x82Y?\x98Bk@3\xfd<A-\x9d\xe8B2O\x1f?\x93\x96:A\x0c\xaf\xdbA2h(@\x90\xd5\xf5C\x1d\x0f\xf4AW&XA\x18'...
+HIT models\regression\random_forest_v1.joblib: pattern 'C:/' at byte 19377891: ...b"\xe3\xa79\x9c\xc4&@$m\x0boC\xa2&@\xd5o\xbfPR\xbf&@\xcck1\xfe\xbb\x93&@\x00H}\x99\xa6+'@,\x9e\x9f\xf8\x18P'@\x94\x1b\x94C:/'@\x87\x85\x82\x05\xc3\x10'@\x95U\x04q\x943'@\x92{\xd1\x835*'@mFRf\x8d-'@\xb6\xb0P\xa1\xdd&'@\xca\xac\x18\x03T7'@\x8b\x18\x9f\xdak7'@\xc5\xfd\xfe\xa4\xf46'@\x84"...
+HIT models\regression\xgboost_v1.joblib: pattern 'C:\\(single)' at byte 388514: ...b"\xff\xff\xff\xff\xff\xff\xffL\x00\x00\x00\x00\x00\x00\x00\x10split_conditions[$d#L\x00\x00\x00\x00\x00\x00\x00\r?\xba\x01\x80?C:\\>\xc4x\xa7?\x933\x8f?lq\x02\xbe\xef\xefu;\xbc\xcf\x00\xb8'\xe6\xff:\x869\xf2\xba\xad\xeb\x88:c\xa1\xc7\xbah\xfb3:\xacX\xcdL\x00\x00\x00\x00\x00\x00\x00\rsplit_indices["...
+scanned=17 hits=3
+== 3. other model artifacts (csv/npz) ==
+(no hits)
+== 4. mlruns metadata (side observation) ==
+mlruns/*/meta.yaml with absolute file:///C:/ artifact_location: 4/4
+RESULT=OK
+== 5. refined joblib scan: printable strings matching absolute-path shapes ==
+HIT models\regression\random_forest_v1.joblib: b"N:/'@dg"
+structured absolute-path strings in joblib files: 1
+(byte-level 'C:/' hits above are coincidental float bytes inside xgboost split_conditions / RF arrays — no structured path strings)

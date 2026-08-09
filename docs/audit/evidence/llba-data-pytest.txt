@@ -1,0 +1,40 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.5, pytest-9.1.1, pluggy-1.6.0 -- C:\Machine_Learning\Prop-pulse\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Machine_Learning\Prop-pulse
+configfile: pytest.ini
+plugins: anyio-4.14.2, cov-7.1.0
+collecting ... collected 30 items
+
+tests/data/test_data_pipeline.py::test_processed_files_nonempty PASSED   [  3%]
+tests/data/test_data_pipeline.py::test_schema_validation_passes_on_processed_splits PASSED [  6%]
+tests/data/test_data_pipeline.py::test_split_years_correct PASSED        [ 10%]
+tests/data/test_data_pipeline.py::test_no_overlap_between_splits PASSED  [ 13%]
+tests/data/test_data_pipeline.py::test_no_duplicate_ids PASSED           [ 16%]
+tests/data/test_data_pipeline.py::test_validate_rejects_duplicate_ids PASSED [ 20%]
+tests/data/test_data_pipeline.py::test_coordinates_valid PASSED          [ 23%]
+tests/data/test_data_pipeline.py::test_simulated_target_columns_present_and_consistent PASSED [ 26%]
+tests/data/test_data_pipeline.py::test_sale_price_present_and_plausible PASSED [ 30%]
+tests/data/test_data_pipeline.py::test_split_row_counts_match_raw PASSED [ 33%]
+tests/data/test_dom_adapter.py::test_real_provider_rejects_missing_file PASSED [ 36%]
+tests/data/test_dom_adapter.py::test_real_provider_rejects_missing_columns PASSED [ 40%]
+tests/data/test_dom_adapter.py::test_real_provider_rejects_non_integer_days PASSED [ 43%]
+tests/data/test_dom_adapter.py::test_real_provider_rejects_non_integer_ids PASSED [ 46%]
+tests/data/test_dom_adapter.py::test_real_provider_rejects_out_of_range_days PASSED [ 50%]
+tests/data/test_dom_adapter.py::test_real_provider_rejects_duplicate_ids PASSED [ 53%]
+tests/data/test_dom_adapter.py::test_real_provider_rejects_invalid_min_coverage PASSED [ 56%]
+tests/data/test_dom_adapter.py::test_real_provider_exact_match_passes_and_aligns PASSED [ 60%]
+tests/data/test_dom_adapter.py::test_real_provider_attach_derives_fast_sale_flag PASSED [ 63%]
+tests/data/test_dom_adapter.py::test_real_provider_low_coverage_raises_with_counts PASSED [ 66%]
+tests/data/test_dom_adapter.py::test_real_provider_partial_coverage_fills_median_and_warns PASSED [ 70%]
+tests/data/test_dom_adapter.py::test_real_provider_is_deterministic PASSED [ 73%]
+tests/data/test_dom_adapter.py::test_select_dom_provider_defaults_to_simulator PASSED [ 76%]
+tests/data/test_dom_adapter.py::test_select_dom_provider_csv PASSED      [ 80%]
+tests/data/test_dom_adapter.py::test_select_dom_provider_csv_missing_file_fails_fast PASSED [ 83%]
+tests/data/test_dom_adapter.py::test_select_dom_provider_unknown_kind PASSED [ 86%]
+tests/data/test_dom_adapter.py::test_csv_pipeline_targets_come_from_csv PASSED [ 90%]
+tests/data/test_dom_adapter.py::test_csv_pipeline_schema_note_records_observed_target PASSED [ 93%]
+tests/data/test_dom_adapter.py::test_default_pipeline_keeps_simulation_behavior PASSED [ 96%]
+tests/data/test_dom_adapter.py::test_default_pipeline_csv_bytes_match_committed PASSED [100%]
+
+============================= 30 passed in 1.57s ==============================

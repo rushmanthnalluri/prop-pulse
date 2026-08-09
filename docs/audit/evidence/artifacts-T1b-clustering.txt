@@ -1,0 +1,14 @@
+ARTIFACT=models\clustering\dbscan.joblib SHA256=9b9bff35f1266f931d3a9e208cc086f7fc5440712cd96654bbcb4f97d75239a2 SIZE=1719
+ARTIFACT=models\clustering\dbscan_scaler.joblib SHA256=029dda7f6368f7af8f9adc018d3ccc55a214b58f7f1d84b983447084af4e5d60 SIZE=679
+DBSCAN type=DBSCAN eps=1.317004520305001 min_samples=2 n_core=22
+LABELS=[-1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 2, 2, 2, 2, 3, 3]
+N_CLUSTERS_FROM_LABELS=4 N_NOISE=3
+SCALER type=StandardScaler mean_=[42.033152, -93.64230400000001, 119.29694216309697, 1.05] scale_=[0.021002364057410915, 0.02217693360228155, 19.402525789160496, 0.8931840671316175]
+SCALER_TRANSFORM_CORE_OK shape=(22, 4)
+LOOKUP_META={"n_clusters": 4, "eps": 1.3170045189879962, "min_samples": 2, "feature_names": ["lat", "long", "median_price_per_sqft", "monthly_sale_velocity"]}
+LOOKUP NridgHt: cluster_id=0 label='mid northwest' fallback=False median_price=179900.0 n_neighborhoods=14
+LOOKUP CollgCr: cluster_id=2 label='mid west' fallback=True median_price=144000.0 n_neighborhoods=4
+LOOKUP NotARealPlace: cluster_id=2 label='mid west' fallback=True median_price=144000.0 n_neighborhoods=4
+CHAMPION_N_CLUSTERS=4 STATS_N_CLUSTERS=4
+N_CLUSTERS_CONSISTENT=True
+RESULT=OK

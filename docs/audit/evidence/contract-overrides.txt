@@ -1,0 +1,16 @@
+=== baseline (DEFAULT_FORM, overall_qual=6) ===
+estimated_price 155916.51 | range {'low': 135417.92, 'high': 175204.76} | prob 0.256927
+
+=== overall_qual=4 (all else same) ===
+estimated_price 141909.97 | range {'low': 123252.83, 'high': 159465.5} | prob 0.256069
+
+=== overall_qual=9 (all else same) ===
+estimated_price 179560.52 | range {'low': 155953.43, 'high': 201773.73} | prob 0.253087
+
+=== advanced overrides: pool_area=500 garage_area=880 kitchen_qual=Ex exter_qual=Ex year_remod_add=2020 tot_rms_abvgrd=10 first_flr_sf=1800 ===
+
+=== advanced overrides payload ===
+{"neighborhood":"NAmes","house_style":"1Story","central_air":true,"bedrooms":3,"full_bath":2,"half_bath":0,"bsmt_full_bath":0,"bsmt_half_bath":0,"gr_liv_area":1600,"lot_area":9000,"total_bsmt_sf":1000,"year_built":1995,"overall_qual":6,"overall_cond":5,"garage_cars":2,"fireplaces":1,"pool_area":500,"garage_area":880,"kitchen_qual":"Ex","exter_qual":"Ex","year_remod_add":2020,"tot_rms_abvgrd":10,"first_flr_sf":1800}
+
+{"estimated_price":192366.32,"price_range":{"low":167075.65,"high":216163.72},"sale_probability":{"probability":0.202214,"sells_within_30_days":false,"threshold":0.203292},"micro_market":{"cluster_id":0,"label":"mid northwest","neighborhoods":["Blmngtn","BrDale","BrkSide","Crawfor","Gilbert","IDOTRR","NPkVill","NWAmes","NoRidge","NridgHt","OldTown","Somerst","StoneBr","Veenker"],"n_neighborhoods":14,"n_sales":461,"median_price":179900.0,"median_price_per_sqft":119.39218523878436,"sale_velocity_30d":0.27765726681127983,"centroid_lat":42.04567857142858,"centroid_long":-93.63607857142857,"fallback":true,"note":"sale_velocity_30d is the fraction of this cluster's TRAIN-split sales with sells_within_30_days==1. It is a DESCRIPTIVE statistic over the SIMULATED sale-speed target (ADR-3), not a real-world market measurement, and is never used as a model input."},"top_price_factors":[{"feature":"1stFlrSF","impact":"positive","magnitude":0.087201},{"feature":"PoolArea","impact":"positive","magnitude":0.085021},{"feature":"TotRmsAbvGrd","impact":"positive","magnitude":0.059016},{"feature":"GarageArea","impact":"positive","magnitude":0.051933},{"feature":"OverallCond","impact":"negative","magnitude":0.046168}],"model_version":{"regression":"ridge_v1","classification":"random_forest_v1","feature_version":"9b0f8ba4201c"}}
+HTTP 200

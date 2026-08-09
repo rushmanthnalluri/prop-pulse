@@ -1,0 +1,51 @@
+classification champion type: CalibratedClassifierCV
+n_calibrated_folds: 5
+fold estimator type: Pipeline
+fold pipeline steps: ['preprocess', 'model']
+
+n_jobs BEFORE force_single_threaded:
+  CalibratedClassifierCV   n_jobs=None  @ root
+  ColumnTransformer        n_jobs=None  @ root.calibrated_classifiers_[0].estimator.steps[0]
+  RandomForestClassifier   n_jobs=-1  @ root.calibrated_classifiers_[0].estimator.steps[1]
+  ColumnTransformer        n_jobs=None  @ root.calibrated_classifiers_[1].estimator.steps[0]
+  RandomForestClassifier   n_jobs=-1  @ root.calibrated_classifiers_[1].estimator.steps[1]
+  ColumnTransformer        n_jobs=None  @ root.calibrated_classifiers_[2].estimator.steps[0]
+  RandomForestClassifier   n_jobs=-1  @ root.calibrated_classifiers_[2].estimator.steps[1]
+  ColumnTransformer        n_jobs=None  @ root.calibrated_classifiers_[3].estimator.steps[0]
+  RandomForestClassifier   n_jobs=-1  @ root.calibrated_classifiers_[3].estimator.steps[1]
+  ColumnTransformer        n_jobs=None  @ root.calibrated_classifiers_[4].estimator.steps[0]
+  RandomForestClassifier   n_jobs=-1  @ root.calibrated_classifiers_[4].estimator.steps[1]
+  ColumnTransformer        n_jobs=None  @ root.estimator.steps[0]
+  RandomForestClassifier   n_jobs=-1  @ root.estimator.steps[1]
+RandomForest objects with n_jobs found: 6
+
+feature frame shape: (3, 94)
+returns same object: True
+
+n_jobs AFTER force_single_threaded:
+  CalibratedClassifierCV   n_jobs=1  @ root
+  ColumnTransformer        n_jobs=1  @ root.calibrated_classifiers_[0].estimator.steps[0]
+  RandomForestClassifier   n_jobs=1  @ root.calibrated_classifiers_[0].estimator.steps[1]
+  ColumnTransformer        n_jobs=1  @ root.calibrated_classifiers_[1].estimator.steps[0]
+  RandomForestClassifier   n_jobs=1  @ root.calibrated_classifiers_[1].estimator.steps[1]
+  ColumnTransformer        n_jobs=1  @ root.calibrated_classifiers_[2].estimator.steps[0]
+  RandomForestClassifier   n_jobs=1  @ root.calibrated_classifiers_[2].estimator.steps[1]
+  ColumnTransformer        n_jobs=1  @ root.calibrated_classifiers_[3].estimator.steps[0]
+  RandomForestClassifier   n_jobs=1  @ root.calibrated_classifiers_[3].estimator.steps[1]
+  ColumnTransformer        n_jobs=1  @ root.calibrated_classifiers_[4].estimator.steps[0]
+  RandomForestClassifier   n_jobs=1  @ root.calibrated_classifiers_[4].estimator.steps[1]
+  ColumnTransformer        n_jobs=1  @ root.estimator.steps[0]
+  RandomForestClassifier   n_jobs=1  @ root.estimator.steps[1]
+ALL reachable n_jobs == 1: True (13 objects)
+max |proba_before - proba_after|: 3.3306690738754696e-16
+identical at 6 decimals (served precision): True
+proba row0 before: [0.7807369362230435, 0.21926306377695637]
+proba row0 after:  [0.7807369362230436, 0.21926306377695637]
+
+regression champion type: Pipeline
+regression n_jobs objects: [('ColumnTransformer', None)]
+
+cycle-guard: self-referential estimator terminated, n_jobs = 1
+string 'drop' entry skipped cleanly; rf n_jobs = 1
+
+SCRIPT 1 DONE

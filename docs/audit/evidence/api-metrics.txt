@@ -1,0 +1,46 @@
+COMMAND: .venv/Scripts/python.exe C:/tmp/api_audit.py metrics
+DATE: Fri Aug  7 13:48:49 UTC 2026
+
+BEFORE:
+{
+  "requests_total": 169,
+  "errors_total": 0,
+  "requests_by_path": {
+    "/health": 5,
+    "/metrics": 1,
+    "/model/info": 1,
+    "/model/importance": 1,
+    "/market/clusters": 1,
+    "/predict": 19,
+    "/nonexistent-route": 1,
+    "/predict/price": 126,
+    "/predict/sale-probability": 14
+  }
+}
+
+sent: 3x200, 2x422, 1x404, 1x500 (NaN)
+
+AFTER:
+{
+  "requests_total": 176,
+  "errors_total": 0,
+  "requests_by_path": {
+    "/health": 5,
+    "/metrics": 2,
+    "/model/info": 1,
+    "/model/importance": 1,
+    "/market/clusters": 1,
+    "/predict": 19,
+    "/nonexistent-route": 1,
+    "/predict/price": 131,
+    "/predict/sale-probability": 14,
+    "/api-audit-no-such-route": 1
+  }
+}
+
+delta requests_total: 7 (expected 7 if 500 counted, 6 if not)
+delta errors_total: 0 (expected 1 if 500 counted, 0 if blind spot)
+delta requests_by_path['/predict/price']: 5 (expected 5)
+404 probe path recorded: True
+  CHECK requests_total increments by exactly sent count: PASS
+  CHECK errors_total blind spot (500 NOT counted) — wave-A F2/F5: PASS

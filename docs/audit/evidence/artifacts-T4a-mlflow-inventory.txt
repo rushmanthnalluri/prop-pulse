@@ -1,0 +1,197 @@
+tracking_uri=file:///C:/Machine_Learning/Prop-pulse/mlruns
+mlflow version=3.15.1
+
+EXPERIMENTS: 4
+
+experiment id=289403811797199859 name='evaluation' stage=active
+  artifact_location=file:///C:/Machine_Learning/Prop-pulse/mlruns/289403811797199859
+  runs via API=2  run-dirs on filesystem=2
+    run df99aa9d... name='champion_selection_v1' status=FINISHED params=8 metrics=19 tags=8
+    run 79a90e77... name='champion_selection_v1' status=FINISHED params=8 metrics=19 tags=8
+
+experiment id=493522534186201585 name='clustering' stage=active
+  artifact_location=file:///C:/Machine_Learning/Prop-pulse/mlruns/493522534186201585
+  runs via API=3  run-dirs on filesystem=3
+    run 5294692f... name='dbscan_v1' status=FINISHED params=7 metrics=4 tags=7
+    run 3776b7d4... name='dbscan_v1' status=FINISHED params=7 metrics=4 tags=7
+    run 0a946a4f... name='dbscan_v1' status=FINISHED params=7 metrics=4 tags=7
+
+experiment id=473755598599804231 name='classification' stage=active
+  artifact_location=file:///C:/Machine_Learning/Prop-pulse/mlruns/473755598599804231
+  runs via API=5  run-dirs on filesystem=8
+    run 0b307016... name='logistic_v1' status=FINISHED params=5 metrics=14 tags=9
+    run 3f741ccc... name='xgboost_v1' status=FINISHED params=7 metrics=14 tags=9
+    run 370a922f... name='random_forest_v1' status=FINISHED params=6 metrics=14 tags=9
+    run baf7c6d9... name='decision_tree_v1' status=FINISHED params=6 metrics=14 tags=9
+    run e6d885eb... name='logistic_v1' status=FINISHED params=5 metrics=14 tags=9
+
+experiment id=313078409984191284 name='regression' stage=active
+  artifact_location=file:///C:/Machine_Learning/Prop-pulse/mlruns/313078409984191284
+  runs via API=9  run-dirs on filesystem=10
+    run d19a8b58... name='lasso_v1' status=FINISHED params=1 metrics=8 tags=7
+    run d9e58fd5... name='ridge_v1' status=FINISHED params=1 metrics=8 tags=7
+    run 0cbe411d... name='linear_v1' status=FINISHED params=0 metrics=7 tags=7
+    run ec46a6b6... name='xgboost_v1' status=FINISHED params=3 metrics=8 tags=7
+    run 23635e0c... name='random_forest_v1' status=FINISHED params=3 metrics=8 tags=7
+    run ccec2601... name='lasso_v1' status=FINISHED params=1 metrics=8 tags=7
+    run 3143ed47... name='ridge_v1' status=FINISHED params=1 metrics=8 tags=7
+    run 65771084... name='linear_v1' status=FINISHED params=0 metrics=7 tags=7
+    run 1ce16e7a... name='linear_v1' status=FAILED params=0 metrics=7 tags=7
+
+== FULL DUMP of 3 sampled runs ==
+
+--- run df99aa9d46234d8886f18e9c70fd100a (experiment 'evaluation', name='champion_selection_v1') ---
+  status=FINISHED start=1786099134260 end=1786099134567
+  PARAMS (8):
+    bootstrap_resamples = 2000
+    bootstrap_seed = 42
+    classification_champion = random_forest_calibrated
+    classification_threshold = 0.203292
+    regression_champion = ridge
+    regression_runner_up = xgboost
+    selection_basis = validation split only; sealed test used once for final report
+    threshold_selection = max val F1
+  METRICS (19):
+    bootstrap_ci_high = 0.005985330821469992
+    bootstrap_ci_low = -0.013335953563988251
+    bootstrap_prob_runner_up_better = 0.1925
+    bootstrap_rmsle_diff = -0.0043405357877082384
+    classification_threshold = 0.20329224173900778
+    cls_test_brier = 0.17102592823393456
+    cls_test_f1 = 0.5063291139240507
+    cls_test_pr_auc = 0.5673632576974792
+    cls_test_precision = 0.3669724770642202
+    cls_test_recall = 0.8163265306122449
+    cls_test_roc_auc = 0.7666018788467768
+    cls_val_brier = 0.1855502446493561
+    cls_val_pr_auc = 0.5250128463826431
+    reg_test_interval_coverage = 0.7828571428571428
+    reg_test_mae = 15075.473458046345
+    reg_test_r2 = 0.9304804522464808
+    reg_test_rmse = 21151.541687388686
+    reg_test_rmsle = 0.11868860145100557
+    reg_val_rmsle = 0.13543666916035035
+  TAGS (8):
+    dataset_version = ames-1.0
+    feature_version = 9b0f8ba4201c
+    simulated_target = classification target simulated (ADR-3)
+    trained_at = 2026-08-07T10:38:54.370983+00:00
+  (mlflow.* system tags: ['mlflow.runName', 'mlflow.source.name', 'mlflow.source.type', 'mlflow.user'])
+  ARTIFACTS (1 nodes):
+    file champion.json 3153
+  model-artifact files: 0
+
+--- run 5294692f9cbc49e3a9da239aa0efb5d1 (experiment 'clustering', name='dbscan_v1') ---
+  status=FINISHED start=1786099119456 end=1786099119667
+  PARAMS (7):
+    algorithm = DBSCAN
+    eps = 1.317005
+    feature_names = lat,long,median_price_per_sqft,monthly_sale_velocity
+    min_samples = 2
+    price_tier_bounds_ppsft = 113.67,130.96
+    random_seed = 42
+    scaler = StandardScaler
+  METRICS (4):
+    eps = 1.3170045189879962
+    n_clusters = 4.0
+    n_noise = 3.0
+    noise_fraction = 0.12
+  TAGS (7):
+    dataset_version = ames-1.0
+    feature_version = 9b0f8ba4201c
+    trained_at = 2026-08-07T10:38:39.551061+00:00
+  (mlflow.* system tags: ['mlflow.runName', 'mlflow.source.name', 'mlflow.source.type', 'mlflow.user'])
+  ARTIFACTS (2 nodes):
+    file cluster_stats.json 2820
+    file eps_selection_trace.json 6233
+  model-artifact files: 0
+
+--- run 0b307016e9ba42548181df4177958d59 (experiment 'classification', name='logistic_v1') ---
+  status=FINISHED start=1786099065018 end=1786099108227
+  PARAMS (5):
+    best_C = 0.1
+    calibration = sigmoid_cv5
+    cv_best_average_precision = 0.434573
+    cv_scoring = average_precision
+    model = logistic
+  METRICS (14):
+    val_brier = 0.1983249817096901
+    val_calibrated_brier = 0.19130928632077238
+    val_calibrated_f1 = 0.07692307692307693
+    val_calibrated_pr_auc = 0.5088930902633477
+    val_calibrated_precision = 0.8
+    val_calibrated_recall = 0.04040404040404041
+    val_calibrated_roc_auc = 0.699590042686277
+    val_calibrated_threshold = 0.5
+    val_f1 = 0.43386243386243384
+    val_pr_auc = 0.5047125064648472
+    val_precision = 0.45555555555555555
+    val_recall = 0.41414141414141414
+    val_roc_auc = 0.6955749968302269
+    val_threshold = 0.5
+  TAGS (9):
+    dataset_version = ames-1.0
+    feature_version = 9b0f8ba4201c
+    simulated_target = true (ADR-3 — not a real-world performance claim)
+    target = sells_within_30_days
+    trained_at = 2026-08-07T10:37:45.132605+00:00
+  (mlflow.* system tags: ['mlflow.runName', 'mlflow.source.name', 'mlflow.source.type', 'mlflow.user'])
+  ARTIFACTS (1 nodes):
+    file logistic_classification_metrics.json 746
+  model-artifact files: 0
+
+RESULT=OK
+
+== ADDENDUM: LoggedModel entities (mlflow 3.x experiment-level models/) ==
+.trash: no models/ dir
+289403811797199859: no models/ dir
+313078409984191284: 9 LoggedModel(s)
+  m-00d2b25f03424ff7ab98593bf391108e name=model source_run=1ce16e7a... status=3 flavor= model.pkl=False
+  m-06e474a2760141179c41f03bd6c4a250 name=model source_run=0cbe411d... status=2 flavor=python_function/cloudpickle model.pkl=True
+  m-1bdd997bf2ce42b1bf67bcafb824cc36 name=model source_run=d9e58fd5... status=2 flavor=python_function/cloudpickle model.pkl=True
+  m-3370b26fd13c4585a0ac21f4686bd683 name=model source_run=ccec2601... status=2 flavor=python_function/cloudpickle model.pkl=True
+  m-4bdbb4425e0a4069bba40b830c4e0999 name=model source_run=d19a8b58... status=2 flavor=python_function/cloudpickle model.pkl=True
+  m-7f969f9a12e346d988994856092c0961 name=model source_run=23635e0c... status=2 flavor=python_function/cloudpickle model.pkl=True
+  m-9223676d54ca44aaa4df603a63efbdaf name=model source_run=ec46a6b6... status=2 flavor=python_function/cloudpickle model.pkl=True
+  m-e16b7bc62ba145c5a4d1d77870c33223 name=model source_run=3143ed47... status=2 flavor=python_function/cloudpickle model.pkl=True
+  m-e3717050375547a291a49001b0f5c74f name=model source_run=65771084... status=2 flavor=python_function/cloudpickle model.pkl=True
+473755598599804231: 13 LoggedModel(s)
+  m-11ccf8b5ade64d03b0a9567d4143251e name=model_calibrated source_run=e6d885eb... status=2 flavor=python_function/skops model.pkl=False
+  m-161a8902da5e4775aa68bc48b43cc00f name=model_calibrated source_run=0b307016... status=2 flavor=python_function/skops model.pkl=False
+  m-1bdea270ecf44ac0b5ae37fb8380dd54 name=model source_run=ff1129c9... status=2 flavor=python_function/skops model.pkl=False
+  m-38f3a87cccdc45db81741acff58f3469 name=model_calibrated source_run=baf7c6d9... status=2 flavor=python_function/skops model.pkl=False
+  m-54cc9211b44a44f398ec497a01b54668 name=model_calibrated source_run=370a922f... status=2 flavor=python_function/skops model.pkl=False
+  m-5ce7ec0a7dab4eb0a80a8a163f694c76 name=model source_run=0b307016... status=2 flavor=python_function/skops model.pkl=False
+  m-786129290fc3402f8d547f7077c2d7df name=model source_run=370a922f... status=2 flavor=python_function/skops model.pkl=False
+  m-7d1ad55608fb4ba5a907ba1811ad99f1 name=model_calibrated source_run=ff1129c9... status=3 flavor= model.pkl=False
+  m-96edefdf4961497cbcffbbca26e34998 name=model source_run=baf7c6d9... status=2 flavor=python_function/skops model.pkl=False
+  m-9944e4ac86ce49d0a05e6fd083d18cee name=model source_run=e6d885eb... status=2 flavor=python_function/skops model.pkl=False
+  m-a210b7f5c3f042be8d15edf7bf19f4cf name=model_calibrated source_run=3f741ccc... status=2 flavor=python_function/skops model.pkl=False
+  m-b1147f5a070940218d5b4ad358690bec name=model source_run=445a0d46... status=3 flavor= model.pkl=False
+  m-eaa033128cb54e0e8f1807aa31feec8e name=model source_run=3f741ccc... status=2 flavor=python_function/skops model.pkl=False
+493522534186201585: no models/ dir
+
+== run -> LoggedModel linkage check ==
+  run 17344991 (.trash/?): LoggedModel linked=False
+  run 22952055 (.trash/?): LoggedModel linked=False
+  run 79a90e77 (289403811797199859/champion_selection_v1): LoggedModel linked=False
+  run df99aa9d (289403811797199859/champion_selection_v1): LoggedModel linked=False
+  run ccec2601 (313078409984191284/lasso_v1): LoggedModel linked=True
+  run d19a8b58 (313078409984191284/lasso_v1): LoggedModel linked=True
+  run 0cbe411d (313078409984191284/linear_v1): LoggedModel linked=True
+  run 1ce16e7a (313078409984191284/linear_v1): LoggedModel linked=True
+  run 65771084 (313078409984191284/linear_v1): LoggedModel linked=True
+  run 23635e0c (313078409984191284/random_forest_v1): LoggedModel linked=True
+  run 3143ed47 (313078409984191284/ridge_v1): LoggedModel linked=True
+  run d9e58fd5 (313078409984191284/ridge_v1): LoggedModel linked=True
+  run ec46a6b6 (313078409984191284/xgboost_v1): LoggedModel linked=True
+  run baf7c6d9 (473755598599804231/decision_tree_v1): LoggedModel linked=True
+  run 0b307016 (473755598599804231/logistic_v1): LoggedModel linked=True
+  run 445a0d46 (473755598599804231/logistic_v1): LoggedModel linked=True
+  run e6d885eb (473755598599804231/logistic_v1): LoggedModel linked=True
+  run ff1129c9 (473755598599804231/logistic_v1): LoggedModel linked=True
+  run 370a922f (473755598599804231/random_forest_v1): LoggedModel linked=True
+  run 3f741ccc (473755598599804231/xgboost_v1): LoggedModel linked=True
+  run 0a946a4f (493522534186201585/dbscan_v1): LoggedModel linked=False
+  run 3776b7d4 (493522534186201585/dbscan_v1): LoggedModel linked=False
+  run 5294692f (493522534186201585/dbscan_v1): LoggedModel linked=False

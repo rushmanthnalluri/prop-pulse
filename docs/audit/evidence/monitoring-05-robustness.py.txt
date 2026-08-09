@@ -1,0 +1,119 @@
+"""Task 5 — drift_check robustness matrix (all in a temp dir; repo log untouched).
+
+Cases: malformed JSON, non-dict records, missing/non-dict 'features', blank
+lines, empty file, missing file, 1MB line (valid + malformed), non-numeric
+feature values (str/None/NaN/±inf/list/dict/bool), all-junk feature -> skipped.
+"""
+import json
+import tempfile
+from pathlib import Path
+
+from ml.monitoring.drift_check import read_prediction_window, run_drift_check
+
+
+def valid_rec(**features):
+    return json.dumps({
+        "timestamp": "2026-08-07T00:00:00+00:00",
+        "payload": {},
+        "features": features or {"GrLivArea": 1500.0},
+        "prediction": {"estimated_price": 1.0, "probability": 0.5, "cluster_id": 0},
+        "model_version": "t",
+    })
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    tmp = Path(tmp)
+
+    print("=== A. Mixed-garbage log: skip counting ===")
+    log = tmp / "mixed.jsonl"
+    lines = [
+        valid_rec(),                                  # 1 valid
+        "{not json",                                  # invalid (malformed)
+        "",                                           # blank — skipped, NOT counted (docstring nuance)
+        "   ",                                        # whitespace-only — same
+        "[1, 2, 3]",                                  # valid JSON, non-dict -> invalid
+        "42",                                         # valid JSON, non-dict -> invalid
+        '"just a string"',                            # valid JSON, non-dict -> invalid
+        json.dumps({"timestamp": "x"}),               # dict, no 'features' key -> invalid
+        json.dumps({"features": [1, 2]}),             # 'features' not a dict -> invalid
+        json.dumps({"features": "nope"}),             # 'features' str -> invalid
+        valid_rec(GrLivArea=2000.0),                  # 2 valid
+        valid_rec(GrLivArea=float("nan")),            # features dict but NaN value -> record VALID, value dropped later
+    ]
+    log.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    valid, n_invalid = read_prediction_window(log, window=500)
+    print(f"lines written: {len(lines)} (2 blank)")
+    print(f"valid={len(valid)} n_invalid={n_invalid}")
+    print(f"expected valid=3 (incl. NaN-value rec), n_invalid=7, blanks uncounted")
+    assert len(valid) == 3 and n_invalid == 7
+
+    print("\n=== B. Empty file -> no_data, exit-safe ===")
+    empty = tmp / "empty.jsonl"
+    empty.write_text("", encoding="utf-8")
+    rep = run_drift_check(log_path=empty, output_path=tmp / "r_empty.json")
+    print(f"status={rep['status']} n={rep['n_predictions']} drift={rep['drift_detected']} reason={rep['recommendation_text'][:80]}")
+    assert rep["status"] == "no_data"
+
+    print("\n=== C. Missing file -> no_data ===")
+    rep = run_drift_check(log_path=tmp / "does_not_exist.jsonl", output_path=tmp / "r_missing.json")
+    print(f"status={rep['status']} reason={rep['recommendation_text'][:80]}")
+    assert rep["status"] == "no_data"
+
+    print("\n=== D. All-garbage file -> no_data with n_invalid counted ===")
+    junk = tmp / "junk.jsonl"
+    junk.write_text("{bad\n[1,2]\n{}\n", encoding="utf-8")
+    rep = run_drift_check(log_path=junk, output_path=tmp / "r_junk.json")
+    print(f"status={rep['status']} n_invalid_lines={rep['n_invalid_lines']}")
+    assert rep["status"] == "no_data" and rep["n_invalid_lines"] == 3
+
+    print("\n=== E. Huge line (1 MB valid + 1 MB malformed) ===")
+    huge = tmp / "huge.jsonl"
+    big_value = "x" * (1024 * 1024)  # 1 MB string field
+    huge_valid = json.dumps({
+        "timestamp": "t", "payload": {}, "features": {"GrLivArea": 1500.0},
+        "prediction": {}, "model_version": "t", "big": big_value,
+    })
+    huge_malformed = '{"features": {"GrLivArea": 1}, "truncated": "' + big_value  # never closed
+    huge.write_text(valid_rec() + "\n" + huge_valid + "\n" + huge_malformed + "\n", encoding="utf-8")
+    print(f"file size = {huge.stat().st_size/1024/1024:.2f} MB")
+    valid, n_invalid = read_prediction_window(huge, window=500)
+    print(f"valid={len(valid)} n_invalid={n_invalid} (expected 2 valid, 1 invalid) — no crash")
+    assert len(valid) == 2 and n_invalid == 1
+
+    print("\n=== F. Non-numeric feature values -> dropped, feature skipped if all junk ===")
+    mix = tmp / "nonnum.jsonl"
+    recs = [
+        valid_rec(GrLivArea="abc", OverallQual=5),          # str junk dropped, OQ kept
+        valid_rec(GrLivArea=None, OverallQual="7"),         # None dropped; "7" coerces to 7.0
+        valid_rec(GrLivArea=[], OverallQual=6),             # list dropped
+        valid_rec(GrLivArea={"x": 1}, OverallQual=6),       # dict dropped
+        valid_rec(GrLivArea=True, OverallQual=6),           # bool -> 1.0 (coerces)
+    ]
+    # raw NaN/Infinity tokens (Python json accepts them)
+    recs.append('{"features": {"GrLivArea": NaN, "OverallQual": 5}, "prediction": {}}')
+    recs.append('{"features": {"GrLivArea": Infinity, "OverallQual": 5}, "prediction": {}}')
+    recs.append('{"features": {"GrLivArea": -Infinity, "OverallQual": 5}, "prediction": {}}')
+    mix.write_text("\n".join(recs) + "\n", encoding="utf-8")
+    valid, n_invalid = read_prediction_window(mix, window=500)
+    rep = run_drift_check(log_path=mix, output_path=tmp / "r_nonnum.json")
+    print(f"valid={len(valid)} n_invalid={n_invalid}")
+    print(f"per_feature_psi keys: {sorted(rep['per_feature_psi'].keys())}")
+    print(f"  GrLivArea present? {'GrLivArea' in rep['per_feature_psi']} (True coerced to 1.0 -> single value -> PSI computable)")
+    print(f"  OverallQual PSI={rep['per_feature_psi'].get('OverallQual')}")
+    assert n_invalid == 0  # all lines parse and carry features dicts
+    # all-junk feature: nothing coercible -> feature absent from report
+    junk2 = tmp / "alljunk.jsonl"
+    junk2.write_text("\n".join(valid_rec(GrLivArea=v) for v in ["x", None, [], {}]) + "\n", encoding="utf-8")
+    rep2 = run_drift_check(log_path=junk2, output_path=tmp / "r_alljunk.json")
+    print(f"all-junk GrLivArea: per_feature_psi={rep2['per_feature_psi']} max_psi={rep2['max_psi']} status={rep2['status']}")
+    assert rep2["per_feature_psi"] == {} and rep2["status"] == "ok" and rep2["max_psi"] is None
+    print("  -> feature silently skipped, report still 'ok', recommendation text explains")
+
+    print("\n=== G. Window = last N RAW lines (invalid lines consume window slots) ===")
+    wlog = tmp / "window.jsonl"
+    wlog.write_text("\n".join([valid_rec()] * 3 + ["{bad"] * 5) + "\n", encoding="utf-8")
+    valid, n_invalid = read_prediction_window(wlog, window=6)
+    print(f"8 lines, window=6 -> valid={len(valid)} n_invalid={n_invalid} (last 6 raw lines = 1 valid + 5 bad)")
+    assert len(valid) == 1 and n_invalid == 5
+
+print("\nALL TASK-5 CHECKS DONE")

@@ -1,0 +1,81 @@
+"""artifacts-audit T5 runner: fitted-pipeline input schema vs models/feature_list.json.
+
+Usage: .venv/Scripts/python.exe docs/audit/evidence/artifacts-T5-schema.py.txt
+Fresh subprocess. For every regression/classification pipeline joblib:
+extracts the expected input column list from the FITTED ColumnTransformer
+(feature_names_in_) and from the Pipeline itself, and compares EXACTLY
+(names + order) against feature_list.json MODEL_FEATURES. Also reports the
+raw sklearn Pipeline.feature_names_in_ for each. Exit 0; prints per-artifact
+MATCH/MISMATCH.
+"""
+import json
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO))
+
+def ct_of(model):
+    """Find the fitted ColumnTransformer inside a (possibly calibrated) pipeline."""
+    from sklearn.compose import ColumnTransformer
+    from sklearn.pipeline import Pipeline
+
+    def walk(obj, seen):
+        if obj is None or id(obj) in seen:
+            return None
+        seen.add(id(obj))
+        if isinstance(obj, ColumnTransformer):
+            return obj
+        if isinstance(obj, Pipeline):
+            for _, step in obj.steps:
+                found = walk(step, seen)
+                if found is not None:
+                    return found
+        # fitted calibrators first: calibrated_classifiers_[i].estimator is the
+        # FITTED pipeline; the plain `.estimator` attr may be the unfitted one.
+        for cc in getattr(obj, "calibrated_classifiers_", None) or []:
+            found = walk(getattr(cc, "estimator", None), seen)
+            if found is not None:
+                return found
+        for attr in ("estimator", "base_estimator", "estimator_"):
+            candidate = getattr(obj, attr, None)
+            found = walk(candidate, seen)
+            if found is not None:
+                return found
+        return None
+
+    return walk(model, set())
+
+def main() -> int:
+    import joblib
+
+    features = json.loads((REPO / "models/feature_list.json").read_text())["features"]
+    print(f"MODEL_FEATURES n={len(features)}")
+
+    paths = sorted((REPO / "models/regression").glob("*.joblib")) + sorted(
+        (REPO / "models/classification").glob("*.joblib")
+    ) + [REPO / "models/registry/regression_champion.joblib", REPO / "models/registry/classification_champion.joblib"]
+
+    n_match = 0
+    for p in paths:
+        model = joblib.load(p)
+        ct = ct_of(model)
+        pipe_cols = list(getattr(model, "feature_names_in_", []))
+        ct_cols = list(getattr(ct, "feature_names_in_", [])) if ct is not None else None
+        rel = p.relative_to(REPO)
+        ok_pipe = pipe_cols == features
+        ok_ct = ct_cols == features if ct_cols is not None else None
+        n_match += bool(ok_pipe and ok_ct)
+        print(f"{rel}: pipeline.feature_names_in_ == MODEL_FEATURES -> {ok_pipe}; "
+              f"ColumnTransformer.feature_names_in_ == MODEL_FEATURES -> {ok_ct} "
+              f"(n_pipe={len(pipe_cols)}, n_ct={len(ct_cols) if ct_cols else 'NA'})")
+        if not ok_pipe:
+            print(f"  pipe-only diff: missing={[c for c in features if c not in pipe_cols][:5]} extra={[c for c in pipe_cols if c not in features][:5]} first_order_diff={next((i for i,(a,b) in enumerate(zip(pipe_cols,features)) if a!=b), None)}")
+        if ok_ct is False:
+            print(f"  ct-only diff: missing={[c for c in features if c not in ct_cols][:5]} extra={[c for c in ct_cols if c not in features][:5]} first_order_diff={next((i for i,(a,b) in enumerate(zip(ct_cols,features)) if a!=b), None)}")
+    print(f"SUMMARY: {n_match}/{len(paths)} artifacts have EXACT (names+order) schema match on BOTH levels")
+    print("RESULT=OK")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

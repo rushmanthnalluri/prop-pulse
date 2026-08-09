@@ -1,0 +1,36 @@
+=== docker images ===
+WARNING: This output is designed for human readability. For machine-readable output, please use --format.
+ghcr.io/mlflow/mlflow:latest                                                                       9f9276e57cda       1.64GB          335MB        
+proppulse-backend:latest                                                                           ffed0840ebb8       1.77GB          537MB        
+proppulse-frontend:latest                                                                          9c67c5dc5742       93.9MB         26.3MB        
+
+=== image Created (UTC) ===
+backend  Created=2026-08-07T11:13:48.057266529Z  Id=sha256:ffed0840ebb891932b5abcfbed65119e985935a32e717b8a1627ba76a6810797
+frontend Created=2026-08-07T11:06:55.765274356Z  Id=sha256:9c67c5dc57427e8054d7a77da30547788e814140f6bcbf451db8f64272fa479d
+mlflow   Created=2026-08-03T11:20:05.948798033Z  Id=sha256:9f9276e57cda1593cfa0fe8519145cd49328e119e85951851b9244e82e3769be
+
+=== docker ps -a ===
+rmp-backend	rmp-backend:latest	Up 22 seconds (healthy)	8000/tcp
+rmp-nginx	nginx:alpine	Up 22 seconds (healthy)	0.0.0.0:80->80/tcp, [::]:80->80/tcp, 0.0.0.0:443->443/tcp, [::]:443->443/tcp
+rmp-frontend-admin	rmp-frontend-admin:latest	Up 22 seconds (healthy)	127.0.0.1:5174->8080/tcp
+rmp-frontend-customer	rmp-frontend-customer:latest	Up 22 seconds (healthy)	127.0.0.1:5173->8080/tcp
+rmp-mongodb-rs-init	mongo:7	Exited (0) 21 hours ago	
+rmp-mongodb	mongo:7	Up 22 seconds (healthy)	127.0.0.1:27018->27017/tcp
+rmp-mongodb-keyfile-init	mongo:7	Exited (0) 21 hours ago	
+showcase-frontend	modularcomponentshowcaseapplication-frontend	Up 22 seconds (healthy)	0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp
+showcase-gateway	modularcomponentshowcaseapplication-gateway	Up 22 seconds (healthy)	0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp
+showcase-springboot	modularcomponentshowcaseapplication-springboot	Up 22 seconds (healthy)	0.0.0.0:8081->8081/tcp, [::]:8081->8081/tcp
+showcase-backend	modularcomponentshowcaseapplication-backend	Up 22 seconds (healthy)	0.0.0.0:5000->5000/tcp, [::]:5000->5000/tcp
+showcase-pgadmin	dpage/pgadmin4:8.10	Exited (255) 22 hours ago	443/tcp, 0.0.0.0:5050->80/tcp
+showcase-postgres	pgvector/pgvector:pg16	Up 22 seconds (healthy)	0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp
+showcase-grafana	grafana/grafana:11.3.0	Up 22 seconds	0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+showcase-prometheus	prom/prometheus:v2.54.1	Up 22 seconds	0.0.0.0:9090->9090/tcp, [::]:9090->9090/tcp
+showcase-jaeger	jaegertracing/all-in-one:1.62.0	Up 22 seconds	0.0.0.0:14250->14250/tcp, [::]:14250->14250/tcp, 0.0.0.0:16686->16686/tcp, [::]:16686->16686/tcp
+showcase-otel-collector	otel/opentelemetry-collector-contrib:0.112.0	Up 22 seconds	0.0.0.0:4317-4318->4317-4318/tcp, [::]:4317-4318->4317-4318/tcp
+showcase-redis	redis:7-alpine	Up 22 seconds (healthy)	0.0.0.0:6379->6379/tcp, [::]:6379->6379/tcp
+showcase-mongo	mongo:7	Up 22 seconds (healthy)	0.0.0.0:27017->27017/tcp, [::]:27017->27017/tcp
+confident_pasteur	9b972cc690e2	Exited (255) 22 hours ago	8080/tcp
+
+=== current UTC/local for mtime comparison ===
+UTC:   2026-08-07 14:05:05
+local: 2026-08-07 19:35:05 +0530

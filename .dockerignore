@@ -1,0 +1,55 @@
+# PropPulse — Docker build-context exclusions (SPEC §12: keep images lean).
+# Applies to both Dockerfiles (both build from the repo-root context).
+# What the images DO need: ml/, backend/ (minus tests), models/,
+# data/external/, frontend/ (minus node_modules/dist), docker/.
+
+# --- VCS / CI metadata ---
+.git
+.github
+.gitignore
+
+# --- Python environments & caches (host .venv is Python 3.14 — never ship) ---
+.venv
+**/__pycache__
+**/*.pyc
+**/*.pyo
+.pytest_cache
+
+# --- Node (reinstalled inside the frontend build stage) ---
+node_modules
+**/node_modules
+frontend/dist
+
+# --- Local environment / secrets (compose injects .env at runtime) ---
+# `.env` alone matches only the repo-root file; `**/.env` also covers nested
+# ones (e.g. a stray frontend/.env) so no env file ever enters the context.
+.env
+**/.env
+
+# --- Data not needed at serving time (data/external/ IS needed — kept) ---
+data/raw
+data/interim
+data/processed
+# ... except the processed train split: the SHAP explainer builds its
+# background distribution from it at serving time (ml/explainability/explainer.py).
+!data/processed/train.csv
+
+# --- Runtime state: bind-mounted or regenerated, never baked into images ---
+mlruns
+logs
+reports
+artifacts
+
+# --- Tests & dev-only content ---
+tests
+backend/tests
+e2e
+notebooks
+figures
+docs
+
+# --- Raw dataset archive & misc ---
+*.zip
+.dockerignore
+docker-compose.yml
+docker-compose.alt-ports.yml

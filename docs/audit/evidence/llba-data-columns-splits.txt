@@ -1,0 +1,26 @@
+raw shape: (1460, 81)
+RAW_COLUMNS count: 81 | actual count: 81
+in actual not in RAW_COLUMNS: []
+in RAW_COLUMNS not in actual: []
+order identical: True
+validate_raw: PASS
+raw Id unique: True | Id dtype: int64
+raw YrSold values: [np.int64(2006), np.int64(2007), np.int64(2008), np.int64(2009), np.int64(2010)]
+raw Electrical NA count: 1
+raw LotFrontage NA count: 259
+raw cols with NA: ['LotFrontage', 'Alley', 'MasVnrType', 'MasVnrArea', 'BsmtQual', 'BsmtCond', 'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 'Electrical', 'FireplaceQu', 'GarageType', 'GarageYrBlt', 'GarageFinish', 'GarageQual', 'GarageCond', 'PoolQC', 'Fence', 'MiscFeature']
+NA cols not covered by cleaner: []
+processed[train]: shape=(945, 85), extra cols=['days_on_market', 'sells_within_30_days', 'lat', 'long'], extra==expected: True
+  empty strings with keep_default_na=False: 0
+  validate_processed: PASS | years=[np.int64(2006), np.int64(2007), np.int64(2008)] | fast-sale rate=0.2529 | median DOM=41
+processed[val]: shape=(338, 85), extra cols=['days_on_market', 'sells_within_30_days', 'lat', 'long'], extra==expected: True
+  empty strings with keep_default_na=False: 0
+  validate_processed: PASS | years=[np.int64(2009)] | fast-sale rate=0.2929 | median DOM=39
+processed[test]: shape=(175, 85), extra cols=['days_on_market', 'sells_within_30_days', 'lat', 'long'], extra==expected: True
+  empty strings with keep_default_na=False: 0
+  validate_processed: PASS | years=[np.int64(2010)] | fast-sale rate=0.2800 | median DOM=37
+geo cols: ['Neighborhood', 'name', 'lat', 'long', 'note'] | rows: 25 | Neighborhood unique: True
+neighborhoods in raw not in geo: []
+neighborhoods in geo not in raw: []
+geo lat range: 41.992 42.0627 | long range: -93.6868 -93.6033
+DEFAULT_DOM_CSV_PATH exists: False -> C:\Machine_Learning\Prop-pulse\data\external\days_on_market.csv

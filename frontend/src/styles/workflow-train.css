@@ -1,0 +1,430 @@
+/* ==========================================================================
+   ML Workbench — stages 06–08 (WORKFLOW §6.3, work package WF-F3)
+   Page-scoped styles for PreprocessStage / TrainStage / EvaluateStage and
+   their components/workflow/* panels. Imported by those three stage pages.
+   Design tokens from styles.css only: nothing below 11px, hairlines over
+   boxes, hovers animate color/background/border only (--dur-hover), no
+   elevation shadows (the single --shadow-pop is reserved for floating
+   layers; none needed here).
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Shared bits: config checklists, action rows, dimmed-while-busy
+   -------------------------------------------------------------------------- */
+
+.wf-config { display: grid; gap: 14px; }
+
+.wf-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+.wf-check input[type='checkbox'] {
+  margin-top: 2px;
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+}
+.wf-check-label { display: block; font-size: 13px; font-weight: 500; color: var(--text); }
+.wf-check-hint { display: block; font-size: 12.5px; color: var(--text-3); margin-top: 2px; max-width: 640px; }
+
+.wf-advanced { margin: 0; }
+.field-row--3 { grid-template-columns: repeat(3, 1fr); }
+
+.wf-config-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 14px;
+}
+
+/* Previous content dims while a re-run is in flight — never a skeleton swap
+   once data is on screen (UX §7.1). */
+.wf-dimmed {
+  opacity: 0.55;
+  transition: opacity var(--dur-hover);
+}
+
+.wf-sim-note { margin: 0 0 12px; }
+
+/* --------------------------------------------------------------------------
+   Stage 06 — pipeline flow + step accordion + before/after
+   -------------------------------------------------------------------------- */
+
+.wf-flow {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.wf-flow-node {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 128px;
+  flex: 1 1 0;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+/* Connector chevron between nodes (hidden on the first). */
+.wf-flow-node + .wf-flow-node::before {
+  content: '›';
+  position: absolute;
+  left: -8px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-3);
+  font-size: 12px;
+}
+.wf-flow-node--cap {
+  background: var(--accent-wash);
+  border-color: var(--accent-border);
+}
+.wf-flow-label {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.wf-flow-badge { flex-shrink: 0; }
+.wf-flow-fact { font-size: 11px; color: var(--text-3); }
+
+.wf-steps { margin-top: 16px; display: grid; gap: 8px; }
+.wf-step {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 0 14px;
+}
+.wf-step > summary {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 0;
+  cursor: pointer;
+  list-style: none;
+  font-size: 13px;
+}
+.wf-step > summary::-webkit-details-marker { display: none; }
+.wf-step > summary::before {
+  content: '›';
+  color: var(--accent);
+  margin-right: 8px;
+  transition: transform 0.15s ease;
+}
+.wf-step[open] > summary::before { transform: rotate(90deg); }
+.wf-step > summary:hover .wf-step-name { color: var(--text); }
+.wf-step-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: var(--text-2);
+  flex: 1;
+}
+.wf-step-fact { font-size: 11px; color: var(--text-3); text-align: right; }
+.wf-step[open] > summary { border-bottom: 1px solid var(--border); }
+
+.wf-step-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+  margin: 0;
+  padding: 12px 0 14px;
+}
+.wf-step-field { min-width: 0; }
+.wf-step-field dt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 2px;
+}
+.wf-step-field dd { margin: 0; font-size: 12.5px; color: var(--text-2); overflow-wrap: anywhere; }
+
+.wf-chip-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.wf-mini-chip {
+  padding: 2px 8px;
+  background: var(--raised);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--text-2);
+}
+
+.wf-leakage {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 10px 14px;
+  background: var(--accent-wash);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-lg);
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.wf-leakage p { margin: 0; }
+.wf-leakage .badge { flex-shrink: 0; margin-top: 1px; }
+
+.wf-beforeafter .metrics { margin-bottom: 20px; }
+.wf-delta-arrow { color: var(--text-3); font-size: 15px; }
+.wf-sample-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+.wf-sample { min-width: 0; }
+
+/* --------------------------------------------------------------------------
+   Stage 07 — objective tabs, candidates, live job status, history, comparison
+   -------------------------------------------------------------------------- */
+
+.wf-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 16px;
+  overflow-x: auto; /* scroll strip on narrow widths (UX §8 topbar-strip pattern) */
+  scrollbar-width: thin;
+}
+.wf-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: var(--font-ui);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    color var(--dur-hover),
+    border-color var(--dur-hover);
+}
+.wf-tab:hover { color: var(--text); }
+.wf-tab--active {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+.wf-tab-badge { flex-shrink: 0; }
+
+.wf-trainpanel .wf-candidates {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 24px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.wf-progress {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--raised);
+  overflow: hidden;
+}
+.wf-progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+.wf-jobstatus-meta { font-size: 11px; color: var(--text-3); margin: 8px 0 0; }
+
+.wf-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  margin-right: 5px;
+  animation: wf-step-pulse 1.2s ease-in-out infinite; /* defined in workflow.css (WF-F1) */
+}
+
+.wf-jobrows {
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--border);
+}
+.wf-jobrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.wf-jobrow-name { font-weight: 500; color: var(--text); min-width: 130px; }
+.wf-jobrow-metrics { font-size: 12px; color: var(--text-2); }
+.wf-jobrow-error { flex-basis: 100%; font-size: 12px; color: var(--danger); }
+.wf-jobrow-error summary {
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.wf-jobrow-error p { margin: 6px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.wf-row-active { background: var(--accent-wash); }
+.wf-jobactions { white-space: nowrap; }
+.wf-jobactions .btn + .btn { margin-left: 6px; }
+/* The visually-hidden "Actions" span is absolutely positioned; without a
+   positioned ancestor its containing block is the root, escaping the
+   .table-scroll clip and leaking 1px of horizontal overflow on phones. */
+.wf-actions-col { position: relative; }
+/* Same escape for visually-hidden <caption>s inside a .table-scroll: making
+   the scroll container their containing block keeps them clipped. */
+.wf-clip { position: relative; }
+
+.wf-best-row { background: var(--accent-wash); }
+.wf-best-row:hover { background: var(--accent-wash) !important; }
+.wf-best-chip { margin-left: 8px; }
+.wf-stale-chip { margin-left: 8px; }
+.wf-stale-note { margin-top: 10px; }
+.wf-stale-note .badge { margin-right: 4px; }
+.wf-threshold-hint { margin-left: 8px; font-size: 11px; color: var(--text-3); }
+.wf-params { max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
+.wf-bootstrap { margin-top: 14px; }
+
+/* --------------------------------------------------------------------------
+   Stage 08 — evaluation workspace
+   -------------------------------------------------------------------------- */
+
+.wf-chart-caption {
+  font-size: 11px;
+  color: var(--text-3);
+  margin: 10px 0 0;
+}
+
+.wf-eval-grid { margin-top: 20px; }
+/* Grid items default to min-width:auto — without this a recharts svg forces
+   its track wider than the phone viewport (measured: 497px at 390px). The
+   same default keeps a long .chart-tag from shrinking inside .chart-head,
+   and .chart-tag's global nowrap then leaks scrollable ink overflow. */
+.wf-eval-grid > *,
+.wf-eval-grid .chart-head > * { min-width: 0; }
+.wf-eval-grid .chart-tag { white-space: normal; text-align: right; }
+
+.wf-cluster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.wf-cluster-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+}
+.wf-cluster-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 8px;
+  vertical-align: baseline;
+}
+.wf-cluster-label { font-size: 13px; font-weight: 600; text-transform: capitalize; }
+.wf-cluster-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  margin: 10px 0 0;
+}
+.wf-cluster-stats dt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.wf-cluster-stats dd { margin: 0; font-size: 12.5px; color: var(--text); }
+.wf-cluster-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   ConfusionMatrix totals modifiers — replicated from styles/insights.css
+   (lines 104–145 + the 640px block) so the shared ConfusionMatrix component
+   renders correctly on the workflow route without importing another page's
+   stylesheet. The base .cm-grid/.cm-cell live in styles.css (global).
+   -------------------------------------------------------------------------- */
+
+.insights-cm { margin: 0; }
+.insights-cm-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.cm-grid.cm-grid--totals { grid-template-columns: 104px repeat(3, 1fr); }
+.cm-axis--total { background: var(--raised); }
+.cm-total { background: var(--raised); justify-content: center; }
+.cm-total strong { font-size: 15px; font-weight: 500; color: var(--text-2); }
+.cm-total--grand strong { color: var(--text); }
+
+/* --------------------------------------------------------------------------
+   Responsive (UX §8): multi-col grids collapse at 1024; densify at 640;
+   phone gutters at 420. Tables never reflow — they scroll (.table-scroll).
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+  .wf-sample-grid { grid-template-columns: 1fr; }
+  .wf-trainpanel .wf-candidates { grid-template-columns: 1fr; }
+  .wf-step-fields { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .field-row--3 { grid-template-columns: 1fr; }
+  .wf-flow { flex-direction: column; }
+  .wf-flow-node + .wf-flow-node::before { content: none; }
+  .wf-cluster-grid { grid-template-columns: 1fr 1fr; }
+  .cm-grid.cm-grid--totals { grid-template-columns: 78px repeat(3, 1fr); }
+  .cm-grid.cm-grid--totals .cm-cell { padding: 10px; }
+  .cm-grid.cm-grid--totals .cm-cell strong { font-size: 18px; }
+  .cm-grid.cm-grid--totals .cm-total strong { font-size: 13px; }
+}
+
+@media (max-width: 420px) {
+  .wf-cluster-grid { grid-template-columns: 1fr; }
+  .wf-config-actions .btn { width: 100%; }
+  .wf-jobrow-name { min-width: 0; }
+}
+
+/* QA p1: at phone widths the objective tab row overflows (measured 432px of
+   tabs vs a 358px scrollport at 390px) and the Clustering tab sits entirely
+   off-screen. Fade the right edge of the strip so the hidden tab has a
+   scroll affordance; the mask rides the scrollport, so swiping reveals the
+   faded content. */
+@media (max-width: 480px) {
+  .wf-tabs {
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+    mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
+  }
+}

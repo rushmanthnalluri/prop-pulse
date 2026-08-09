@@ -1,0 +1,21 @@
+rss_before_mb=270.7 peak_wset_mb=323.2
+--- block A: /predict c=1 x100 ---
+POST /predict  concurrency=1
+  requests=100 errors=0 (0.00%) statuses={'200': 100}
+  latency ms: min=167.3 mean=261.18 p50=208.97 p90=437.03 p95=466.92 p99=575.41 max=587.68
+  wall=26.118s throughput=3.83 req/s
+{"method": "POST", "endpoint": "/predict", "concurrency": 1, "requests": 100, "errors": 0, "error_rate": 0.0, "throughput_rps": 3.83, "wall_seconds": 26.118, "latency_ms": {"min": 167.3, "mean": 261.18, "p50": 208.97, "p90": 437.03, "p95": 466.92, "p99": 575.41, "max": 587.68}, "statuses": {"200": 100}}
+--- block B: /predict c=1 x100 ---
+POST /predict  concurrency=1
+  requests=100 errors=0 (0.00%) statuses={'200': 100}
+  latency ms: min=186.34 mean=337.11 p50=347.75 p90=479.9 p95=499.11 p99=517.99 max=564.5
+  wall=33.711s throughput=2.97 req/s
+{"method": "POST", "endpoint": "/predict", "concurrency": 1, "requests": 100, "errors": 0, "error_rate": 0.0, "throughput_rps": 2.97, "wall_seconds": 33.711, "latency_ms": {"min": 186.34, "mean": 337.11, "p50": 347.75, "p90": 479.9, "p95": 499.11, "p99": 517.99, "max": 564.5}, "statuses": {"200": 100}}
+--- block C: /predict c=1 x100 ---
+POST /predict  concurrency=1
+  requests=100 errors=0 (0.00%) statuses={'200': 100}
+  latency ms: min=203.91 mean=407.06 p50=416.36 p90=560.54 p95=601.2 p99=643.16 max=652.04
+  wall=40.706s throughput=2.46 req/s
+{"method": "POST", "endpoint": "/predict", "concurrency": 1, "requests": 100, "errors": 0, "error_rate": 0.0, "throughput_rps": 2.46, "wall_seconds": 40.706, "latency_ms": {"min": 203.91, "mean": 407.06, "p50": 416.36, "p90": 560.54, "p95": 601.2, "p99": 643.16, "max": 652.04}, "statuses": {"200": 100}}
+--- RSS after 300 ---
+rss_after_mb=270.6 peak_wset_mb=323.2

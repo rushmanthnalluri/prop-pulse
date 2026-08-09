@@ -1,0 +1,64 @@
+=== (a) preflight from configured origin http://localhost:5400 ===
+$ curl -s -i -X OPTIONS http://localhost:8400/predict -H "Origin: http://localhost:5400" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type"
+HTTP/1.1 200 OK
+date: Fri, 07 Aug 2026 13:45:19 GMT
+server: uvicorn
+vary: Origin
+access-control-allow-methods: DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
+access-control-max-age: 600
+access-control-allow-credentials: true
+access-control-allow-origin: http://localhost:5400
+access-control-allow-headers: content-type
+content-length: 2
+content-type: text/plain; charset=utf-8
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+
+OK
+=== (b) preflight from NON-configured origin http://evil.example.com ===
+$ curl -s -i -X OPTIONS http://localhost:8400/predict -H "Origin: http://evil.example.com" -H "Access-Control-Request-Method: POST" -H "Access-Control-Request-Headers: content-type"
+HTTP/1.1 400 Bad Request
+date: Fri, 07 Aug 2026 13:45:20 GMT
+server: uvicorn
+vary: Origin
+access-control-allow-methods: DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
+access-control-max-age: 600
+access-control-allow-credentials: true
+access-control-allow-headers: content-type
+content-length: 22
+content-type: text/plain; charset=utf-8
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+
+
+=== (c) actual GET /health from configured origin ===
+HTTP/1.1 200 OK
+date: Fri, 07 Aug 2026 13:45:20 GMT
+server: uvicorn
+content-length: 73
+content-type: application/json
+access-control-allow-credentials: true
+access-control-allow-origin: http://localhost:5400
+vary: Origin
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+
+=== (d) actual GET /health from non-configured origin ===
+HTTP/1.1 200 OK
+access-control-allow-credentials: true
+
+=== (e) preflight from dev-origin http://localhost:5173 (NOT configured in this run) ===
+HTTP/1.1 400 Bad Request
+date: Fri, 07 Aug 2026 13:45:21 GMT
+server: uvicorn
+vary: Origin
+access-control-allow-methods: DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
+access-control-max-age: 600
+access-control-allow-credentials: true
+content-length: 22

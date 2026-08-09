@@ -1,0 +1,82 @@
+"""Task 2 — verify/refute wave-A llba-ml-services F1 (degenerate-bin PSI blind spot).
+
+Checks:
+ A. Census of degenerate-bin features in models/monitoring/reference_stats.json
+    (recomputed independently, not trusting the wave-A list).
+ B. Zero-inflation rates in the actual train split for those features.
+ C. Blind-spot proof: in-range shift AND extreme out-of-range shift on a 1-bin
+    feature both produce PSI == 0.0 (the single bin is [-inf, +inf]).
+ D. Contrast: same-magnitude shift on a healthy 10-bin feature -> large PSI.
+ E. Does anything flag degenerate features (reference build warnings, drift
+    report fields)? — grep-level check.
+"""
+import json
+import numpy as np
+import pandas as pd
+
+from ml.monitoring.psi import bin_proportions, population_stability_index
+
+ref = json.load(open("models/monitoring/reference_stats.json"))
+nums = ref["numeric_features"]
+
+print("=== A. Degenerate-bin census (53 numeric features) ===")
+by_nbins = {}
+for f in nums:
+    n = len(ref["numeric"][f]["bin_edges"]) - 1
+    by_nbins.setdefault(n, []).append(f)
+for n in sorted(by_nbins):
+    print(f"{n} bins ({len(by_nbins[n])}): {by_nbins[n]}")
+print("\n1-bin feature edges/proportions:")
+for f in by_nbins[1]:
+    spec = ref["numeric"][f]
+    print(f"  {f}: edges={spec['bin_edges']} expected={spec['expected_proportions']}")
+
+print("\n=== B. Train zero-inflation for the 1-bin features ===")
+train = pd.read_csv("data/processed/train.csv", keep_default_na=False)
+print(f"train rows: {len(train)}")
+for f in by_nbins[1]:
+    col = pd.to_numeric(train[f], errors="coerce")
+    zero = float((col == 0).mean())
+    nz = int((col > 0).sum())
+    print(f"  {f}: {zero*100:.2f}% zero, {nz} non-zero rows, max={col.max()}")
+
+print("\n=== C. Blind-spot proof on PoolArea (1 bin, edges [0.0, 738.0]) ===")
+spec = ref["numeric"]["PoolArea"]
+edges = spec["bin_edges"]
+expected = spec["expected_proportions"]
+# what bin_proportions actually builds: [-inf] + edges[1:-1] + [+inf] = [-inf, inf]
+print(f"interior cuts used by bin_proportions: {edges[1:-1]} (empty -> single [-inf,+inf] bin)")
+for label, sample in [
+    ("in-range shift: 300 x 500.0 (train is ~98% zero)", [500.0] * 300),
+    ("EXTREME out-of-range: 300 x 9,999,999.0", [9_999_999.0] * 300),
+    ("in-distribution control: 294 x 0.0 + 6 x 500.0", [0.0] * 294 + [500.0] * 6),
+]:
+    props = bin_proportions(sample, edges)
+    psi = population_stability_index(expected, props)
+    print(f"  {label}\n    props={props.tolist()} PSI={psi!r}")
+
+print("\n=== D. Contrast — healthy 10-bin feature GrLivArea ===")
+gspec = ref["numeric"]["GrLivArea"]
+gedges = gspec["bin_edges"]
+gexp = gspec["expected_proportions"]
+rng = np.random.default_rng(42)
+train_gl = pd.to_numeric(train["GrLivArea"], errors="coerce").to_numpy()
+shifted = train_gl * 1.5  # uniform +50% area shift, real train shape
+props = bin_proportions(shifted, gedges)
+psi_shift = population_stability_index(gexp, props)
+props_ctrl = bin_proportions(rng.permutation(train_gl), gedges)
+psi_ctrl = population_stability_index(gexp, props_ctrl)
+print(f"  +50% GrLivArea shift: PSI={psi_shift:.4f} (drift threshold 0.2)")
+print(f"  shuffled control:     PSI={psi_ctrl:.4f}")
+
+print("\n=== E. 2-bin features — partial blind spot check (YrSold example) ===")
+yspec = ref["numeric"]["YrSold"]
+print(f"  YrSold edges={yspec['bin_edges']} expected={yspec['expected_proportions']}")
+sspec = ref["numeric"]["sale_year"]
+print(f"  sale_year edges={sspec['bin_edges']} expected={sspec['expected_proportions']}")
+
+print("\n=== F. Any degenerate-feature flag in reference/report? ===")
+# reference payload fields
+print("reference top-level keys:", sorted(ref.keys()))
+print("-> no 'degenerate'/'warning' field:", not any("degener" in k or "warn" in k for k in ref.keys()))
+print("\nALL TASK-2 CHECKS DONE")

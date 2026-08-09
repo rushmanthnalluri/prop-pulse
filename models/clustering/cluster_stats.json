@@ -1,0 +1,81 @@
+{
+  "0": {
+    "label": "mid northwest",
+    "neighborhoods": [
+      "Blmngtn",
+      "BrDale",
+      "BrkSide",
+      "Crawfor",
+      "Gilbert",
+      "IDOTRR",
+      "NPkVill",
+      "NWAmes",
+      "NoRidge",
+      "NridgHt",
+      "OldTown",
+      "Somerst",
+      "StoneBr",
+      "Veenker"
+    ],
+    "n_sales": 461,
+    "median_price": 179900.0,
+    "median_price_per_sqft": 119.39218523878436,
+    "sale_velocity_30d": 0.27765726681127983,
+    "centroid_lat": 42.04567857142858,
+    "centroid_long": -93.63607857142857,
+    "note": "sale_velocity_30d is the fraction of this cluster's TRAIN-split sales with sells_within_30_days==1. It is a DESCRIPTIVE statistic over the SIMULATED sale-speed target (ADR-3), not a real-world market measurement, and is never used as a model input."
+  },
+  "1": {
+    "label": "affordable southwest",
+    "neighborhoods": [
+      "Blueste",
+      "SWISU"
+    ],
+    "n_sales": 15,
+    "median_price": 140000.0,
+    "median_price_per_sqft": 80.57851239669421,
+    "sale_velocity_30d": 0.26666666666666666,
+    "centroid_lat": 42.014700000000005,
+    "centroid_long": -93.64835,
+    "note": "sale_velocity_30d is the fraction of this cluster's TRAIN-split sales with sells_within_30_days==1. It is a DESCRIPTIVE statistic over the SIMULATED sale-speed target (ADR-3), not a real-world market measurement, and is never used as a model input."
+  },
+  "2": {
+    "label": "mid west",
+    "neighborhoods": [
+      "ClearCr",
+      "Edwards",
+      "Sawyer",
+      "SawyerW"
+    ],
+    "n_sales": 158,
+    "median_price": 144000.0,
+    "median_price_per_sqft": 113.85091420534458,
+    "sale_velocity_30d": 0.1962025316455696,
+    "centroid_lat": 42.02945,
+    "centroid_long": -93.673575,
+    "note": "sale_velocity_30d is the fraction of this cluster's TRAIN-split sales with sells_within_30_days==1. It is a DESCRIPTIVE statistic over the SIMULATED sale-speed target (ADR-3), not a real-world market measurement, and is never used as a model input."
+  },
+  "3": {
+    "label": "mid southeast",
+    "neighborhoods": [
+      "MeadowV",
+      "Mitchel"
+    ],
+    "n_sales": 41,
+    "median_price": 138000.0,
+    "median_price_per_sqft": 128.57142857142858,
+    "sale_velocity_30d": 0.21951219512195122,
+    "centroid_lat": 41.992,
+    "centroid_long": -93.6041,
+    "note": "sale_velocity_30d is the fraction of this cluster's TRAIN-split sales with sells_within_30_days==1. It is a DESCRIPTIVE statistic over the SIMULATED sale-speed target (ADR-3), not a real-world market measurement, and is never used as a model input."
+  },
+  "n_clusters": 4,
+  "eps": 1.3170045189879962,
+  "min_samples": 2,
+  "feature_names": [
+    "lat",
+    "long",
+    "median_price_per_sqft",
+    "monthly_sale_velocity"
+  ]
+}

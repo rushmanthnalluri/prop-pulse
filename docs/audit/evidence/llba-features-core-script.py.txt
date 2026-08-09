@@ -1,0 +1,161 @@
+"""llba-features core verification script (run via .venv python; output -> llba-features-core-verification.txt)."""
+import json, hashlib, math
+import numpy as np
+import pandas as pd
+from ml.features.pipeline import (RAW_INPUT_COLUMNS, ENGINEERED_FEATURES,
+    NEIGHBORHOOD_STAT_FEATURES, MODEL_FEATURES, build_feature_frame,
+    CITY_CENTER_LAT, CITY_CENTER_LONG, _haversine_km)
+from ml.features.stats import fit_neighborhood_stats, load_neighborhood_stats
+from ml.features.defaults import FEATURE_DEFAULTS
+from ml.paths import PROCESSED_DIR, FEATURE_LIST_PATH
+
+print("== 1. MODEL_FEATURES vs models/feature_list.json ==")
+fl = json.loads(FEATURE_LIST_PATH.read_text())
+print("len(MODEL_FEATURES) =", len(MODEL_FEATURES))
+print("len(feature_list.json features) =", len(fl["features"]))
+print("exact ordered equality:", MODEL_FEATURES == fl["features"])
+print("composition sizes: raw=%d engineered=%d stats=%d total=%d" % (
+    len(RAW_INPUT_COLUMNS), len(ENGINEERED_FEATURES), len(NEIGHBORHOOD_STAT_FEATURES), len(MODEL_FEATURES)))
+print("sha1 field in file:", fl["sha1"])
+recomp = hashlib.sha1(json.dumps(MODEL_FEATURES).encode()).hexdigest()
+print("recomputed sha1(json.dumps(MODEL_FEATURES)):", recomp)
+print("match:", recomp == fl["sha1"])
+
+print("\n== 2. build_feature_frame on all 3 splits: columns, order, NaN/Inf ==")
+splits = {n: pd.read_csv(PROCESSED_DIR / f"{n}.csv", keep_default_na=False) for n in ("train", "val", "test")}
+stats = fit_neighborhood_stats(splits["train"])
+frames = {}
+for name, df in splits.items():
+    ff = build_feature_frame(df, stats)
+    frames[name] = ff
+    cols_ok = list(ff.columns) == MODEL_FEATURES
+    cols_match_file = list(ff.columns) == fl["features"]
+    nan_count = int(ff.isna().sum().sum())
+    num = ff.select_dtypes(include=[np.number])
+    inf_count = int(np.isinf(num.to_numpy(dtype=float)).sum())
+    print(f"{name}: rows={len(ff)} cols==MODEL_FEATURES:{cols_ok} cols==feature_list.json:{cols_match_file} NaNs={nan_count} Infs(numeric)={inf_count}")
+
+print("\n== 3. Row-count preservation ==")
+for name, df in splits.items():
+    print(f"{name}: {len(frames[name])} == {len(df)} -> {len(frames[name]) == len(df)}")
+
+print("\n== 4. Independent haversine check ==")
+def hav(lat1, lon1, lat2, lon2):
+    R = 6371.0
+    p1, p2 = math.radians(lat1), math.radians(lat2)
+    dp = math.radians(lat2 - lat1); dl = math.radians(lon2 - lon1)
+    a = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+    return 2 * R * math.asin(math.sqrt(a))
+ff = frames["train"]
+tr = splits["train"]
+max_err = 0.0
+for i in range(0, len(ff), 37):
+    row = ff.iloc[i]
+    exp = hav(float(row["lat"]), float(row["long"]), CITY_CENTER_LAT, CITY_CENTER_LONG)
+    max_err = max(max_err, abs(exp - row["distance_to_city_center_km"]))
+print("max abs error vs independent implementation over sampled rows:", max_err)
+one_deg = float(_haversine_km(pd.Series([42.0347]), pd.Series([-93.6199]), 43.0347, -93.6199).iloc[0])
+print("sanity: 1 degree of latitude at Ames -> code gives %.4f km (expect ~111.19)" % one_deg)
+
+print("\n== 5. amenity_count vs SPEC formula (independent recompute, all train rows) ==")
+expected = ((tr["Fireplaces"].astype(float) > 0).astype(int)
+    + (tr["PoolArea"].astype(float) > 0).astype(int)
+    + (tr["WoodDeckSF"].astype(float) > 0).astype(int)
+    + (tr["OpenPorchSF"].astype(float) > 0).astype(int)
+    + (tr["ScreenPorch"].astype(float) > 0).astype(int)
+    + (tr["GarageCars"].astype(float) > 0).astype(int)
+    + (tr["CentralAir"].astype(str) == "Y").astype(int)
+    + (tr["PavedDrive"].astype(str) == "Y").astype(int))
+print("amenity_count matches on all train rows:", bool((ff["amenity_count"] == expected).all()))
+print("amenity_count range:", int(ff["amenity_count"].min()), "-", int(ff["amenity_count"].max()))
+
+print("\n== 6. Engineered values spot recompute (train, all rows) ==")
+checks = {
+ "property_age": (ff["property_age"] == tr["YrSold"].astype(float) - tr["YearBuilt"].astype(float)).all(),
+ "years_since_remod": (ff["years_since_remod"] == tr["YrSold"].astype(float) - tr["YearRemodAdd"].astype(float)).all(),
+ "total_sf": (ff["total_sf"] == tr["GrLivArea"].astype(float) + tr["TotalBsmtSF"].astype(float)).all(),
+ "sale_month": (ff["sale_month"] == tr["MoSold"].astype(float)).all(),
+ "sale_year": (ff["sale_year"] == tr["YrSold"].astype(float)).all(),
+ "sale_quarter": (ff["sale_quarter"] == ((tr["MoSold"].astype(float) - 1) // 3) + 1).all(),
+ "total_bath": (ff["total_bath"] == tr["FullBath"] + 0.5 * tr["HalfBath"] + tr["BsmtFullBath"] + 0.5 * tr["BsmtHalfBath"]).all(),
+ "lat passthrough": (ff["lat"].astype(float) == tr["lat"].astype(float)).all(),
+ "long passthrough": (ff["long"].astype(float) == tr["long"].astype(float)).all(),
+}
+for k, v in checks.items():
+    print(f"  {k}: {bool(v)}")
+bed = tr["BedroomAbvGr"].astype(float).clip(lower=1.0)
+print("  living_area_per_bedroom:", bool((ff["living_area_per_bedroom"] == tr["GrLivArea"].astype(float) / bed).all()))
+tb = tr["FullBath"] + 0.5 * tr["HalfBath"] + tr["BsmtFullBath"] + 0.5 * tr["BsmtHalfBath"]
+print("  bathroom_bedroom_ratio:", bool((ff["bathroom_bedroom_ratio"] == tb / bed).all()))
+print("  zero-bedroom rows in train:", int((tr["BedroomAbvGr"] == 0).sum()))
+print("  negative property_age rows (train/val/test):",
+      [int((frames[n]["property_age"] < 0).sum()) for n in ("train", "val", "test")])
+print("  negative years_since_remod rows (train/val/test):",
+      [int((frames[n]["years_since_remod"] < 0).sum()) for n in ("train", "val", "test")])
+
+print("\n== 7. Neighborhood stats join correctness (train+val+test) ==")
+for name, df in splits.items():
+    ff2 = frames[name]
+    ok = True
+    for nb in df["Neighborhood"].unique():
+        mask = (df["Neighborhood"] == nb).to_numpy()
+        exp = stats.for_neighborhood(nb)
+        for feat, fld in zip(NEIGHBORHOOD_STAT_FEATURES, ("median_price", "mean_price", "median_price_per_sqft", "monthly_sale_velocity")):
+            if not (ff2.loc[mask, feat] == exp[fld]).all():
+                ok = False
+                print("MISMATCH", name, nb, feat)
+    print(f"{name}: per-neighborhood join values all correct: {ok}")
+print("val neighborhoods not in train:", sorted(set(splits["val"]["Neighborhood"]) - set(splits["train"]["Neighborhood"])))
+print("test neighborhoods not in train:", sorted(set(splits["test"]["Neighborhood"]) - set(splits["train"]["Neighborhood"])))
+
+print("\n== 8. Stats artifact == recomputation from train.csv ==")
+art = load_neighborhood_stats()
+mism = 0
+for nb, grp in tr.groupby("Neighborhood"):
+    a = art.neighborhoods[nb]
+    if a["median_price"] != float(grp["SalePrice"].median()): mism += 1
+    if a["mean_price"] != float(grp["SalePrice"].mean()): mism += 1
+    ppsf = grp["SalePrice"].astype(float) / grp["GrLivArea"].astype(float).clip(lower=1.0)
+    if abs(a["median_price_per_sqft"] - float(ppsf.median())) > 1e-9: mism += 1
+n_months = tr[["YrSold", "MoSold"]].drop_duplicates().shape[0]
+print("n_months recomputed:", n_months, "artifact:", art.n_months)
+print("per-neighborhood stat mismatches:", mism)
+print("global median:", art.global_fallback["median_price"], "recomputed:", float(tr["SalePrice"].median()))
+print("global velocity:", art.global_fallback["monthly_sale_velocity"], "recomputed:", len(tr) / n_months)
+print("artifact == fresh fit_neighborhood_stats(train):",
+      art.neighborhoods == stats.neighborhoods and art.global_fallback == stats.global_fallback)
+full = pd.concat(list(splits.values()), ignore_index=True)
+diff = [nb for nb in art.neighborhoods
+        if art.neighborhoods[nb]["median_price"] != float(full.loc[full["Neighborhood"] == nb, "SalePrice"].median())]
+print("neighborhoods whose artifact median differs from full-data median (train-only proof):", len(diff), diff[:5])
+
+print("\n== 9. FEATURE_DEFAULTS == recomputed mode/median on train ==")
+mism = []
+for col in RAW_INPUT_COLUMNS:
+    s = tr[col]
+    if pd.api.types.is_numeric_dtype(s):
+        med = float(s.median())
+        exp = int(med) if pd.api.types.is_integer_dtype(s) and med.is_integer() else med
+    else:
+        m = s.mode(dropna=False)
+        exp = "None" if m.empty else str(m.iloc[0])
+    got = FEATURE_DEFAULTS.get(col, "<MISSING>")
+    if got != exp:
+        mism.append((col, exp, got))
+print("columns covered:", len(FEATURE_DEFAULTS), "of", len(RAW_INPUT_COLUMNS))
+print("mismatches vs recomputation:", mism if mism else "NONE")
+
+print("\n== 10. dtype / 'None'-token audit of raw columns in all splits ==")
+obj_cols = {}
+for name, df in splits.items():
+    for c in RAW_INPUT_COLUMNS:
+        if df[c].dtype == object:
+            obj_cols.setdefault(c, set()).add(name)
+print("object-dtype raw columns:", sorted(obj_cols))
+engineered_inputs = ["YrSold", "MoSold", "GrLivArea", "BedroomAbvGr", "FullBath", "HalfBath",
+    "BsmtFullBath", "BsmtHalfBath", "TotalBsmtSF", "YearBuilt", "YearRemodAdd", "lat", "long",
+    "Fireplaces", "PoolArea", "WoodDeckSF", "OpenPorchSF", "ScreenPorch", "GarageCars"]
+for name, df in splits.items():
+    bad = [c for c in engineered_inputs if df[c].dtype == object]
+    none_tokens = {c: int((df[c].astype(str) == "None").sum()) for c in engineered_inputs if (df[c].astype(str) == "None").any()}
+    print(f"{name}: object-dtype engineered-input cols: {bad if bad else 'NONE'}; 'None' tokens in those cols: {none_tokens if none_tokens else 'NONE'}")

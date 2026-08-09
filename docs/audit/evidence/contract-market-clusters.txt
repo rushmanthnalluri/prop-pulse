@@ -1,0 +1,286 @@
+$ curl -s http://localhost:8400/market/clusters
+{
+    "n_clusters": 4,
+    "clusters": [
+        {
+            "cluster_id": 0,
+            "label": "mid northwest",
+            "neighborhoods": [
+                "Blmngtn",
+                "BrDale",
+                "BrkSide",
+                "Crawfor",
+                "Gilbert",
+                "IDOTRR",
+                "NPkVill",
+                "NWAmes",
+                "NoRidge",
+                "NridgHt",
+                "OldTown",
+                "Somerst",
+                "StoneBr",
+                "Veenker"
+            ],
+            "n_neighborhoods": 14,
+            "n_sales": 461,
+            "median_price": 179900.0,
+            "median_price_per_sqft": 119.39218523878436,
+            "sale_velocity_30d": 0.27765726681127983,
+            "centroid_lat": 42.04567857142858,
+            "centroid_long": -93.63607857142857,
+            "note": "sale_velocity_30d is the fraction of this cluster's TRAIN-split sales with sells_within_30_days==1. It is a DESCRIPTIVE statistic over the SIMULATED sale-speed target (ADR-3), not a real-world market measurement, and is never used as a model input."
+        },
+        {
+            "cluster_id": 1,
+            "label": "affordable southwest",
+            "neighborhoods": [
+                "Blueste",
+                "SWISU"
+            ],
+            "n_neighborhoods": 2,
+            "n_sales": 15,
+            "median_price": 140000.0,
+            "median_price_per_sqft": 80.57851239669421,
+            "sale_velocity_30d": 0.26666666666666666,
+            "centroid_lat": 42.014700000000005,
+            "centroid_long": -93.64835,
+            "note": "sale_velocity_30d is the fraction of this cluster's TRAIN-split sales with sells_within_30_days==1. It is a DESCRIPTIVE statistic over the SIMULATED sale-speed target (ADR-3), not a real-world market measurement, and is never used as a model input."
+        },
+        {
+            "cluster_id": 2,
+            "label": "mid west",
+            "neighborhoods": [
+                "ClearCr",
+                "Edwards",
+                "Sawyer",
+                "SawyerW"
+            ],
+            "n_neighborhoods": 4,
+            "n_sales": 158,
+            "median_price": 144000.0,
+            "median_price_per_sqft": 113.85091420534458,
+            "sale_velocity_30d": 0.1962025316455696,
+            "centroid_lat": 42.02945,
+            "centroid_long": -93.673575,
+            "note": "sale_velocity_30d is the fraction of this cluster's TRAIN-split sales with sells_within_30_days==1. It is a DESCRIPTIVE statistic over the SIMULATED sale-speed target (ADR-3), not a real-world market measurement, and is never used as a model input."
+        },
+        {
+            "cluster_id": 3,
+            "label": "mid southeast",
+            "neighborhoods": [
+                "MeadowV",
+                "Mitchel"
+            ],
+            "n_neighborhoods": 2,
+            "n_sales": 41,
+            "median_price": 138000.0,
+            "median_price_per_sqft": 128.57142857142858,
+            "sale_velocity_30d": 0.21951219512195122,
+            "centroid_lat": 41.992,
+            "centroid_long": -93.6041,
+            "note": "sale_velocity_30d is the fraction of this cluster's TRAIN-split sales with sells_within_30_days==1. It is a DESCRIPTIVE statistic over the SIMULATED sale-speed target (ADR-3), not a real-world market measurement, and is never used as a model input."
+        }
+    ],
+    "neighborhoods": [
+        {
+            "neighborhood": "Blmngtn",
+            "name": "Bloomington Heights",
+            "lat": 42.0627,
+            "long": -93.6418,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "Blueste",
+            "name": "Bluestem",
+            "lat": 42.0094,
+            "long": -93.6457,
+            "cluster_id": 1,
+            "fallback": false
+        },
+        {
+            "neighborhood": "BrDale",
+            "name": "Briardale",
+            "lat": 42.0521,
+            "long": -93.6284,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "BrkSide",
+            "name": "Brookside",
+            "lat": 42.0324,
+            "long": -93.6251,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "ClearCr",
+            "name": "Clear Creek",
+            "lat": 42.028,
+            "long": -93.6711,
+            "cluster_id": 2,
+            "fallback": false
+        },
+        {
+            "neighborhood": "CollgCr",
+            "name": "College Creek",
+            "lat": 42.0193,
+            "long": -93.6868,
+            "cluster_id": 2,
+            "fallback": true
+        },
+        {
+            "neighborhood": "Crawfor",
+            "name": "Crawford",
+            "lat": 42.0153,
+            "long": -93.6403,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "Edwards",
+            "name": "Edwards",
+            "lat": 42.022,
+            "long": -93.6667,
+            "cluster_id": 2,
+            "fallback": false
+        },
+        {
+            "neighborhood": "Gilbert",
+            "name": "Gilbert",
+            "lat": 42.0602,
+            "long": -93.6398,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "IDOTRR",
+            "name": "Iowa DOT and Rail Road",
+            "lat": 42.0224,
+            "long": -93.6215,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "MeadowV",
+            "name": "Meadow Village",
+            "lat": 41.992,
+            "long": -93.6033,
+            "cluster_id": 3,
+            "fallback": false
+        },
+        {
+            "neighborhood": "Mitchel",
+            "name": "Mitchell",
+            "lat": 41.992,
+            "long": -93.6049,
+            "cluster_id": 3,
+            "fallback": false
+        },
+        {
+            "neighborhood": "NAmes",
+            "name": "North Ames",
+            "lat": 42.0424,
+            "long": -93.6176,
+            "cluster_id": 0,
+            "fallback": true
+        },
+        {
+            "neighborhood": "NPkVill",
+            "name": "Northpark Villa",
+            "lat": 42.0504,
+            "long": -93.6259,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "NWAmes",
+            "name": "Northwest Ames",
+            "lat": 42.0495,
+            "long": -93.634,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "NoRidge",
+            "name": "Northridge",
+            "lat": 42.0514,
+            "long": -93.6532,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "NridgHt",
+            "name": "Northridge Heights",
+            "lat": 42.06,
+            "long": -93.6539,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "OldTown",
+            "name": "Old Town",
+            "lat": 42.031,
+            "long": -93.6146,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "SWISU",
+            "name": "South & West of Iowa State University",
+            "lat": 42.02,
+            "long": -93.651,
+            "cluster_id": 1,
+            "fallback": false
+        },
+        {
+            "neighborhood": "Sawyer",
+            "name": "Sawyer",
+            "lat": 42.0333,
+            "long": -93.6703,
+            "cluster_id": 2,
+            "fallback": false
+        },
+        {
+            "neighborhood": "SawyerW",
+            "name": "Sawyer West",
+            "lat": 42.0345,
+            "long": -93.6862,
+            "cluster_id": 2,
+            "fallback": false
+        },
+        {
+            "neighborhood": "Somerst",
+            "name": "Somerset",
+            "lat": 42.0503,
+            "long": -93.6444,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "StoneBr",
+            "name": "Stone Brook",
+            "lat": 42.0603,
+            "long": -93.6306,
+            "cluster_id": 0,
+            "fallback": false
+        },
+        {
+            "neighborhood": "Timber",
+            "name": "Timberland",
+            "lat": 41.9964,
+            "long": -93.6489,
+            "cluster_id": 3,
+            "fallback": true
+        },
+        {
+            "neighborhood": "Veenker",
+            "name": "Veenker",
+            "lat": 42.0415,
+            "long": -93.6516,
+            "cluster_id": 0,
+            "fallback": false
+        }
+    ]
+}

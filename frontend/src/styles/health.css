@@ -1,0 +1,144 @@
+/* ==========================================================================
+   Model Health page (SPEC §5.5) — page-specific styles.
+   Tokens and shared primitives come from styles.css; nothing here is below
+   the 11px readability floor (SPEC §2.2).
+   ========================================================================== */
+
+/* Refresh row: per-fetch freshness stamps + manual refresh button. */
+.health-refresh {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  flex-wrap: wrap;
+  margin-top: -8px;
+}
+.health-refresh-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+/* Subtle in-flight indicator for background polls — reserves its slot with
+   visibility so polls never shift the row's layout. It trails the meta text
+   so the meta stays flush with the left gridline (WP-7c). */
+.health-refreshing {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 10px;
+  visibility: hidden;
+}
+.health-refreshing.is-active { visibility: visible; }
+.health-refreshing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: health-pulse 1.1s ease-in-out infinite;
+}
+@keyframes health-pulse {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* Standing caveat under the refresh row (spec microcopy, verbatim). */
+.health-caveat { margin-top: 10px; }
+
+/* Section-local spacing helpers. */
+.health-section-alert { margin-top: 14px; }
+.health-section-note { margin-top: 12px; }
+.health-block { margin-top: 16px; }
+.health-traffic-table { margin-top: 16px; }
+
+/* Unit suffix inside a large metric value ("38 ms"). */
+.health-unit {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* Drift empty state (CONTRACT §5.13): the honest no_data design — real
+   config facts from the served snapshot, the operator CLI hint, and a
+   teaching preview of what the panel will report once traffic is scored.
+   No PSI values are ever invented. */
+.health-empty-facts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 20px;
+  margin-top: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+}
+.health-empty-facts b { font-weight: 500; color: var(--text-2); }
+.health-empty-cli { margin-top: 16px; font-size: 12.5px; color: var(--text-3); }
+.health-empty-cli code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 3px 8px;
+  color: var(--text-2);
+  white-space: nowrap;
+}
+.health-empty-what {
+  max-width: 460px;
+  margin: 18px auto 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+.health-empty-what-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
+.health-empty-what li {
+  position: relative;
+  padding: 3px 0 3px 16px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.health-empty-what li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 10px;
+  width: 5px;
+  height: 5px;
+  border-radius: 2px;
+  background: var(--accent-border);
+}
+.health-empty-report { margin-top: 16px; }
+
+/* "What this page monitors" methodology rows. */
+.monitor-list { border-top: 1px solid var(--border); }
+.monitor-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 4px 24px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.monitor-label { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.monitor-row p { font-size: 13px; color: var(--text-2); max-width: 720px; }
+.monitor-row code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+}
+
+@media (max-width: 640px) {
+  .monitor-row { grid-template-columns: 1fr; }
+}

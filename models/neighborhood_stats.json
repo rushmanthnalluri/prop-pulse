@@ -1,0 +1,171 @@
+{
+  "version": 1,
+  "dataset_version": "ames-1.0",
+  "computed_from": "data/processed/train.csv (train split only)",
+  "stat_fields": [
+    "median_price",
+    "mean_price",
+    "median_price_per_sqft",
+    "monthly_sale_velocity"
+  ],
+  "n_train_rows": 945,
+  "n_months": 36,
+  "global_fallback": {
+    "median_price": 164990.0,
+    "mean_price": 182125.1343915344,
+    "median_price_per_sqft": 120.57877813504822,
+    "monthly_sale_velocity": 26.25
+  },
+  "neighborhoods": {
+    "Blmngtn": {
+      "median_price": 194201.0,
+      "mean_price": 203382.27272727274,
+      "median_price_per_sqft": 138.51711840228245,
+      "monthly_sale_velocity": 0.3055555555555556
+    },
+    "Blueste": {
+      "median_price": 151000.0,
+      "mean_price": 151000.0,
+      "median_price_per_sqft": 97.04370179948586,
+      "monthly_sale_velocity": 0.027777777777777776
+    },
+    "BrDale": {
+      "median_price": 100000.0,
+      "mean_price": 100854.54545454546,
+      "median_price_per_sqft": 90.67882472137791,
+      "monthly_sale_velocity": 0.3055555555555556
+    },
+    "BrkSide": {
+      "median_price": 127000.0,
+      "mean_price": 121858.33333333333,
+      "median_price_per_sqft": 101.43769968051119,
+      "monthly_sale_velocity": 1.0833333333333333
+    },
+    "ClearCr": {
+      "median_price": 205750.0,
+      "mean_price": 214246.6,
+      "median_price_per_sqft": 121.49450131180078,
+      "monthly_sale_velocity": 0.5555555555555556
+    },
+    "CollgCr": {
+      "median_price": 198250.0,
+      "mean_price": 199452.7857142857,
+      "median_price_per_sqft": 131.96739016114333,
+      "monthly_sale_velocity": 2.7222222222222223
+    },
+    "Crawfor": {
+      "median_price": 217000.0,
+      "mean_price": 211011.8205128205,
+      "median_price_per_sqft": 113.67469879518072,
+      "monthly_sale_velocity": 1.0833333333333333
+    },
+    "Edwards": {
+      "median_price": 127500.0,
+      "mean_price": 131787.0,
+      "median_price_per_sqft": 107.08611787459634,
+      "monthly_sale_velocity": 1.6666666666666667
+    },
+    "Gilbert": {
+      "median_price": 181000.0,
+      "mean_price": 191007.6603773585,
+      "median_price_per_sqft": 119.0599173553719,
+      "monthly_sale_velocity": 1.4722222222222223
+    },
+    "IDOTRR": {
+      "median_price": 108950.0,
+      "mean_price": 105346.57692307692,
+      "median_price_per_sqft": 91.894441649155,
+      "monthly_sale_velocity": 0.7222222222222222
+    },
+    "MeadowV": {
+      "median_price": 115000.0,
+      "mean_price": 109977.77777777778,
+      "median_price_per_sqft": 117.33800350262698,
+      "monthly_sale_velocity": 0.25
+    },
+    "Mitchel": {
+      "median_price": 146900.0,
+      "mean_price": 150226.5625,
+      "median_price_per_sqft": 132.66956606724003,
+      "monthly_sale_velocity": 0.8888888888888888
+    },
+    "NAmes": {
+      "median_price": 140000.0,
+      "mean_price": 144694.0,
+      "median_price_per_sqft": 122.14342001576044,
+      "monthly_sale_velocity": 4.083333333333333
+    },
+    "NPkVill": {
+      "median_price": 140000.0,
+      "mean_price": 141000.0,
+      "median_price_per_sqft": 130.96351730589336,
+      "monthly_sale_velocity": 0.08333333333333333
+    },
+    "NWAmes": {
+      "median_price": 180000.0,
+      "mean_price": 191130.11111111112,
+      "median_price_per_sqft": 104.90151168117269,
+      "monthly_sale_velocity": 1.25
+    },
+    "NoRidge": {
+      "median_price": 295750.0,
+      "mean_price": 351020.76923076925,
+      "median_price_per_sqft": 129.54086189988288,
+      "monthly_sale_velocity": 0.7222222222222222
+    },
+    "NridgHt": {
+      "median_price": 318000.0,
+      "mean_price": 314413.44680851063,
+      "median_price_per_sqft": 152.99877600979192,
+      "monthly_sale_velocity": 1.3055555555555556
+    },
+    "OldTown": {
+      "median_price": 120000.0,
+      "mean_price": 133091.73333333334,
+      "median_price_per_sqft": 94.05940594059406,
+      "monthly_sale_velocity": 2.0833333333333335
+    },
+    "SWISU": {
+      "median_price": 138250.0,
+      "mean_price": 143742.85714285713,
+      "median_price_per_sqft": 79.8871582962492,
+      "monthly_sale_velocity": 0.3888888888888889
+    },
+    "Sawyer": {
+      "median_price": 135000.0,
+      "mean_price": 138257.63829787233,
+      "median_price_per_sqft": 119.3058568329718,
+      "monthly_sale_velocity": 1.3055555555555556
+    },
+    "SawyerW": {
+      "median_price": 179900.0,
+      "mean_price": 188863.87096774194,
+      "median_price_per_sqft": 116.79256246368391,
+      "monthly_sale_velocity": 0.8611111111111112
+    },
+    "Somerst": {
+      "median_price": 225500.0,
+      "mean_price": 224581.6,
+      "median_price_per_sqft": 137.67271056661562,
+      "monthly_sale_velocity": 1.6666666666666667
+    },
+    "StoneBr": {
+      "median_price": 286000.0,
+      "mean_price": 304547.06666666665,
+      "median_price_per_sqft": 153.9087947882736,
+      "monthly_sale_velocity": 0.4166666666666667
+    },
+    "Timber": {
+      "median_price": 239000.0,
+      "mean_price": 240644.12,
+      "median_price_per_sqft": 133.5676625659051,
+      "monthly_sale_velocity": 0.6944444444444444
+    },
+    "Veenker": {
+      "median_price": 218000.0,
+      "mean_price": 238772.72727272726,
+      "median_price_per_sqft": 143.81933438985737,
+      "monthly_sale_velocity": 0.3055555555555556
+    }
+  }
+}

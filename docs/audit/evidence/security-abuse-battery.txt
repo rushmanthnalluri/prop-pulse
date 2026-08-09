@@ -1,0 +1,32 @@
+=========== INPUT ABUSE BATTERY (live server :8360, POST /predict) ===========
+baseline valid                                             -> HTTP 200 | {"estimated_price":151147.74,"price_range":{"low":131276.1,"high":169846.06},"sale_probability":{"probability":0.216313,"sells_within_30_days":true,"threshold":0.203292},"micro_market":{"cluster_id":0,"label":"mid northw
+NaN literal in float field (lot_frontage)                  -> HTTP 500 | {"detail":"Internal server error"}
+Infinity literal in float field (lot_frontage)             -> HTTP 500 | {"detail":"Internal server error"}
+-Infinity literal in float field                           -> HTTP 500 | {"detail":"Internal server error"}
+NaN literal in int field (bedrooms)                        -> HTTP 500 | {"detail":"Internal server error"}
+huge exponent 1e999 (float field)                          -> HTTP 500 | {"detail":"Internal server error"}
+huge exponent 1e999 (int field lot_area)                   -> HTTP 500 | {"detail":"Internal server error"}
+huge int 10**15 (bedrooms)                                 -> HTTP 422 | {"detail":[{"type":"less_than_equal","loc":["body","bedrooms"],"msg":"Input should be less than or equal to 8","input":1000000000000000,"ctx":{"le":8}}]}
+type confusion bedrooms=string                             -> HTTP 422 | {"detail":[{"type":"int_parsing","loc":["body","bedrooms"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"three"}]}
+type confusion gr_liv_area=1500.5 (float->int)             -> HTTP 422 | {"detail":[{"type":"int_from_float","loc":["body","gr_liv_area"],"msg":"Input should be a valid integer, got a number with a fractional part","input":1500.5}]}
+type confusion central_air=string                          -> HTTP 422 | {"detail":[{"type":"bool_parsing","loc":["body","central_air"],"msg":"Input should be a valid boolean, unable to interpret input","input":"not-a-bool"}]}
+type confusion year_built=array                            -> HTTP 422 | {"detail":[{"type":"int_type","loc":["body","year_built"],"msg":"Input should be a valid integer","input":[1995]}]}
+type confusion neighborhood=42                             -> HTTP 422 | {"detail":[{"type":"string_type","loc":["body","neighborhood"],"msg":"Input should be a valid string","input":42}]}
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    print('\U0001f4a3'*500)
+    ~~~~~^^^^^^^^^^
+  File "C:\Users\rushm\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode characters in position 0-499: character maps to <undefined>
+unicode bomb in neighborhood                               -> HTTP 422 | {"detail":[{"type":"value_error","loc":["body","neighborhood"],"msg":"Value error, unknown neighborhood ''; must be one of: Blmngtn, Blueste, BrDale, BrkSide, ClearCr, CollgCr, Crawfor, Edwards, Gilbert, IDOTRR, MeadowV,
+/usr/bin/bash: line 20: warning: command substitution: ignored null byte in input
+NUL padding in neighborhood                                -> HTTP 200 | {"estimated_price":151147.74,"price_range":{"low":131276.1,"high":169846.06},"sale_probability":{"probability":0.216313,"sells_within_30_days":true,"threshold":0.203292},"micro_market":{"cluster_id":0,"label":"mid northw
+SQL-ish string in neighborhood                             -> HTTP 422 | {"detail":[{"type":"value_error","loc":["body","neighborhood"],"msg":"Value error, unknown neighborhood \"' OR 1=1 --\"; must be one of: Blmngtn, Blueste, BrDale, BrkSide, ClearCr, CollgCr, Crawfor, Edwards, Gilbert, IDO
+SQL-ish string in ms_zoning                                -> HTTP 200 | {"estimated_price":151147.74,"price_range":{"low":131276.1,"high":169846.06},"sale_probability":{"probability":0.216313,"sells_within_30_days":true,"threshold":0.203292},"micro_market":{"cluster_id":0,"label":"mid northw
+unknown extra field                                        -> HTTP 422 | {"detail":[{"type":"extra_forbidden","loc":["body","'evil_field'"],"msg":"Extra inputs are not permitted","input":1}]}
+wrong content-type (text/plain) with JSON body             -> HTTP 422 | {"detail":[{"type":"json_invalid","loc":["body",0],"msg":"JSON decode error","input":{},"ctx":{"error":"Expecting value"}}]}
+--- text/plain content type with JSON body ---
+HTTP 422
+{"detail":[{"type":"model_attributes_type","loc":["body"],"msg":"Input should be a valid dictionary or object to extract fields from","input":"{\"neighborhood\":\"NAmes\",\"bedrooms\":3,\"full_bath\":

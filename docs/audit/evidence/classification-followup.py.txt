@@ -1,0 +1,65 @@
+"""Follow-up: quantify predict_proba batch nondeterminism + inspect champion params.
+Run from repo root: PYTHONPATH=. .venv/Scripts/python.exe docs/audit/evidence/classification-followup.py.txt
+"""
+import json
+from pathlib import Path
+
+import joblib
+import numpy as np
+import pandas as pd
+
+from ml.features.pipeline import build_feature_frame
+from ml.features.stats import load_neighborhood_stats
+
+features = json.loads(Path("models/feature_list.json").read_text())["features"]
+stats = load_neighborhood_stats()
+champ = joblib.load("models/registry/classification_champion.joblib")
+
+test = pd.read_csv("data/processed/test.csv", keep_default_na=False)
+val = pd.read_csv("data/processed/val.csv", keep_default_na=False)
+X_test = build_feature_frame(test, stats=stats)[features]
+X_val = build_feature_frame(val, stats=stats)[features]
+
+print("=== A. Repeat batch predict_proba x8 on test (n=175) ===")
+ps = [champ.predict_proba(X_test)[:, 1] for _ in range(8)]
+base = ps[0]
+for i, p in enumerate(ps[1:], 1):
+    d = np.abs(p - base)
+    print(f"run {i}: max|diff|={d.max():.3e}  n_diff={int((d > 0).sum())}")
+P = np.vstack(ps)
+print(f"across 8 runs: global max spread per row = {(P.max(axis=0) - P.min(axis=0)).max():.3e}")
+
+thr = json.loads(Path("models/champion.json").read_text())["classification"]["threshold"]
+print(f"\n=== B. Threshold-flip risk at t={thr} ===")
+for name, X in (("val", X_val), ("test", X_test)):
+    reps = np.vstack([champ.predict_proba(X)[:, 1] for _ in range(5)])
+    spread = reps.max(axis=0) - reps.min(axis=0)
+    near = np.abs(reps.mean(axis=0) - thr)
+    n_unstable = int((((reps >= thr).any(axis=0)) & ((reps < thr).any(axis=0))).sum())
+    print(f"{name}: max spread={spread.max():.3e}; rows whose >=threshold decision flips across 5 runs: {n_unstable}; "
+          f"min distance of any mean prob to threshold: {near.min():.3e}")
+
+print("\n=== C. Same check with n_jobs forced to 1 inside the RF ===")
+# locate the RF estimators inside CalibratedClassifierCV -> calibrated_classifiers_[i].estimator ('model' step)
+cc = champ.calibrated_classifiers_[0]
+pipe = cc.estimator if hasattr(cc, "estimator") else cc.base_estimator
+rf = pipe.named_steps["model"]
+print("RF params: class_weight=%r n_jobs=%r random_state=%r n_estimators=%r max_depth=%r min_samples_leaf=%r"
+      % (rf.class_weight, rf.n_jobs, rf.random_state, rf.n_estimators, rf.max_depth, rf.min_samples_leaf))
+old = rf.n_jobs
+for c in champ.calibrated_classifiers_:
+    est = c.estimator if hasattr(c, "estimator") else c.base_estimator
+    est.named_steps["model"].n_jobs = 1
+p1 = champ.predict_proba(X_test)[:, 1]
+p2 = champ.predict_proba(X_test)[:, 1]
+print("n_jobs=1: two batch calls bit-identical:", bool(np.array_equal(p1, p2)))
+for c in champ.calibrated_classifiers_:
+    est = c.estimator if hasattr(c, "estimator") else c.base_estimator
+    est.named_steps["model"].n_jobs = old
+p3 = champ.predict_proba(X_test)[:, 1]
+print("restored n_jobs=-1; diff vs n_jobs=1 result: max|diff|=%.3e" % np.abs(p3 - p1).max())
+
+print("\n=== D. Champion structure sanity ===")
+print("top-level type:", type(champ).__name__, "| method:", champ.method, "| n calibrated folds:", len(champ.calibrated_classifiers_))
+print("classes_:", champ.classes_)
+print("\nDONE")

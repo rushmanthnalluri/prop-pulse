@@ -1,0 +1,30 @@
+== RAW data/raw/ames/train.csv ==
+rows: 1460 cols: 81
+Id unique: 1460 dupes: 0 Id range: (1, 1460)
+YrSold value counts: {2006: 314, 2007: 329, 2008: 304, 2009: 338, 2010: 175}
+
+== RAW time-split ==
+train(YrSold<=2008): 947  val(2009): 338  test(2010): 175  sum: 1460
+
+== OUTLIER rule (GrLivArea>4000 & SalePrice<300000) on raw train split ==
+matched Ids: [524, 1299] count: 2
+  Id  GrLivArea  SalePrice  YrSold Neighborhood
+ 524       4676     184750    2007      Edwards
+1299       5642     160000    2008      Edwards
+outliers_report.json removed_ids: [524, 1299] n_removed: 2 summary: {'rows_before': 947, 'rows_after': 945, 'applied_to': 'train split only'}
+rule hits in val raw: 0 in test raw: 0
+val rows with GrLivArea>4000: 0 test rows with GrLivArea>4000: 0
+
+== PROCESSED splits ==
+train: rows=945 cols=85 YrSold=[2006, 2007, 2008]
+val: rows=338 cols=85 YrSold=[2009]
+test: rows=175 cols=85 YrSold=[2010]
+processed total: 1458 | 945+338+175 = 1458 | raw 1460 - 2 outliers = 1458
+ARITHMETIC CHECK: 945+338+175+2 == 1460 -> True
+
+== ID reconciliation ==
+union processed Ids: 1458 raw Ids: 1460
+raw - processed == [524, 1299] (must equal [524, 1299])
+processed - raw == []
+pairwise overlaps: {'train&val': 0, 'train&test': 0, 'val&test': 0}
+key columns (SalePrice,GrLivArea,YrSold,MoSold,LotArea,YearBuilt) identical to raw for all processed rows: OK

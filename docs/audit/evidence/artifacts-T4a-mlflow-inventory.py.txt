@@ -1,0 +1,87 @@
+"""artifacts-audit T4a runner: MLflow file-store inventory via the mlflow API.
+
+Usage: .venv/Scripts/python.exe docs/audit/evidence/artifacts-T4a-mlflow-inventory.py.txt
+Sets MLFLOW_ALLOW_FILE_STORE=true (mlflow 3.15 requirement), points the client
+at the repo file store ./mlruns, lists experiments, counts runs per experiment,
+and dumps THREE runs in full (params, metrics, tags, artifact tree). Also
+cross-checks run dirs on the filesystem against the API listing.
+Read-only. Exit 0.
+"""
+import os
+import sys
+from pathlib import Path
+
+os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
+
+REPO = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO))
+
+def main() -> int:
+    import mlflow
+    from mlflow.tracking import MlflowClient
+
+    uri = (REPO / "mlruns").resolve().as_uri()
+    mlflow.set_tracking_uri(uri)
+    client = MlflowClient(tracking_uri=uri)
+    print(f"tracking_uri={uri}")
+    print(f"mlflow version={mlflow.__version__}")
+
+    experiments = client.search_experiments()
+    print(f"\nEXPERIMENTS: {len(experiments)}")
+    all_runs = []
+    for exp in experiments:
+        runs = client.search_runs([exp.experiment_id])
+        fs_dirs = [p for p in (REPO / "mlruns" / exp.experiment_id).iterdir() if p.is_dir() and not p.name.startswith(".")]
+        print(f"\nexperiment id={exp.experiment_id} name={exp.name!r} stage={exp.lifecycle_stage}")
+        print(f"  artifact_location={exp.artifact_location}")
+        print(f"  runs via API={len(runs)}  run-dirs on filesystem={len(fs_dirs)}")
+        for r in runs:
+            print(f"    run {r.info.run_id[:8]}... name={r.info.run_name!r} status={r.info.status} "
+                  f"params={len(r.data.params)} metrics={len(r.data.metrics)} tags={len(r.data.tags)}")
+            all_runs.append((exp, r))
+
+    print("\n== FULL DUMP of 3 sampled runs ==")
+    # sample: first run of three different experiments where possible
+    sampled: list = []
+    seen_exp = set()
+    for exp, r in all_runs:
+        if exp.experiment_id not in seen_exp:
+            sampled.append((exp, r))
+            seen_exp.add(exp.experiment_id)
+        if len(sampled) == 3:
+            break
+    for exp, r in sampled:
+        print(f"\n--- run {r.info.run_id} (experiment {exp.name!r}, name={r.info.run_name!r}) ---")
+        print(f"  status={r.info.status} start={r.info.start_time} end={r.info.end_time}")
+        print(f"  PARAMS ({len(r.data.params)}):")
+        for k in sorted(r.data.params):
+            print(f"    {k} = {r.data.params[k]}")
+        print(f"  METRICS ({len(r.data.metrics)}):")
+        for k in sorted(r.data.metrics):
+            print(f"    {k} = {r.data.metrics[k]}")
+        print(f"  TAGS ({len(r.data.tags)}):")
+        for k in sorted(r.data.tags):
+            if k.startswith("mlflow."):
+                continue
+            print(f"    {k} = {r.data.tags[k]}")
+        print(f"  (mlflow.* system tags: {sorted(k for k in r.data.tags if k.startswith('mlflow.'))})")
+
+        def walk_artifacts(path=""):
+            out = []
+            for a in client.list_artifacts(r.info.run_id, path):
+                out.append(a)
+                if a.is_dir:
+                    out.extend(walk_artifacts(a.path))
+            return out
+
+        arts = walk_artifacts()
+        print(f"  ARTIFACTS ({len(arts)} nodes):")
+        for a in arts:
+            print(f"    {'dir ' if a.is_dir else 'file'} {a.path} {'' if a.is_dir else a.file_size}")
+        model_nodes = [a for a in arts if "model" in a.path.lower() and not a.is_dir]
+        print(f"  model-artifact files: {len(model_nodes)}")
+    print("\nRESULT=OK")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

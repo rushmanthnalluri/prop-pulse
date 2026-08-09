@@ -1,0 +1,1 @@
+{"detail":[{"type":"extra_forbidden","loc":["body","bogus_field"],"msg":"Extra inputs are not permitted","input":123}]}

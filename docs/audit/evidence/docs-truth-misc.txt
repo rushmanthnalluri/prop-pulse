@@ -1,0 +1,57 @@
+=== installed versions (SPEC §14 pins) ===
+pandas 2.3.3
+numpy 2.4.6
+scikit-learn 1.9.0
+xgboost 3.4.0
+shap 0.52.0
+mlflow 3.15.1
+fastapi 0.141.1
+pydantic 2.13.4
+pytest 9.1.1
+
+=== docker live ===
+client 29.4.0 server 29.4.0
+Docker Compose version v5.1.1
+proppulse-backend:latest 1.77GB
+proppulse-frontend:latest 93.9MB
+ghcr.io/mlflow/mlflow:latest 1.64GB
+compose config VALID (with override)
+compose config VALID (base alone)
+
+=== playwright ===
+Version 1.62.1
+  "version": "1.62.1",
+e2e tests count: 5
+
+=== integration marker command (README L352) ===
+8/127 tests collected (119 deselected) in 4.38s
+
+=== frontend hardcoded-prediction scan ===
+no hardcoded prediction values in frontend/src
+
+=== processed CSV md5 (vs REPRODUCIBILITY.md pasted values) ===
+c237df1860d7310db31de7af24150a2f *data/processed/train.csv
+c04b4ab6cfc538eee295ca29485bd7cb *data/processed/val.csv
+b576c82c7678ae48e0263d1124ba4404 *data/processed/test.csv
+4061da6f4fbdb72096b4a51690f82534 *data/processed/schema.json
+b5544a6427c088d204d340a6951844bd *data/processed/outliers_report.json
+
+=== ridge alpha / grids / n_iter ===
+ridge champion alpha: 100.0
+64:RIDGE_ALPHA_GRID = np.logspace(-3, 3, 13).tolist()
+65:LASSO_ALPHA_GRID = np.logspace(-4, 0, 13).tolist()
+78:N_ITER_TREE_SEARCH = 8
+mlflow ridge_v1 param alpha: 100.0
+
+=== SIMULATED caveat coverage (metric-mention files) ===
+README.md | SIMULATED mentions: 4
+FINAL-RELEASE.md | SIMULATED mentions: 3
+reports/MODEL_EVALUATION.md | SIMULATED mentions: 4
+docs/API.md | SIMULATED mentions: 6
+docs/DEMO.md | SIMULATED mentions: 1
+docs/METHODOLOGY.md | SIMULATED mentions: 3
+reports/EDA_REPORT.md | SIMULATED mentions: 7
+reports/REPRODUCIBILITY.md | SIMULATED mentions: 0
+
+=== port 8380 after server kill ===
+port 8380 FREE

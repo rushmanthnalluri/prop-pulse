@@ -1,0 +1,67 @@
+== 1. MODEL_FEATURES vs models/feature_list.json ==
+len(MODEL_FEATURES) = 94
+len(feature_list.json features) = 94
+exact ordered equality: True
+composition sizes: raw=79 engineered=11 stats=4 total=94
+sha1 field in file: 7601f2f66c747fe43b5900019dd9762ad86ea75f
+recomputed sha1(json.dumps(MODEL_FEATURES)): 7601f2f66c747fe43b5900019dd9762ad86ea75f
+match: True
+
+== 2. build_feature_frame on all 3 splits: columns, order, NaN/Inf ==
+train: rows=945 cols==MODEL_FEATURES:True cols==feature_list.json:True NaNs=0 Infs(numeric)=0
+val: rows=338 cols==MODEL_FEATURES:True cols==feature_list.json:True NaNs=0 Infs(numeric)=0
+test: rows=175 cols==MODEL_FEATURES:True cols==feature_list.json:True NaNs=0 Infs(numeric)=0
+
+== 3. Row-count preservation ==
+train: 945 == 945 -> True
+val: 338 == 338 -> True
+test: 175 == 175 -> True
+
+== 4. Independent haversine check ==
+max abs error vs independent implementation over sampled rows: 4.0800696154974503e-13
+sanity: 1 degree of latitude at Ames -> code gives 111.1949 km (expect ~111.19)
+
+== 5. amenity_count vs SPEC formula (independent recompute, all train rows) ==
+amenity_count matches on all train rows: True
+amenity_count range: 0 - 7
+
+== 6. Engineered values spot recompute (train, all rows) ==
+  property_age: True
+  years_since_remod: True
+  total_sf: True
+  sale_month: True
+  sale_year: True
+  sale_quarter: True
+  total_bath: True
+  lat passthrough: True
+  long passthrough: True
+  living_area_per_bedroom: True
+  bathroom_bedroom_ratio: True
+  zero-bedroom rows in train: 4
+  negative property_age rows (train/val/test): [0, 0, 0]
+  negative years_since_remod rows (train/val/test): [0, 0, 0]
+
+== 7. Neighborhood stats join correctness (train+val+test) ==
+train: per-neighborhood join values all correct: True
+val: per-neighborhood join values all correct: True
+test: per-neighborhood join values all correct: True
+val neighborhoods not in train: []
+test neighborhoods not in train: []
+
+== 8. Stats artifact == recomputation from train.csv ==
+n_months recomputed: 36 artifact: 36
+per-neighborhood stat mismatches: 0
+global median: 164990.0 recomputed: 164990.0
+global velocity: 26.25 recomputed: 26.25
+artifact == fresh fit_neighborhood_stats(train): True
+neighborhoods whose artifact median differs from full-data median (train-only proof): 19 ['Blmngtn', 'Blueste', 'BrDale', 'BrkSide', 'ClearCr']
+
+== 9. FEATURE_DEFAULTS == recomputed mode/median on train ==
+columns covered: 79 of 79
+mismatches vs recomputation: NONE
+
+== 10. dtype / 'None'-token audit of raw columns in all splits ==
+object-dtype raw columns: ['Alley', 'BldgType', 'BsmtCond', 'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2', 'BsmtQual', 'CentralAir', 'Condition1', 'Condition2', 'Electrical', 'ExterCond', 'ExterQual', 'Exterior1st', 'Exterior2nd', 'Fence', 'FireplaceQu', 'Foundation', 'Functional', 'GarageCond', 'GarageFinish', 'GarageQual', 'GarageType', 'Heating', 'HeatingQC', 'HouseStyle', 'KitchenQual', 'LandContour', 'LandSlope', 'LotConfig', 'LotShape', 'MSZoning', 'MasVnrType', 'MiscFeature', 'Neighborhood', 'PavedDrive', 'PoolQC', 'RoofMatl', 'RoofStyle', 'Street', 'Utilities']
+train: object-dtype engineered-input cols: NONE; 'None' tokens in those cols: NONE
+val: object-dtype engineered-input cols: NONE; 'None' tokens in those cols: NONE
+test: object-dtype engineered-input cols: NONE; 'None' tokens in those cols: NONE

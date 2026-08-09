@@ -1,0 +1,84 @@
+........................................................................ [ 44%]
+........................................................................ [ 88%]
+..................                                                       [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/integration/test_end_to_end.py::test_predict_matches_direct_pipeline
+  C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\shap\plots\colors\_colors.py:47: PendingDeprecationWarning: The set_bad function will be deprecated in a future version. Use cmap.with_extremes(bad=...) or Colormap(bad=...) instead.
+    red_blue.set_bad(gray_rgb.tolist(), 1.0)
+
+tests/integration/test_end_to_end.py::test_predict_matches_direct_pipeline
+  C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\shap\plots\colors\_colors.py:48: PendingDeprecationWarning: The set_over function will be deprecated in a future version. Use cmap.with_extremes(over=...) or Colormap(over=...) instead.
+    red_blue.set_over(gray_rgb.tolist(), 1.0)
+
+tests/integration/test_end_to_end.py::test_predict_matches_direct_pipeline
+  C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\shap\plots\colors\_colors.py:49: PendingDeprecationWarning: The set_under function will be deprecated in a future version. Use cmap.with_extremes(under=...) or Colormap(under=...) instead.
+    red_blue.set_under(gray_rgb.tolist(), 1.0)  # "under" is incorrectly used instead of "bad" in the scatter plot
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=============================== tests coverage ================================
+_______________ coverage: platform win32, python 3.14.5-final-0 _______________
+
+Name                                         Stmts   Miss  Cover   Missing
+--------------------------------------------------------------------------
+backend\app\__init__.py                          0      0   100%
+backend\app\api\__init__.py                      0      0   100%
+backend\app\api\deps.py                         19      2    89%   29, 39
+backend\app\api\health.py                       13      0   100%
+backend\app\api\market.py                        8      0   100%
+backend\app\api\model.py                        31      1    97%   77
+backend\app\api\predict.py                      45      7    84%   54-55, 72, 121-122, 152-153
+backend\app\config.py                           39      1    97%   60
+backend\app\main.py                             82      4    95%   99-100, 152-153
+backend\app\monitoring\__init__.py               0      0   100%
+backend\app\monitoring\middleware.py            18      2    89%   31-32
+backend\app\monitoring\prediction_log.py        28      4    86%   43, 68-70
+backend\app\schemas\__init__.py                  0      0   100%
+backend\app\schemas\property.py                 97      0   100%
+backend\app\schemas\responses.py                68      0   100%
+backend\app\security.py                         24      2    92%   63-64
+backend\app\services\__init__.py                 0      0   100%
+backend\app\services\cluster_service.py         24      0   100%
+backend\app\services\monitoring_service.py      40      4    90%   51, 58-61
+backend\app\services\prediction_service.py     102      7    93%   65-66, 217-219, 227, 229
+ml\__init__.py                                   0      0   100%
+ml\clustering\__init__.py                       14     10    29%   19-31
+ml\clustering\dataset.py                        35      3    91%   59, 64, 94
+ml\clustering\serve.py                          72      4    94%   69, 96, 107, 118
+ml\clustering\train.py                         280    280     0%   44-605
+ml\data\__init__.py                              1      0   100%
+ml\data\clean.py                                35      2    94%   140-141
+ml\data\ingest.py                               26      3    88%   31, 49, 54
+ml\data\outliers.py                             19      0   100%
+ml\data\pipeline.py                             74     10    86%   74-75, 171-184, 188
+ml\data\sale_speed.py                           97      3    97%   103, 238, 281
+ml\data\split.py                                25      3    88%   35, 45, 48
+ml\data\validate.py                             76      8    89%   141, 153, 157, 166, 170, 179, 219, 222
+ml\evaluation\__init__.py                        0      0   100%
+ml\evaluation\evaluate.py                      164    112    32%   105, 110-111, 122-124, 134-140, 158-165, 182, 214-222, 244, 292-300, 327-332, 336, 358-414, 574-616, 625-764, 780-783, 798
+ml\evaluation\select.py                        116     14    88%   119, 124, 158, 208, 281, 292-305, 346, 358
+ml\explainability\__init__.py                    0      0   100%
+ml\explainability\build_artifacts.py           101     69    32%   81-89, 99-116, 134-162, 181-237, 242-246, 250
+ml\explainability\explainer.py                 102     15    85%   81-84, 104, 145, 153, 168, 178-179, 203-205, 223, 249, 256
+ml\explainability\service.py                    30      2    93%   102-103
+ml\features\__init__.py                         11      7    36%   22-30
+ml\features\defaults.py                         44     22    50%   40-48, 66-69, 76-86, 102, 109-115
+ml\features\pipeline.py                        164     26    84%   239-243, 318, 388-399, 495-504, 509-520, 529
+ml\features\serving.py                          56     10    82%   149-156, 167, 176
+ml\features\stats.py                            50      7    86%   76, 134, 136, 162-167
+ml\monitoring\__init__.py                        5      0   100%
+ml\monitoring\drift_check.py                   152     27    82%   88, 128, 156, 164, 167, 190-192, 194, 204, 208-209, 276, 343, 349, 376-398, 402
+ml\monitoring\psi.py                            55      4    93%   83, 116, 119, 161
+ml\monitoring\reference.py                      59      7    88%   91, 111-112, 150, 159-160, 164
+ml\paths.py                                     23      0   100%
+ml\tracking.py                                  42     24    43%   30-34, 51-62, 71-73, 81-88
+ml\training\__init__.py                          0      0   100%
+ml\training\common.py                           40     13    68%   30, 62-71, 80-81
+ml\training\train_classification.py            156    107    31%   137-139, 156, 217-240, 245-251, 262-266, 290-312, 323-360, 365-372, 381-483, 488-489, 493
+ml\training\train_regression.py                109     60    45%   114-119, 126-132, 139-141, 152-173, 183-197, 205-287, 292-304, 308
+--------------------------------------------------------------------------
+TOTAL                                         2871    886    69%
+162 passed, 4 warnings in 38.15s

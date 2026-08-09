@@ -1,0 +1,10 @@
+ambient_before_profile:
+19.2646844713644
+--- in-process stage profile (note: profile path does NOT pin n_jobs=1; SHAP stage unaffected) ---
+cold full predict (SHAP singleton build): 3067.0 ms
+  build_features     mean=21.713 ms p50=22.608 ms p95=34.94 ms
+  ridge_predict      mean=14.971 ms p50=14.173 ms p95=25.03 ms
+  rf_predict_proba   mean=586.981 ms p50=552.211 ms p95=838.298 ms
+  shap_explain       mean=23.293 ms p50=22.488 ms p95=40.318 ms
+  full_predict       mean=632.159 ms p50=608.317 ms p95=980.543 ms
+{"profile": {"cold_full_predict_ms": 3067.0, "stages": {"build_features": {"mean_ms": 21.713, "p50_ms": 22.608, "p95_ms": 34.94}, "ridge_predict": {"mean_ms": 14.971, "p50_ms": 14.173, "p95_ms": 25.03}, "rf_predict_proba": {"mean_ms": 586.981, "p50_ms": 552.211, "p95_ms": 838.298}, "shap_explain": {"mean_ms": 23.293, "p50_ms": 22.488, "p95_ms": 40.318}, "full_predict": {"mean_ms": 632.159, "p50_ms": 608.317, "p95_ms": 980.543}}}}

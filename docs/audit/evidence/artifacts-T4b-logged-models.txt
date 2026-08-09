@@ -1,0 +1,15 @@
+regression LoggedModel m-1bdd997bf2ce42b1bf67bcafb824cc36 (run d9e58fd5): loaded type=Pipeline
+  max|pred - ridge_v1.joblib pred| = 0.000e+00
+Traceback (most recent call last):
+  File "<stdin>", line 23, in <module>
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\skops\io\_persist.py", line 139, in load
+    raise TypeError(
+    ...<5 lines>...
+    )
+TypeError: trusted must be a list of strings. Before version 0.10 trusted could be a boolean, but this is no longer supported, due to a reported CVE-2024-37065. You can pass the output of `get_untrusted_types` as trusted to load the data. Be sure to review the output of the function before passing it as trusted.
+
+== retry classification skops load with proper trusted-types list ==
+untrusted types in model.skops: 4 -> ['numpy.dtype', 'sklearn.calibration._CalibratedClassifier', 'sklearn.calibration._SigmoidCalibration', 'sklearn.model_selection._split.StratifiedKFold']
+classification LoggedModel loaded type=CalibratedClassifierCV
+max|proba - random_forest_calibrated_v1.joblib proba| = 5.551e-17
+RESULT=OK

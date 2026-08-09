@@ -1,0 +1,31 @@
+# --- Python ---
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+dist/
+build/
+*.egg-info/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- Environment / secrets ---
+.env
+
+# --- MLflow local file store ---
+mlruns/
+
+# --- Logs ---
+logs/
+*.log
+
+# --- Node / frontend ---
+node_modules/
+frontend/dist/
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

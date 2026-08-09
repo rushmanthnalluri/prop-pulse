@@ -1,0 +1,62 @@
+/* ==========================================================================
+   Overview page (WP-2, SPEC §5.1) — page-scoped styles. Tokens and shared
+   classes come from styles.css; nothing here is global. Imported from
+   pages/Overview.jsx.
+   ========================================================================== */
+
+/* Hero — the one section that opens the page, so it owns the top padding. */
+.ov-hero { padding: 44px 0 36px; }
+.ov-hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+.ov-hero-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 16px;
+}
+
+/* Headline metrics — 6-up hairline strip (SPEC §5.1 responsive:
+   6-up ≥1024, 3-up ≤1024, 2-up ≤640). Border/padding resets follow the
+   .metrics pattern in styles.css. */
+.metrics--6 { grid-template-columns: repeat(6, 1fr); }
+
+@media (max-width: 1024px) {
+  .metrics--6 { grid-template-columns: repeat(3, 1fr); row-gap: 18px; }
+  .metrics--6 .metric { padding-left: 18px; }
+  .metrics--6 .metric:nth-child(3n + 1) { border-left: none; padding-left: 0; }
+}
+
+@media (max-width: 640px) {
+  .metrics--6 { grid-template-columns: repeat(2, 1fr); }
+  .metrics--6 .metric:nth-child(3n + 1) { border-left: 1px solid var(--border); padding-left: 18px; }
+  .metrics--6 .metric:nth-child(odd) { border-left: none; padding-left: 0; }
+}
+
+/* Right-aligned mono link in a .section-head ("All 94 features →"). */
+.ov-head-link {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  text-align: right;
+  white-space: nowrap;
+}
+.ov-head-link:hover { color: var(--accent); }
+
+/* Caption/notes sitting under a grid or chart. */
+.ov-note-block { margin-top: 14px; max-width: 720px; }
+
+/* Disclosures — plain stacked note lines (SPEC §5.1-7). */
+.ov-disclosures {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 720px;
+}
+
+@media (max-width: 640px) {
+  .ov-hero { padding: 32px 0 28px; }
+}
+
+@media (max-width: 420px) {
+  .ov-hero-actions { flex-direction: column; }
+  .ov-hero-actions .btn { width: 100%; }
+}

@@ -1,0 +1,33 @@
+=== A. Direct PSI: all-2026 production vs train reference ===
+YrSold: edges=[2006.0, 2007.0, 2008.0] expected=[0.3323, 0.6677]
+  props(all-2026)=[0.0, 1.0] PSI=4.358638  (live report shows 4.358638)
+sale_year: edges=[2006.0, 2007.0, 2008.0] expected=[0.3323, 0.6677]
+  props(all-2026)=[0.0, 1.0] PSI=4.358638  (live report shows 4.358638)
+-> any post-2008 production value lands in the open last bin; PSI ~= 4.36 >> 0.2 forever
+
+=== B. Split year ranges (time-based split, ADR-4) ===
+  train: YrSold 2006–2008, n=945
+  val: YrSold 2009–2009, n=338
+  test: YrSold 2010–2010, n=175
+
+=== C. Full drift check on n=250 synthetic today-dated serving rows ===
+n=250 drift_detected=True retraining_recommended=True
+drifted_features=['MoSold', 'YrSold', 'property_age', 'sale_month', 'sale_quarter', 'sale_year', 'years_since_remod']
+warn_features=[]
+drifted NON-calendar features: []
+  MoSold: PSI=12.657597
+  YrSold: PSI=4.358638
+  property_age: PSI=3.890161
+  sale_month: PSI=12.657597
+  sale_quarter: PSI=6.755423
+  sale_year: PSI=4.358638
+  years_since_remod: PSI=6.46267
+recommendation_text: Drift detected in 7 feature(s) (MoSold, YrSold, property_age, sale_month, sale_quarter, sale_year, years_since_remod) with PSI >= 0.2 across 250 predictions. Retraining is RECOMMENDED — this is a reco
+
+=== D. Docs disclosure inventory ===
+docs/API.md:117-119 — 'drifted_features: [YrSold, sale_year] is expected on any post-2008 traffic ... Treat pure calendar drift as structural.'
+README.md:379-381 — 'Known structural caveat: YrSold/sale_year always "drift" on post-2008 traffic ... ignore pure calendar features'
+docs/DEPLOYMENT.md:132-135 — 'Expect YrSold/sale_year to always flag on post-2008 traffic (structural — the train split ends at 2008)'
+reports/DOCKER_SMOKE.md:189 — mentions known YrSold/sale_year caveat
+
+ALL TASK-7 CHECKS DONE

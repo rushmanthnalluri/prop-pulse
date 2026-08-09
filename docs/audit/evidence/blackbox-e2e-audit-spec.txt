@@ -1,0 +1,19 @@
+
+Running 11 tests using 1 worker
+
+(node:10768) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 tests\audit-blackbox.spec.js:85:1 › trace-truth: DOM renders exactly the intercepted /predict JSON (1.9s)
+  ok  2 tests\audit-blackbox.spec.js:141:1 › extreme max property (8 bd, qual 10, 6000 sqft, …) renders sanely (1.7s)
+  ok  3 tests\audit-blackbox.spec.js:167:1 › min-everything property (0 bd, 300 sqft, 1870, qual 1) renders sanely (1.6s)
+  ok  4 tests\audit-blackbox.spec.js:186:1 › noise neighborhoods CollgCr/NAmes/Timber show the fallback badge; StoneBr does not (3.3s)
+  ok  5 tests\audit-blackbox.spec.js:208:1 › race: 5 rapid submits settle to one consistent result matching the API JSON (3.9s)
+  ok  6 tests\audit-blackbox.spec.js:235:1 › mid-load page switching (map → insights → valuation) leaves no errors (3.5s)
+  ok  7 tests\audit-blackbox.spec.js:259:1 › mobile viewport 390x844: usable layout, no horizontal overflow (9.0s)
+  ok  8 tests\audit-blackbox.spec.js:277:1 › reload mid-session: documented empty state returns, page still works (2.6s)
+  ok  9 tests\audit-blackbox.spec.js:292:1 › 422 path: bedrooms=99 (HTML5 bypassed) names the offending field (780ms)
+  ok 10 tests\audit-blackbox.spec.js:306:1 › neighborhood select lists exactly the 25 geo-CSV neighborhoods; unknown rejected (2.5s)
+  ok 11 tests\audit-blackbox.spec.js:322:1 › backend down → error + Try again → backend restart → full recovery (LAST) (31.9s)
+
+  11 passed (1.1m)
+EXIT:0

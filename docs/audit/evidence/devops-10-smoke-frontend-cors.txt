@@ -1,0 +1,25 @@
+=== 5. frontend nginx ===
+GET / -> HTTP 200, 660 bytes, type=text/html
+bundle referenced: /assets/index-uuBdBQdg.js
+GET /assets/index-uuBdBQdg.js -> HTTP 200, 311395 bytes, type=application/javascript
+--- API base URL baked into bundle ---
+      1 http://localhost:18000
+--- SPA fallback ---
+GET /market -> HTTP 200
+
+=== 6. CORS preflight from composed frontend origin ===
+HTTP/1.1 200 OK
+date: Fri, 07 Aug 2026 14:10:11 GMT
+server: uvicorn
+vary: Origin
+access-control-allow-methods: DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
+access-control-max-age: 600
+access-control-allow-credentials: true
+access-control-allow-origin: http://localhost:18080
+access-control-allow-headers: content-type
+content-length: 2
+content-type: text/plain; charset=utf-8
+x-content-type-options: nosniff
+
+=== 6b. CORS preflight from WRONG origin (expect no allow-origin) ===
+no ACAO header for evil origin (correct)

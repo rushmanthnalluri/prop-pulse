@@ -1,0 +1,10 @@
+=== in-process mechanism check (no file changes; runtime only) ===
+VALIDATION: rejected NaN -> finite_number | input repr: nan
+Traceback (most recent call last):
+  File "<stdin>", line 13, in <module>
+ModuleNotFoundError: No module named 'fastapi.exception_handler'
+
+=== /metrics after the 500-inducing requests (are 500s counted?) ===
+requests_total: 35 | errors_total: 0 | by_path: {'/health': 4, '/no-such-route': 1, '/predict': 28, '/metrics': 2}
+SERIALIZATION allow_nan=False -> ValueError: Out of range float values are not JSON compliant: nan
+=> 422 response construction crashes; exception propagates to ServerErrorMiddleware => generic 500

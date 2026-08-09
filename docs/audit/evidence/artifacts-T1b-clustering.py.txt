@@ -1,0 +1,58 @@
+"""artifacts-audit T1b runner: fresh-process clustering load + serving lookup.
+
+Usage: .venv/Scripts/python.exe docs/audit/evidence/artifacts-T1b-clustering.py.txt
+Fresh subprocess: loads models/clustering/dbscan.joblib + dbscan_scaler.joblib
+directly (joblib), reports fitted attributes, then exercises the serving path
+(ml.clustering.serve.MicroMarketLookup) for one clustered, one noise, and one
+unknown neighborhood. Exit 0 on success.
+"""
+import hashlib
+import json
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO))
+
+def main() -> int:
+    import joblib
+    import numpy as np
+
+    db_path = REPO / "models/clustering/dbscan.joblib"
+    sc_path = REPO / "models/clustering/dbscan_scaler.joblib"
+    for p in (db_path, sc_path):
+        print(f"ARTIFACT={p.relative_to(REPO)} SHA256={hashlib.sha256(p.read_bytes()).hexdigest()} SIZE={p.stat().st_size}")
+
+    db = joblib.load(db_path)
+    sc = joblib.load(sc_path)
+    labels = np.asarray(db.labels_)
+    n_clusters = len(set(labels.tolist()) - {-1})
+    print(f"DBSCAN type={type(db).__name__} eps={db.eps} min_samples={db.min_samples} n_core={db.core_sample_indices_.size}")
+    print(f"LABELS={sorted(labels.tolist())}")
+    print(f"N_CLUSTERS_FROM_LABELS={n_clusters} N_NOISE={int((labels == -1).sum())}")
+    print(f"SCALER type={type(sc).__name__} mean_={sc.mean_.tolist()} scale_={sc.scale_.tolist()}")
+    transformed = sc.transform(np.asarray(db.components_, dtype=float))
+    print(f"SCALER_TRANSFORM_CORE_OK shape={transformed.shape}")
+
+    from ml.clustering.serve import MicroMarketLookup
+
+    lookup = MicroMarketLookup()
+    print(f"LOOKUP_META={json.dumps(lookup.meta, default=str)}")
+    for hood in ("NridgHt", "CollgCr", "NotARealPlace"):
+        payload = lookup.lookup(hood)
+        print(
+            f"LOOKUP {hood}: cluster_id={payload['cluster_id']} label={payload['label']!r} "
+            f"fallback={payload['fallback']} median_price={payload['median_price']} "
+            f"n_neighborhoods={payload['n_neighborhoods']}"
+        )
+
+    champ = json.loads((REPO / "models/champion.json").read_text())
+    stats = json.loads((REPO / "models/clustering/cluster_stats.json").read_text())
+    print(f"CHAMPION_N_CLUSTERS={champ['clustering']['n_clusters']} STATS_N_CLUSTERS={stats['n_clusters']}")
+    ok = n_clusters == champ["clustering"]["n_clusters"] == stats["n_clusters"]
+    print(f"N_CLUSTERS_CONSISTENT={ok}")
+    print("RESULT=OK")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

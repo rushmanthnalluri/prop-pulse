@@ -1,0 +1,41 @@
+[PASS] threshold.value_vs_6dp_round recomputed=0.203292242 stored(6dp)=0.203292
+== 7. sealed-test metrics from registry champions ==
+[PASS] champion.reg.test.mae recomputed=15075.47345805 recorded=15075.47345800
+[PASS] champion.reg.test.rmse recomputed=21151.54168739 recorded=21151.54168700
+[PASS] champion.reg.test.r2 recomputed=0.93048045 recorded=0.93048000
+[PASS] champion.reg.test.rmsle recomputed=0.11868860 recorded=0.11868900
+[PASS] champion.reg.test.interval_coverage recomputed=0.78285714 recorded=0.782857
+[PASS] champion.reg.test.rmsle_hand hand=0.1186886015 recorded=0.118689
+[PASS] interval.dollar_equiv log-space cov=0.782857 dollar-space cov=0.782857
+[PASS] champion.cls.test.roc_auc recomputed=0.76660188 recorded=0.76660200
+[PASS] champion.cls.test.pr_auc recomputed=0.56736326 recorded=0.56736300
+[PASS] champion.cls.test.precision recomputed=0.36697248 recorded=0.36697200
+[PASS] champion.cls.test.recall recomputed=0.81632653 recorded=0.81632700
+[PASS] champion.cls.test.f1 recomputed=0.50632911 recorded=0.50632900
+[PASS] champion.cls.test.brier recomputed=0.17102593 recorded=0.17102600
+[PASS] champion.cls.test.cm {'tn': 57, 'fp': 69, 'fn': 9, 'tp': 40} vs {'tn': 57, 'fp': 69, 'fn': 9, 'tp': 40}
+[PASS] threshold.rounding_safe 6dp stored threshold reproduces identical hard test metrics
+[FAIL] hand.cm_precision 0.36697248 vs 0.366972
+[FAIL] hand.cm_recall 0.81632653 vs 0.816327
+[FAIL] hand.cm_f1 0.50632911 vs 0.506329
+== 8. prediction_reference.json decile recompute ==
+[PASS] pref.reg.edges n_edges=11
+[PASS] pref.reg.props sum=1.000000
+[PASS] pref.reg.summary {'min': 58172.299486676755, 'mean': 180362.54966154488, 'max': 559226.6846866579}
+[PASS] pref.cls.edges n_edges=11
+[PASS] pref.cls.props 
+[FAIL] pref.meta n_rows=338
+== 9. champion.json schema vs SPEC §6 ==
+[PASS] schema.regression missing=[]
+[PASS] schema.classification missing=[]
+[PASS] schema.clustering missing=[]
+[PASS] schema.top keys=['classification', 'clustering', 'dataset_version', 'feature_version', 'rationale', 'regression', 'selected_at']
+[PASS] schema.paths_exist all referenced model paths exist
+[PASS] schema.extra_keys extras beyond SPEC: regression.residual_interval, regression.bootstrap_vs_runner_up, classification.threshold
+== RESULT: FAILURES: ['hand.cm_precision', 'hand.cm_recall', 'hand.cm_f1', 'pref.meta']
+
+== AUDITOR NOTE (llba-training) ==
+The 4 "FAIL" lines above are tolerance artifacts of the check script, not defects:
+- hand.cm_* : champion.json stores 6dp-rounded values; hand-derived values (0.36697248, 0.81632653, 0.50632911) match the recorded 0.366972 / 0.816327 / 0.506329 exactly at 6dp. -> PASS.
+- pref.meta : n_rows==338 passed; the AND-ed threshold equality failed only because prediction_reference.json stores the FULL-precision threshold (0.20329224173900778) vs champion.json's 6dp-rounded 0.203292. Recorded as finding F-3 (P3).
+All substantive checks PASS.

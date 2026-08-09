@@ -1,0 +1,199 @@
+"""Forensic recompute script — classification audit (agent: classification).
+
+Run from repo root:  PYTHONPATH=. .venv/Scripts/python.exe docs/audit/evidence/classification-recompute.py.txt
+Read-only: loads CSVs/joblibs/JSONs, recomputes metrics, prints everything.
+"""
+import json
+import hashlib
+from pathlib import Path
+
+import joblib
+import numpy as np
+import pandas as pd
+from sklearn.calibration import calibration_curve
+from sklearn.metrics import (
+    average_precision_score,
+    brier_score_loss,
+    confusion_matrix,
+    f1_score,
+    precision_recall_curve,
+    precision_score,
+    recall_score,
+    roc_auc_score,
+)
+
+ROOT = Path(".")
+
+
+def load(split):
+    return pd.read_csv(ROOT / "data/processed" / f"{split}.csv", keep_default_na=False)
+
+
+def sha(p):
+    return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+
+
+def metrics(y, p, t):
+    pred = (p >= t).astype(int)
+    cm = confusion_matrix(y, pred, labels=[0, 1])
+    return dict(
+        roc_auc=float(roc_auc_score(y, p)),
+        pr_auc=float(average_precision_score(y, p)),
+        precision=float(precision_score(y, pred, zero_division=0)),
+        recall=float(recall_score(y, pred, zero_division=0)),
+        f1=float(f1_score(y, pred, zero_division=0)),
+        brier=float(brier_score_loss(y, p)),
+        tn=int(cm[0, 0]), fp=int(cm[0, 1]), fn=int(cm[1, 0]), tp=int(cm[1, 1]),
+    )
+
+
+def fmt(m):
+    return " ".join(f"{k}={v:.6f}" if isinstance(v, float) else f"{k}={v}" for k, v in m.items())
+
+
+print("=== 1. Target derivation & distribution per split ===")
+splits = {n: load(n) for n in ("train", "val", "test")}
+for name, df in splits.items():
+    derived = (df["days_on_market"] <= 30).astype(int)
+    match = bool((derived.to_numpy() == df["sells_within_30_days"].astype(int).to_numpy()).all())
+    pos = int(df["sells_within_30_days"].sum())
+    n = len(df)
+    print(
+        f"{name}: n={n} positives={pos} rate={pos / n:.6f} "
+        f"target==(days_on_market<=30) for all rows: {match} "
+        f"dom dtype={df['days_on_market'].dtype} range=({df['days_on_market'].min()},{df['days_on_market'].max()}) "
+        f"median={df['days_on_market'].median()}"
+    )
+tr = splits["train"]
+print(f"train neg/pos ratio = {(len(tr) - tr['sells_within_30_days'].sum()) / tr['sells_within_30_days'].sum():.6f}")
+
+print("\n=== 1b. Re-derive days_on_market with the documented simulator (fit on train split) ===")
+from ml.data.sale_speed import SaleSpeedSimulator
+
+sim = SaleSpeedSimulator(seed=42).fit(splits["train"])
+for name, df in splits.items():
+    sim_days = sim.transform(df)
+    exact = int((sim_days.to_numpy() == df["days_on_market"].to_numpy()).sum())
+    print(f"simulator vs {name}.days_on_market: {exact}/{len(df)} rows exactly reproduced")
+
+print("\n=== 1c. schema.json provenance note ===")
+schema = json.loads(Path("data/processed/schema.json").read_text())
+notes = schema.get("notes") or schema.get("pipeline_notes") or []
+print(json.dumps(notes, indent=1)[:800])
+
+print("\n=== 2. Artifact identity (sha256) ===")
+h_reg = sha("models/registry/classification_champion.joblib")
+h_rfc = sha("models/classification/random_forest_calibrated_v1.joblib")
+print("registry/classification_champion.joblib      :", h_reg)
+print("classification/random_forest_calibrated_v1   :", h_rfc)
+print("identical:", h_reg == h_rfc)
+
+print("\n=== 3. Recompute champion metrics on val + test (current artifacts) ===")
+from ml.features.pipeline import MODEL_FEATURES, build_feature_frame
+from ml.features.stats import load_neighborhood_stats
+
+features = json.loads(Path("models/feature_list.json").read_text())["features"]
+print(f"feature_list: {len(features)} features; matches MODEL_FEATURES: {features == MODEL_FEATURES}")
+stats = load_neighborhood_stats()
+champ = joblib.load("models/registry/classification_champion.joblib")
+claims = json.loads(Path("models/champion.json").read_text())["classification"]
+thr = claims["threshold"]
+print("claimed operating threshold:", thr)
+
+frames, probas = {}, {}
+for name in ("val", "test"):
+    df = splits[name]
+    X = build_feature_frame(df, stats=stats)[features]
+    frames[name] = X
+    y = df["sells_within_30_days"].astype(int).to_numpy()
+    p = np.asarray(champ.predict_proba(X)[:, 1], dtype=float)
+    probas[name] = (y, p)
+    m = metrics(y, p, thr)
+    print(f"\n[{name}] recomputed @ threshold {thr}: {fmt(m)}")
+    print(f"[{name}] champion.json claim        : {json.dumps(claims[name + '_metrics'])}")
+    cm_claim = claims[name + "_metrics"]["confusion_matrix"]
+    diffs = []
+    for k in ("roc_auc", "pr_auc", "precision", "recall", "f1", "brier"):
+        if abs(m[k] - claims[name + "_metrics"][k]) > 5e-7:
+            diffs.append(f"{k}: {m[k]:.6f} vs {claims[name + '_metrics'][k]:.6f}")
+    for k in ("tn", "fp", "fn", "tp"):
+        if m[k] != cm_claim[k]:
+            diffs.append(f"cm.{k}: {m[k]} vs {cm_claim[k]}")
+    print(f"[{name}] MATCH within 5e-7: {'YES' if not diffs else 'NO -> ' + '; '.join(diffs)}")
+
+print("\n=== 4. Max-F1 threshold re-selection on VAL probabilities ===")
+from ml.evaluation.select import pick_f1_threshold
+
+yv, pv = probas["val"]
+choice = pick_f1_threshold(yv, pv)
+print(f"pick_f1_threshold(val): threshold={choice.threshold:.6f} P={choice.precision:.6f} R={choice.recall:.6f} F1={choice.f1:.6f}")
+print(f"claimed threshold     : {thr}  (reproduces: {abs(choice.threshold - thr) < 5e-7})")
+prec, rec, thrs = precision_recall_curve(yv, pv)
+pt_, rt_ = prec[:-1], rec[:-1]
+denom = pt_ + rt_
+f1s = np.where(denom > 0, 2 * pt_ * rt_ / np.maximum(denom, 1e-12), 0.0)
+i = int(np.argmax(f1s))
+print(f"manual argmax cross-check: threshold={thrs[i]:.6f} F1={f1s[i]:.6f}")
+
+print("\n=== 4b. TEST-optimal threshold (demonstrates val-only selection) ===")
+yt, pt = probas["test"]
+tc = pick_f1_threshold(yt, pt)
+print(f"test-optimal: threshold={tc.threshold:.6f} F1={tc.f1:.6f} P={tc.precision:.6f} R={tc.recall:.6f}")
+print(f"F1 on test at val-chosen {thr}: {metrics(yt, pt, thr)['f1']:.6f}")
+
+print("\n=== 5. Calibration on TEST (quantile bins) + ECE ===")
+for label, (y, p) in (("val", probas["val"]), ("test", probas["test"])):
+    nbins = 10
+    frac, meanp = calibration_curve(y, p, n_bins=nbins, strategy="quantile")
+    edges = np.quantile(p, np.linspace(0, 1, nbins + 1))
+    edges[0], edges[-1] = 0.0, 1.0
+    bidx = np.digitize(p, edges[1:-1])
+    ece = sum(
+        (bidx == b).mean() * abs(y[bidx == b].mean() - p[bidx == b].mean())
+        for b in range(nbins) if (bidx == b).any()
+    )
+    print(f"[{label}] ECE(10 quantile bins)={ece:.4f}  prevalence={y.mean():.4f}  mean_pred={p.mean():.4f}")
+    for f_, m_ in zip(frac, meanp):
+        print(f"    mean_pred={m_:.3f} frac_pos={f_:.3f}")
+
+print("\n=== 5b. Raw RF vs calibrated RF Brier (val + test) ===")
+raw_rf = joblib.load("models/classification/random_forest_v1.joblib")
+for name in ("val", "test"):
+    y = splits[name]["sells_within_30_days"].astype(int).to_numpy()
+    pr = np.asarray(raw_rf.predict_proba(frames[name])[:, 1], dtype=float)
+    pc = probas[name][1]
+    print(
+        f"[{name}] raw brier={brier_score_loss(y, pr):.6f} raw ROC-AUC={roc_auc_score(y, pr):.6f} raw PR-AUC={average_precision_score(y, pr):.6f} | "
+        f"calibrated brier={brier_score_loss(y, pc):.6f} cal ROC-AUC={roc_auc_score(y, pc):.6f} cal PR-AUC={average_precision_score(y, pc):.6f}"
+    )
+
+print("\n=== 5c. Cross-check: current joblibs vs models/classification/metrics.json (val, thr=0.5) ===")
+saved = json.loads(Path("models/classification/metrics.json").read_text())
+Xv = frames["val"]
+for mdl in ("logistic", "decision_tree", "random_forest", "xgboost"):
+    for suffix, key in (("v1", "val"), ("calibrated_v1", "val_calibrated")):
+        path = f"models/classification/{mdl}_{suffix}.joblib"
+        model = joblib.load(path)
+        p = np.asarray(model.predict_proba(Xv)[:, 1], dtype=float)
+        m = metrics(yv, p, 0.5)
+        s = saved[mdl][key]
+        ok = (
+            abs(m["roc_auc"] - s["roc_auc"]) < 5e-7
+            and abs(m["pr_auc"] - s["pr_auc"]) < 5e-7
+            and abs(m["brier"] - s["brier"]) < 5e-7
+        )
+        print(
+            f"{mdl}/{key}: roc_auc {m['roc_auc']:.6f} vs {s['roc_auc']:.6f} | pr_auc {m['pr_auc']:.6f} vs {s['pr_auc']:.6f} | "
+            f"brier {m['brier']:.6f} vs {s['brier']:.6f} -> {'MATCH' if ok else 'MISMATCH'}"
+        )
+
+print("\n=== 6. Determinism of predict_proba ===")
+Xt = frames["test"]
+p1 = champ.predict_proba(Xt)
+p2 = champ.predict_proba(Xt)
+print("two full-test predict_proba calls bit-identical:", bool(np.array_equal(p1, p2)))
+row = Xt.iloc[[0]]
+print("single-row predict_proba twice bit-identical:", bool(np.array_equal(champ.predict_proba(row), champ.predict_proba(row))))
+print("single-row vs batch row-0 probability equal:", bool(np.array_equal(champ.predict_proba(row), p1[[0]])))
+
+print("\nDONE")

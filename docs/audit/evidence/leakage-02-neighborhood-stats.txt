@@ -1,0 +1,18 @@
+=== CHECK B: models/neighborhood_stats.json fit on TRAIN only? ===
+artifact claims computed_from: data/processed/train.csv (train split only)
+artifact n_train_rows: 945 | actual train rows: 945
+neighborhoods in artifact: 25
+value mismatches vs TRAIN-only recompute: 0 []
+global_fallback mismatches vs TRAIN-only: NONE
+value mismatches vs TRAIN+VAL recompute: 93 (must be >0 for the check to discriminate)
+   e.g. ('Blmngtn', 'median_price', 194201.0, 186000.0)
+   e.g. ('Blmngtn', 'mean_price', 203382.2727, 195050.3125)
+   e.g. ('Blmngtn', 'median_price_per_sqft', 138.5171, 135.5644)
+   e.g. ('Blmngtn', 'monthly_sale_velocity', 0.3056, 0.3333)
+   e.g. ('Blueste', 'median_price', 151000.0, 137500.0)
+   e.g. ('Blueste', 'mean_price', 151000.0, 137500.0)
+   e.g. ('Blueste', 'median_price_per_sqft', 97.0437, 98.9694)
+   e.g. ('Blueste', 'monthly_sale_velocity', 0.0278, 0.0417)
+
+spot check NAmes: median_price train-only=140000.0, train+val=139925.0, artifact=140000.0
+n_months artifact=36, train distinct (YrSold,MoSold)=36

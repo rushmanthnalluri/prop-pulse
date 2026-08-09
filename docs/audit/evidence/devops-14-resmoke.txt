@@ -1,0 +1,28 @@
+=== up rebuilt stack ===
+ Container proppulse-backend-1 Healthy 
+ Container proppulse-frontend-1 Starting 
+ Container proppulse-frontend-1 Started 
+backend healthy after poll 1 (19:42:33)
+proppulse-backend-1	Up 7 seconds (healthy)	0.0.0.0:18000->8000/tcp, [::]:18000->8000/tcp
+proppulse-frontend-1	Up 1 second	0.0.0.0:18080->80/tcp, [::]:18080->80/tcp
+
+=== re-smoke: health ===
+{"status":"ok","models_loaded":{"regression":true,"classification":true}} HTTP 200
+=== re-smoke: /predict contract keys + warm latency x3 ===
+keys: ['estimated_price', 'micro_market', 'model_version', 'price_range', 'sale_probability', 'top_price_factors']
+price: 204881.59 | factors: 5 | feature_version: 9b0f8ba4201c
+warm predict 1: 0.226429s
+warm predict 2: 0.194451s
+warm predict 3: 0.210109s
+=== re-smoke: clusters + importance heads ===
+{"n_clusters":4,"clusters":[{"cluster_id":0,"label":"mid northwest","neighborhoo
+
+{"metadata":{"model":"Ridge","model_path":"models/registry/regression_champion.j
+
+=== re-smoke: frontend + bundle ===
+GET / -> HTTP 200
+bundle: /assets/index-BPR07Fhi.js
+GET bundle -> HTTP 200, 311450B
+      1 http://localhost:18000
+=== re-smoke: CORS preflight ===
+access-control-allow-origin: http://localhost:18080

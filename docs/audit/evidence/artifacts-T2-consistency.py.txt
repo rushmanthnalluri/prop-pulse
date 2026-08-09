@@ -1,0 +1,128 @@
+"""artifacts-audit T2 runner: versioning + metrics consistency, all by execution.
+
+Usage: .venv/Scripts/python.exe docs/audit/evidence/artifacts-T2-consistency.py.txt
+Fresh subprocess. Verifies, reading only:
+  A. champion.json name/version/path -> source file exists; sha256(registry) == sha256(source)
+  B. champion.json feature_version == ml.tracking.feature_version(feature_list.json);
+     feature_list.json internal 'sha1' == sha1(json.dumps(MODEL_FEATURES)) from ml.features.pipeline
+  C. champion.json regression val/test metrics == recomputed from ridge champion on val/test
+     (project metric functions, independent data path) incl. residual interval + coverage
+  D. champion.json classification val/test metrics == recomputed from calibrated RF champion
+     incl. F1-threshold re-derivation (pick_f1_threshold) at champion threshold
+  E. metrics.json vs champion.json: regression ridge.val == champion val (rounded 6dp);
+     classification val_calibrated threshold-independent metrics (roc_auc/pr_auc/brier) match,
+     threshold-dependent block expected to differ (0.5 vs 0.203292) BY DESIGN
+Exit 0; prints CONSISTENT/INCONSISTENT per check.
+"""
+import hashlib
+import json
+import math
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO))
+
+def sha256(p: Path) -> str:
+    return hashlib.sha256(p.read_bytes()).hexdigest()
+
+def close(a, b, tol=5e-7) -> bool:
+    return math.isclose(float(a), float(b), rel_tol=tol, abs_tol=1e-9)
+
+def main() -> int:
+    import joblib
+    import numpy as np
+
+    from ml.evaluation.evaluate import interval_coverage, load_eval_frame
+    from ml.evaluation.select import pick_f1_threshold
+    from ml.paths import FEATURE_LIST_PATH
+    from ml.tracking import feature_version
+    from ml.training.common import regression_metrics
+    from ml.training.train_classification import classification_metrics
+
+    champ = json.loads((REPO / "models/champion.json").read_text())
+    reg_metrics_json = json.loads((REPO / "models/regression/metrics.json").read_text())
+    cls_metrics_json = json.loads((REPO / "models/classification/metrics.json").read_text())
+
+    print("== A. champion paths + byte identity ==")
+    for fam, key in (("regression", "ridge"), ("classification", "random_forest")):
+        entry = champ[fam]
+        name, ver = entry["name"], entry["version"]
+        suffix = "_calibrated" if fam == "classification" and entry.get("calibrated") else ""
+        src = REPO / f"models/{fam}/{name}{suffix}_{ver}.joblib"
+        reg_path = REPO / entry["path"]
+        same = sha256(src) == sha256(reg_path)
+        print(f"{fam}: name={name} version={ver} source={src.relative_to(REPO)} exists={src.exists()}")
+        print(f"  registry={entry['path']} exists={reg_path.exists()} sha256_equal={same} -> {'CONSISTENT' if same else 'INCONSISTENT'}")
+    clu = REPO / champ["clustering"]["path"]
+    print(f"clustering: path={champ['clustering']['path']} exists={clu.exists()}")
+
+    print("== B. feature_version ==")
+    fv_file = feature_version(FEATURE_LIST_PATH)
+    fv_champ = champ["feature_version"]
+    print(f"ml.tracking.feature_version(feature_list.json)={fv_file} champion.json={fv_champ} -> {'CONSISTENT' if fv_file == fv_champ else 'INCONSISTENT'}")
+    from ml.features.pipeline import MODEL_FEATURES
+    payload = json.loads(FEATURE_LIST_PATH.read_text())
+    inner = hashlib.sha1(json.dumps(MODEL_FEATURES).encode("utf-8")).hexdigest()
+    print(f"feature_list.json sha1 field={payload['sha1']} recomputed={inner} match={payload['sha1'] == inner}; MODEL_FEATURES n={len(MODEL_FEATURES)} == file n={len(payload['features'])} order_equal={payload['features'] == list(MODEL_FEATURES)}")
+
+    print("== C. regression metrics recompute ==")
+    reg_model = joblib.load(REPO / champ["regression"]["path"])
+    X_val, raw_val = load_eval_frame("val")
+    X_test, raw_test = load_eval_frame("test")
+    y_val_d = raw_val["SalePrice"].astype(float).to_numpy()
+    y_test_d = raw_test["SalePrice"].astype(float).to_numpy()
+    pred_val = np.asarray(reg_model.predict(X_val), dtype=float)
+    pred_test = np.asarray(reg_model.predict(X_test), dtype=float)
+    val_m = regression_metrics(y_val_d, np.expm1(pred_val))
+    resid = np.log1p(y_val_d) - pred_val
+    q_low, q_high = float(np.quantile(resid, 0.1)), float(np.quantile(resid, 0.9))
+    test_m = regression_metrics(y_test_d, np.expm1(pred_test))
+    cov = interval_coverage(np.log1p(y_test_d), pred_test, champ["regression"]["residual_interval"])
+    for k in ("mae", "rmse", "r2", "rmsle"):
+        ok = close(val_m[k], champ["regression"]["val_metrics"][k])
+        print(f"val.{k}: recomputed={val_m[k]:.8f} champion={champ['regression']['val_metrics'][k]} -> {'CONSISTENT' if ok else 'INCONSISTENT'}")
+        ok2 = close(val_m[k], reg_metrics_json["ridge"]["val"][k], tol=1e-9)
+        print(f"  metrics.json ridge.val.{k}={reg_metrics_json['ridge']['val'][k]:.10f} match={ok2}")
+    for k, v in (("q_low", q_low), ("q_high", q_high)):
+        ok = close(v, champ["regression"]["residual_interval"][k])
+        print(f"residual_interval.{k}: recomputed={v:.8f} champion={champ['regression']['residual_interval'][k]} -> {'CONSISTENT' if ok else 'INCONSISTENT'}")
+    for k in ("mae", "rmse", "r2", "rmsle"):
+        ok = close(test_m[k], champ["regression"]["test_metrics"][k])
+        print(f"test.{k}: recomputed={test_m[k]:.8f} champion={champ['regression']['test_metrics'][k]} -> {'CONSISTENT' if ok else 'INCONSISTENT'}")
+    ok = close(cov, champ["regression"]["test_metrics"]["interval_coverage"])
+    print(f"test.interval_coverage: recomputed={cov:.8f} champion={champ['regression']['test_metrics']['interval_coverage']} -> {'CONSISTENT' if ok else 'INCONSISTENT'}")
+
+    print("== D. classification metrics recompute ==")
+    cls_model = joblib.load(REPO / champ["classification"]["path"])
+    y_val_c = raw_val["sells_within_30_days"].astype(int).to_numpy()
+    y_test_c = raw_test["sells_within_30_days"].astype(int).to_numpy()
+    classes = list(cls_model.classes_)
+    p_val = np.asarray(cls_model.predict_proba(X_val)[:, classes.index(1)], dtype=float)
+    p_test = np.asarray(cls_model.predict_proba(X_test)[:, classes.index(1)], dtype=float)
+    thr = pick_f1_threshold(y_val_c, p_val)
+    print(f"pick_f1_threshold(val)={thr.threshold:.6f} champion.threshold={champ['classification']['threshold']} -> {'CONSISTENT' if close(thr.threshold, champ['classification']['threshold'], 1e-6) else 'INCONSISTENT'}")
+    val_c = classification_metrics(y_val_c, p_val, champ["classification"]["threshold"])
+    test_c = classification_metrics(y_test_c, p_test, champ["classification"]["threshold"])
+    for k in ("roc_auc", "pr_auc", "precision", "recall", "f1", "brier"):
+        ok = close(val_c[k], champ["classification"]["val_metrics"][k])
+        print(f"val.{k}: recomputed={val_c[k]:.8f} champion={champ['classification']['val_metrics'][k]} -> {'CONSISTENT' if ok else 'INCONSISTENT'}")
+        ok = close(test_c[k], champ["classification"]["test_metrics"][k])
+        print(f"test.{k}: recomputed={test_c[k]:.8f} champion={champ['classification']['test_metrics'][k]} -> {'CONSISTENT' if ok else 'INCONSISTENT'}")
+    for split, m in (("val", val_c), ("test", test_c)):
+        cm_r = m.get("confusion_matrix", {})
+        cm_c = champ["classification"][f"{split}_metrics"]["confusion_matrix"]
+        ok = all(int(cm_r[k]) == int(cm_c[k]) for k in ("tn", "fp", "fn", "tp"))
+        print(f"{split}.confusion_matrix: recomputed={cm_r} champion={cm_c} -> {'CONSISTENT' if ok else 'INCONSISTENT'}")
+
+    print("== E. metrics.json vs champion.json (classification) ==")
+    mj = cls_metrics_json["random_forest"]["val_calibrated"]
+    for k in ("roc_auc", "pr_auc", "brier"):
+        ok = close(mj[k], champ["classification"]["val_metrics"][k], tol=1e-6)
+        print(f"val_calibrated.{k}: metrics.json={mj[k]:.8f} champion={champ['classification']['val_metrics'][k]} match={ok}")
+    print(f"threshold-dependent block differs BY DESIGN: metrics.json threshold={mj['threshold']} confusion={mj['confusion_matrix']} vs champion threshold={champ['classification']['threshold']} confusion={champ['classification']['val_metrics']['confusion_matrix']}")
+    print("RESULT=OK")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

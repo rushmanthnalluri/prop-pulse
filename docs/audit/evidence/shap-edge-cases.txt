@@ -1,0 +1,15 @@
+COMMAND: .venv/Scripts/python.exe - <<EOF (edge cases: CollgCr serving row, unseen neighborhood, error paths)
+DATE: Fri Aug  7 13:05:41 UTC 2026
+---OUTPUT---
+CollgCr rows in train: 98 of 945
+CollgCr explain_instance ->  5 factors, sum(mag) = 0.258909 <=1: True
+    {'feature': 'OverallCond', 'impact': 'negative', 'magnitude': 0.068447}
+    {'feature': '2ndFlrSF', 'impact': 'negative', 'magnitude': 0.054287}
+    {'feature': 'long', 'impact': 'positive', 'magnitude': 0.051329}
+    {'feature': 'YearBuilt', 'impact': 'positive', 'magnitude': 0.047407}
+    {'feature': 'distance_to_city_center_km', 'impact': 'negative', 'magnitude': 0.037439}
+unseen-neighborhood ML-layer explain: OK, 5 factors (no crash; stats/geo fallback + all-zero dummies)
+two-row frame: ValueError -> feature_row must be a single-row pandas DataFrame in MODEL_FEATURES order; got DataFrame w
+non-DataFrame: ValueError -> feature_row must be a single-row pandas DataFrame in MODEL_FEATURES order; got dict with n
+top_n=0: ValueError -> top_n must be >= 1, got 0
+missing column: ValueError -> feature_frame is missing 1 MODEL_FEATURES columns (e.g. ['GrLivArea']); pass the output of

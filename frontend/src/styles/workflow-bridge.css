@@ -1,0 +1,183 @@
+/* ==========================================================================
+   ML Workbench — WF-F4 bridge stages 09–12 (Predict / Market / Explain /
+   Health) + the sandbox prediction panel (WORKFLOW §6.3-09…12, owner WF-F4).
+   Design tokens from styles.css only: nothing below 11px, hairlines over
+   boxes, no shadows at all here (--shadow-pop stays reserved for floating
+   layers). Imported by each WF-F4 stage page; Vite dedupes the chunk.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Stage 09 — sandbox half + champion bridge aside, hairline-separated
+   (§6.3-09: "two panels, visually separated by a hairline")
+   -------------------------------------------------------------------------- */
+
+.wf-duo {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
+  gap: 28px;
+  align-items: start;
+}
+
+.wf-duo-main { min-width: 0; }
+
+.wf-duo-aside {
+  min-width: 0;
+  border-left: 1px solid var(--border);
+  padding-left: 28px;
+  position: sticky;
+  top: 20px; /* mirrors the product's sticky-rail behavior on wide layouts */
+}
+
+/* --------------------------------------------------------------------------
+   Sandbox prediction panel (stage 09 main)
+   -------------------------------------------------------------------------- */
+
+.wf-picker-row {
+  display: flex;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.wf-picker-row .field { flex: 1 1 230px; }
+
+.wf-sandbox-lead { margin: 0 0 16px; max-width: 640px; }
+
+.wf-sandbox-simnote { margin: 0 0 12px; }
+
+/* Result card — accent hairline (the "measured thing" edge); deliberately
+   NOT the champion's 30px verdict size: the sandbox price renders at fs-stat
+   so the two faces are visually distinct (§7 honesty). */
+.wf-result {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-lg);
+  transition: opacity var(--dur-hover);
+}
+.wf-result--empty {
+  border-color: var(--border-strong);
+  border-style: dashed;
+  background: none;
+}
+.wf-result-price {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--navy);
+  font-variant-numeric: tabular-nums;
+}
+.wf-result-range {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+.wf-result-verdict {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.wf-result-note { margin: 0; font-size: 11.5px; color: var(--text-3); }
+.wf-result-meta { margin: 0; font-size: 11px; color: var(--text-3); }
+
+/* Previous result kept dimmed while a re-predict is in flight (UX §7.1 —
+   busy feedback on the control, never a skeleton swap). */
+.wf-dim { opacity: 0.55; pointer-events: none; }
+
+/* --------------------------------------------------------------------------
+   Bridge cards (stages 09–12) + "what you'll find" grids
+   -------------------------------------------------------------------------- */
+
+.wf-bridge {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 18px 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.wf-bridge-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wf-bridge-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--text); }
+.wf-bridge-copy { margin: 0; font-size: 13px; color: var(--text-2); max-width: 720px; }
+.wf-bridge-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.wf-bridge-meta { margin: 0; font-size: 11px; color: var(--text-3); }
+.wf-bridge-note {
+  margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  color: var(--text-3);
+  max-width: 720px;
+}
+.wf-bridge-cta { justify-self: start; }
+
+.wf-find-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+.wf-find-card {
+  display: grid;
+  gap: 5px;
+  align-content: start;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.wf-find-title { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.wf-find-body { margin: 0; font-size: 12px; color: var(--text-2); }
+
+/* --------------------------------------------------------------------------
+   Sandbox teaser cards (stages 10–12)
+   -------------------------------------------------------------------------- */
+
+.wf-teaser {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.wf-teaser-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.wf-teaser-title { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--text); }
+.wf-teaser-note { margin: 0; font-size: 12px; color: var(--text-2); max-width: 720px; }
+
+/* --------------------------------------------------------------------------
+   Responsive (UX §8): the duo stacks at ≤1024px — the aside's hairline moves
+   from its left edge to its top, and the stickiness ends with the columns.
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+  .wf-duo { grid-template-columns: 1fr; }
+  .wf-duo-aside {
+    position: static;
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    padding-top: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .wf-duo { gap: 22px; }
+  .wf-bridge,
+  .wf-teaser { padding: 14px 16px; }
+  .wf-find-grid { grid-template-columns: 1fr; }
+}

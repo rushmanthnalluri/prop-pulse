@@ -1,0 +1,82 @@
+== A. PropertyInput schema fields vs serving API_TO_RAW (both directions) ==
+schema field count: 55 | serving-mapped count: 55
+schema fields NOT mapped by serving: NONE
+serving-mapped fields NOT in schema: NONE
+API_TO_RAW values not in RAW_INPUT_COLUMNS: NONE
+raw columns targeted by >1 API field: NONE
+
+== B. Every API field lands on its raw column ==
+direct-mapping mismatches: NONE
+central_air False -> N (expect N)
+mo_sold/yr_sold overrides beat sale_date: True True
+raw row covers exactly RAW_INPUT_COLUMNS: True
+no None values in raw row: True
+full payload -> frame: cols==MODEL_FEATURES: True | NaNs: 0
+lat/long == Crawfor centroid: True
+neighborhood_median_price == Crawfor stats: True
+
+== C. Sale-date default & year_remod default ==
+no sale_date -> YrSold/MoSold = today: True
+year_remod_add omitted -> YearRemodAdd == year_built: True
+
+== D. Special-value parsing ==
+  _central_air_token('Y') = Y
+  _central_air_token('n') = N
+  _central_air_token('true') = Y
+  _central_air_token('0') = N
+  _central_air_token('yes') = Y
+  _central_air_token('NO') = N
+  _central_air_token(True) = Y
+  _central_air_token(False) = N
+  _central_air_token(1) = Y
+  _central_air_token('maybe') -> ValueError OK
+  _parse_sale_date('2009-06-15') = (2009, 6)
+  _parse_sale_date('2009-06') = (2009, 6)
+  _parse_sale_date(datetime.date(2010, 1, 20)) = (2010, 1)
+  _parse_sale_date(datetime.datetime(2007, 12, 1, 9, 30)) = (2007, 12)
+  _parse_sale_date('2009-13') -> ValueError OK
+  _parse_sale_date('garbage') -> ValueError OK
+  _parse_sale_date('2009') -> ValueError OK
+
+== E. Error handling: unknown keys / missing defaults ==
+unknown key -> ValueError OK: unknown PropertyInput fields: ['bogus_field']; see ml.features.serving
+missing col w/o default -> ValueError OK: missing columns with no entry in FEATURE_DEFAULTS: ['GrLivArea']; regenerate mod
+
+== F. Unseen neighborhood end-to-end ==
+NaNs: 0
+stats == global fallback: True
+lat/long == FEATURE_DEFAULTS lat/long: True
+
+== G. Serving row without lat/long (geo fill path in build_feature_frame) ==
+lat/long filled from StoneBr centroid: True | NaNs: 0
+
+== H. 25-neighborhood coordinate lookup vs CSV ==
+all 25 centroids match CSV: True | rows: 25
+
+== I. feature_version plumbing (SPEC §14: 12-char sha1 of file bytes) ==
+ml.tracking.feature_version(feature_list.json): 9b0f8ba4201c
+champion.json feature_version: 9b0f8ba4201c | match: True
+(feature_list.json internal 'sha1' field is a different, 40-char hash of the JSON list — distinct purpose)
+
+== J. Cache semantics probes (temp files inside docs/audit/evidence only) ==
+_property_geo_lookup same-path after rewrite returns STALE first content: True | {1: (42.03, -93.61)}
+_property_geo_lookup same-path after DELETE returns STALE content (should be None, got): {1: (42.03, -93.61)}
+-> cache is keyed on path only; content/mtime changes are invisible within a process
+_geo_lookup cacheinfo: CacheInfo(hits=30, misses=1, maxsize=1, currsize=1)
+_property_geo_lookup cacheinfo: CacheInfo(hits=4, misses=2, maxsize=4, currsize=2)
+
+== K. Edge cases reachable via API schema ranges ==
+year_built=2026 + yr_sold=2006 (both schema-legal) -> property_age: -20.0
+MoSold=13 (blocked by API schema, NOT by pipeline) -> sale_quarter: 5.0
+yr_sold=None direct call -> TypeError (not ValueError): int() argument must be a string, a bytes-like object or a re
+
+== L. Serving-vs-training path parity ==
+serving-built row geo == training row geo: True | joined stats equal: True
+MODEL_FEATURES via package: 94
+RAW_INPUT_COLUMNS via package: 79
+FEATURE_DEFAULTS via package: 79
+build_feature_frame via package: True
+NeighborhoodStats: NeighborhoodStats
+fit/load: True True
+bad attr -> AttributeError OK: module 'ml.features' has no attribute 'NOPE'
+__all__ sorted: ['FEATURE_DEFAULTS', 'MODEL_FEATURES', 'NeighborhoodStats', 'RAW_INPUT_COLUMNS', 'build_feature_frame', 'fit_neighborhood_stats', 'load_neighborhood_stats']

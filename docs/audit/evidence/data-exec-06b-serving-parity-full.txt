@@ -1,0 +1,5 @@
+synthetic full-parity test over all 94 feature columns
+differing columns: 0 -> NONE: serving row == training row, EXACT
+mappable columns carrying non-default values in this test: 31
+amenity_count train vs serving: 6 6
+neighborhood stats: True

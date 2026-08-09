@@ -1,0 +1,39 @@
+===================== 1) HEADERS ON 200 =====================
+$ curl -si http://127.0.0.1:8360/health
+HTTP/1.1 200 OK
+date: Fri, 07 Aug 2026 13:01:21 GMT
+server: uvicorn
+content-length: 73
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+
+{"status":"ok","models_loaded":{"regression":true,"classification":true}}
+===================== 2) HEADERS ON 404 =====================
+$ curl -si http://127.0.0.1:8360/no-such-route
+HTTP/1.1 404 Not Found
+date: Fri, 07 Aug 2026 13:01:21 GMT
+server: uvicorn
+content-length: 22
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+
+{"detail":"Not Found"}
+===================== 3) HEADERS+BODY ON 422 (malformed JSON) =====================
+$ curl -si -X POST /predict -H Content-Type:application/json -d "{not json"
+HTTP/1.1 422 Unprocessable Content
+date: Fri, 07 Aug 2026 13:01:21 GMT
+server: uvicorn
+content-length: 158
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+
+{"detail":[{"type":"json_invalid","loc":["body",1],"msg":"JSON decode error","input":{},"ctx":{"error":"Expecting property name enclosed in double quotes"}}]}

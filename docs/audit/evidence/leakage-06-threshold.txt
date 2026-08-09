@@ -1,0 +1,10 @@
+=== CHECK E: operating threshold 0.203292 — selected on VAL, not TEST ===
+champion.json classification.threshold = 0.203292
+champion.json classification.name = random_forest (calibrated=True)
+
+recomputed max-F1 threshold on VAL : 0.203292 (F1=0.5455, P=0.4091, R=0.8182)
+counterfactual max-F1 on TEST        : 0.258531 (F1=0.6066, P=0.5068, R=0.7551)
+
+stored == val-recomputed (to 6dp): True
+stored == test-counterfactual    : False
+F1 on test @ stored threshold 0.203292: 0.5063 | test-optimal F1: 0.6066

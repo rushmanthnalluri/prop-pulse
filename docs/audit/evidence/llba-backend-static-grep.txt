@@ -1,0 +1,54 @@
+=== grep: hardcoded threshold values in backend/app ===
+backend/app/services/prediction_service.py:10:  ``champion.json`` ``classification.threshold`` (SPEC §14 — not 0.5).
+
+=== grep: every 'threshold' mention in backend/app ===
+backend/app/api/model.py:54:                "threshold": classification.get("threshold"),
+backend/app/api/predict.py:100:            "threshold": service.threshold,
+backend/app/api/predict.py:167:        "threshold": service.threshold,
+backend/app/config.py:42:    drift_psi_threshold: float = 0.2
+backend/app/main.py:126:            threshold=champion["classification"]["threshold"],
+backend/app/schemas/responses.py:28:    threshold: float
+backend/app/schemas/responses.py:88:    threshold: float
+backend/app/services/prediction_service.py:9:  ``sells_within_30_days``; the operating threshold comes from
+backend/app/services/prediction_service.py:10:  ``champion.json`` ``classification.threshold`` (SPEC §14 — not 0.5).
+backend/app/services/prediction_service.py:118:        threshold: Operating threshold from ``champion.json``.
+backend/app/services/prediction_service.py:128:        threshold: float,
+backend/app/services/prediction_service.py:134:        self.threshold = float(threshold)
+backend/app/services/prediction_service.py:159:            sells_within_30_days=bool(probability >= self.threshold),
+backend/app/services/prediction_service.py:181:            sells_within_30_days=bool(probability >= self.threshold),
+
+=== grep: print( in backend/app ===
+(none)
+
+=== grep: all except handlers in backend/app ===
+backend/app/api/model.py:71:    except (OSError, json.JSONDecodeError) as exc:
+backend/app/api/predict.py:54:    except Exception as exc:  # noqa: BLE001 — logging must never break serving
+backend/app/api/predict.py:71:    except ValueError as exc:
+backend/app/api/predict.py:121:    except ValueError as exc:
+backend/app/api/predict.py:152:    except ValueError as exc:
+backend/app/main.py:152:        except Exception as exc:  # noqa: BLE001 — warm-up must never block startup
+backend/app/main.py:194:    @app.exception_handler(Exception)
+backend/app/main.py:195:    async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+backend/app/main.py:202:        logger.exception("unhandled error on %s %s", request.method, request.url.path)
+backend/app/monitoring/middleware.py:31:            except Exception:  # noqa: BLE001 — metrics must never break serving
+backend/app/monitoring/prediction_log.py:68:        except Exception as exc:  # noqa: BLE001 — logging must never break serving
+backend/app/security.py:63:            except ValueError:  # malformed header — let the app deal with it
+backend/app/services/monitoring_service.py:58:        except (OSError, json.JSONDecodeError) as exc:
+backend/app/services/monitoring_service.py:60:            # Never echo the exception (it can contain absolute server paths).
+backend/app/services/prediction_service.py:65:            except (AttributeError, ValueError):  # frozen/read-only estimator
+backend/app/services/prediction_service.py:217:        except Exception as exc:  # noqa: BLE001 — explanation must never break a prediction
+
+=== grep: custom RequestValidationError handler? ===
+(none — FastAPI default 422 handler in force)
+
+=== __init__ files ===
+--- backend/app/__init__.py
+"""app package."""
+--- backend/app/api/__init__.py
+"""api package."""
+--- backend/app/schemas/__init__.py
+"""schemas package."""
+--- backend/app/services/__init__.py
+"""services package."""
+--- backend/app/monitoring/__init__.py
+"""monitoring package."""

@@ -1,0 +1,45 @@
+=== A. Hand-computed formula check (no code but mine) ===
+hand=0.2746530721670274  lib=0.2746530721670274  match=True
+
+=== B. Three reference features vs hand-built shifted samples (seed 42) ===
+
+-- GrLivArea: 10 bins, edges=[334.0, 912.0, 1061.6, 1200.0, 1336.6, 1456.0, 1584.4, 1715.2, 1908.6, 2199.2, 4476.0]
+   expected proportions=[0.0942, 0.1058, 0.0984, 0.1016, 0.0963, 0.1037, 0.0995, 0.1005, 0.0995, 0.1005]
+   lib  props=[np.float64(0.09), np.float64(0.044), np.float64(0.048), np.float64(0.056), np.float64(0.048), np.float64(0.07), np.float64(0.092), np.float64(0.096), np.float64(0.198), np.float64(0.258)]
+   indep props=[np.float64(0.09), np.float64(0.044), np.float64(0.048), np.float64(0.056), np.float64(0.048), np.float64(0.07), np.float64(0.092), np.float64(0.096), np.float64(0.198), np.float64(0.258)]
+   PSI lib=0.3816953175  indep=0.3816953175  match=True
+   in-distribution control PSI=0.000017 (should be small)
+
+-- OverallQual: 5 bins, edges=[1.0, 5.0, 6.0, 7.0, 8.0, 10.0]
+   expected proportions=[0.0836, 0.2783, 0.2624, 0.218, 0.1577]
+   lib  props=[np.float64(0.008), np.float64(0.032), np.float64(0.088), np.float64(0.164), np.float64(0.708)]
+   indep props=[np.float64(0.008), np.float64(0.032), np.float64(0.088), np.float64(0.164), np.float64(0.708)]
+   PSI lib=1.7426695716  indep=1.7426695716  match=True
+   in-distribution control PSI=0.000004 (should be small)
+
+-- LotArea: 10 bins, edges=[1533.0, 5000.0, 7098.8, 8091.2, 8833.2, 9500.0, 10238.2, 11116.6, 12379.2, 14579.8, 164660.0]
+   expected proportions=[0.0974, 0.1026, 0.1005, 0.0995, 0.0995, 0.1005, 0.0995, 0.1005, 0.0995, 0.1005]
+   lib  props=[np.float64(0.4), np.float64(0.026), np.float64(0.004), np.float64(0.006), np.float64(0.012), np.float64(0.008), np.float64(0.018), np.float64(0.022), np.float64(0.038), np.float64(0.466)]
+   indep props=[np.float64(0.4), np.float64(0.026), np.float64(0.004), np.float64(0.006), np.float64(0.012), np.float64(0.008), np.float64(0.018), np.float64(0.022), np.float64(0.038), np.float64(0.466)]
+   PSI lib=2.4040885985  indep=2.4040885985  match=True
+   in-distribution control PSI=0.000031 (should be small)
+
+=== C. eps handling — empty-bin penalty ===
+lib=8.1553802588 hand=8.1553802588 match=True
+finite=True; penalty vs identical=8.155
+surprise-bin PSI (1e-9 expected vs full mass) = 27.6310 (large but finite: True)
+
+=== D. Out-of-range values land in edge bins (±inf open edges) ===
+GrLivArea train range edges: min=334.0, max=4476.0
+props for [min-5000, max+50000] = [0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.5]
+  -> first bin=0.5, last bin=0.5, interior sum=0.0
+PSI of all-above-max production sample vs train ref = 12.4218 (drift-scale)
+
+=== E. psi_bins_from_train conventions ===
+constant sample edges: [6.5, 7.0, 7.5]
+zero-inflated (95% zero) edges: [0.0, 462.21591145585137]
+empty/junk sample raises ValueError: cannot derive bins from an empty sample
+empty/junk sample raises ValueError: cannot derive bins from an empty sample
+n_bins=0 raises ValueError: n_bins must be >= 1, got 0
+
+ALL TASK-1 CHECKS DONE

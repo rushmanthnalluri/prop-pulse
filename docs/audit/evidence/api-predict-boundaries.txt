@@ -1,0 +1,132 @@
+COMMAND: .venv/Scripts/python.exe C:/tmp/api_audit.py boundaries
+DATE: Fri Aug  7 13:48:00 UTC 2026
+
+boundary ACCEPT bedrooms=0: HTTP 200 -> PASS
+boundary ACCEPT bedrooms=8: HTTP 200 -> PASS
+boundary REJECT bedrooms=9: HTTP 422 -> PASS
+boundary ACCEPT full_bath=0: HTTP 200 -> PASS
+boundary ACCEPT full_bath=4: HTTP 200 -> PASS
+boundary REJECT full_bath=5: HTTP 422 -> PASS
+boundary ACCEPT half_bath=0: HTTP 200 -> PASS
+boundary ACCEPT half_bath=2: HTTP 200 -> PASS
+boundary REJECT half_bath=3: HTTP 422 -> PASS
+boundary ACCEPT bsmt_full_bath=0: HTTP 200 -> PASS
+boundary ACCEPT bsmt_full_bath=3: HTTP 200 -> PASS
+boundary REJECT bsmt_full_bath=4: HTTP 422 -> PASS
+boundary ACCEPT bsmt_half_bath=0: HTTP 200 -> PASS
+boundary ACCEPT bsmt_half_bath=2: HTTP 200 -> PASS
+boundary REJECT bsmt_half_bath=3: HTTP 422 -> PASS
+boundary ACCEPT gr_liv_area=300: HTTP 200 -> PASS
+boundary ACCEPT gr_liv_area=6000: HTTP 200 -> PASS
+boundary REJECT gr_liv_area=299: HTTP 422 -> PASS
+boundary REJECT gr_liv_area=6001: HTTP 422 -> PASS
+boundary ACCEPT lot_area=500: HTTP 200 -> PASS
+boundary ACCEPT lot_area=200000: HTTP 200 -> PASS
+boundary REJECT lot_area=499: HTTP 422 -> PASS
+boundary REJECT lot_area=200001: HTTP 422 -> PASS
+boundary ACCEPT lot_frontage=1.0: HTTP 200 -> PASS
+boundary ACCEPT lot_frontage=500.0: HTTP 200 -> PASS
+boundary REJECT lot_frontage=0.9: HTTP 422 -> PASS
+boundary REJECT lot_frontage=500.1: HTTP 422 -> PASS
+boundary ACCEPT total_bsmt_sf=0: HTTP 200 -> PASS
+boundary ACCEPT total_bsmt_sf=4000: HTTP 200 -> PASS
+boundary REJECT total_bsmt_sf=-1: HTTP 422 -> PASS
+boundary REJECT total_bsmt_sf=4001: HTTP 422 -> PASS
+boundary ACCEPT year_built=1870: HTTP 200 -> PASS
+boundary ACCEPT year_built=2026: HTTP 200 -> PASS
+boundary REJECT year_built=1869: HTTP 422 -> PASS
+boundary REJECT year_built=2027: HTTP 422 -> PASS
+boundary ACCEPT year_remod_add=1870: HTTP 200 -> PASS
+boundary ACCEPT year_remod_add=2026: HTTP 200 -> PASS
+boundary REJECT year_remod_add=1869: HTTP 422 -> PASS
+boundary REJECT year_remod_add=2027: HTTP 422 -> PASS
+boundary ACCEPT overall_qual=1: HTTP 200 -> PASS
+boundary ACCEPT overall_qual=10: HTTP 200 -> PASS
+boundary REJECT overall_qual=0: HTTP 422 -> PASS
+boundary REJECT overall_qual=11: HTTP 422 -> PASS
+boundary ACCEPT overall_cond=1: HTTP 200 -> PASS
+boundary ACCEPT overall_cond=10: HTTP 200 -> PASS
+boundary REJECT overall_cond=0: HTTP 422 -> PASS
+boundary REJECT overall_cond=11: HTTP 422 -> PASS
+boundary ACCEPT garage_cars=0: HTTP 200 -> PASS
+boundary ACCEPT garage_cars=5: HTTP 200 -> PASS
+boundary REJECT garage_cars=6: HTTP 422 -> PASS
+boundary ACCEPT garage_area=0.0: HTTP 200 -> PASS
+boundary ACCEPT garage_area=2000.0: HTTP 200 -> PASS
+boundary REJECT garage_area=-0.1: HTTP 422 -> PASS
+boundary REJECT garage_area=2000.1: HTTP 422 -> PASS
+boundary ACCEPT fireplaces=0: HTTP 200 -> PASS
+boundary ACCEPT fireplaces=4: HTTP 200 -> PASS
+boundary REJECT fireplaces=5: HTTP 422 -> PASS
+boundary ACCEPT pool_area=0: HTTP 200 -> PASS
+boundary ACCEPT pool_area=1000: HTTP 200 -> PASS
+boundary REJECT pool_area=1001: HTTP 422 -> PASS
+boundary ACCEPT wood_deck_sf=0: HTTP 200 -> PASS
+boundary ACCEPT wood_deck_sf=1500: HTTP 200 -> PASS
+boundary REJECT wood_deck_sf=1501: HTTP 422 -> PASS
+boundary ACCEPT open_porch_sf=0: HTTP 200 -> PASS
+boundary ACCEPT open_porch_sf=1000: HTTP 200 -> PASS
+boundary REJECT open_porch_sf=1001: HTTP 422 -> PASS
+boundary ACCEPT screen_porch=0: HTTP 200 -> PASS
+boundary ACCEPT screen_porch=800: HTTP 200 -> PASS
+boundary REJECT screen_porch=801: HTTP 422 -> PASS
+boundary ACCEPT mas_vnr_area=0.0: HTTP 200 -> PASS
+boundary ACCEPT mas_vnr_area=2000.0: HTTP 200 -> PASS
+boundary REJECT mas_vnr_area=-0.1: HTTP 422 -> PASS
+boundary REJECT mas_vnr_area=2000.1: HTTP 422 -> PASS
+boundary ACCEPT kitchen_abv_gr=0: HTTP 200 -> PASS
+boundary ACCEPT kitchen_abv_gr=3: HTTP 200 -> PASS
+boundary REJECT kitchen_abv_gr=4: HTTP 422 -> PASS
+boundary ACCEPT tot_rms_abvgrd=1: HTTP 200 -> PASS
+boundary ACCEPT tot_rms_abvgrd=15: HTTP 200 -> PASS
+boundary REJECT tot_rms_abvgrd=0: HTTP 422 -> PASS
+boundary REJECT tot_rms_abvgrd=16: HTTP 422 -> PASS
+boundary ACCEPT bsmt_fin_sf1=0: HTTP 200 -> PASS
+boundary ACCEPT bsmt_fin_sf1=2500: HTTP 200 -> PASS
+boundary REJECT bsmt_fin_sf1=2501: HTTP 422 -> PASS
+boundary ACCEPT bsmt_unf_sf=0: HTTP 200 -> PASS
+boundary ACCEPT bsmt_unf_sf=2500: HTTP 200 -> PASS
+boundary REJECT bsmt_unf_sf=2501: HTTP 422 -> PASS
+boundary ACCEPT first_flr_sf=300: HTTP 200 -> PASS
+boundary ACCEPT first_flr_sf=4000: HTTP 200 -> PASS
+boundary REJECT first_flr_sf=299: HTTP 422 -> PASS
+boundary REJECT first_flr_sf=4001: HTTP 422 -> PASS
+boundary ACCEPT second_flr_sf=0: HTTP 200 -> PASS
+boundary ACCEPT second_flr_sf=3000: HTTP 200 -> PASS
+boundary REJECT second_flr_sf=3001: HTTP 422 -> PASS
+boundary ACCEPT enclosed_porch=0: HTTP 200 -> PASS
+boundary ACCEPT enclosed_porch=600: HTTP 200 -> PASS
+boundary REJECT enclosed_porch=601: HTTP 422 -> PASS
+boundary ACCEPT misc_val=0: HTTP 200 -> PASS
+boundary ACCEPT misc_val=20000: HTTP 200 -> PASS
+boundary REJECT misc_val=20001: HTTP 422 -> PASS
+boundary ACCEPT mo_sold=1: HTTP 200 -> PASS
+boundary ACCEPT mo_sold=12: HTTP 200 -> PASS
+boundary REJECT mo_sold=0: HTTP 422 -> PASS
+boundary REJECT mo_sold=13: HTTP 422 -> PASS
+boundary ACCEPT yr_sold=2006: HTTP 200 -> PASS
+boundary ACCEPT yr_sold=2026: HTTP 200 -> PASS
+boundary REJECT yr_sold=2005: HTTP 422 -> PASS
+boundary REJECT yr_sold=2027: HTTP 422 -> PASS
+
+boundary battery failures: 0
+=== RAW EXAMPLE: one-past-boundary gr_liv_area=6001 ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"less_than_equal","loc":["body","gr_liv_area"],"msg":"Input should be less than or equal to 6000","input":6001,"ctx":{"le":6000}}]}
+stack-trace-in-body: False
+
+=== RAW EXAMPLE: all-at-max payload accepted ===
+HTTP 200
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"estimated_price":385034.53,"price_range":{"low":334413.62,"high":432666.53},"model_version":{"regression":"ridge_v1","classification":"random_forest_v1","feature_version":"9b0f8ba4201c"}}
+stack-trace-in-body: False
+

@@ -1,0 +1,17 @@
+=== path-traversal style URL probes (no path params exist in routes) ===
+/model/..%2f..%2f.env                    -> HTTP 404
+/model/../../.env                        -> HTTP 404
+/market/..%2f..%2fetc%2fpasswd           -> HTTP 404
+//etc/passwd                             -> HTTP 404
+/model/info%00.json                      -> HTTP 404
+/%2e%2e/%2e%2e/.env                      -> HTTP 404
+
+=== route table (static: no path parameters anywhere) ===
+backend/app/api/health.py:15:@router.get("/health", response_model=HealthResponse)
+backend/app/api/health.py:24:@router.get("/metrics", response_model=MetricsResponse)
+backend/app/api/market.py:13:@router.get("/market/clusters", response_model=MarketClustersResponse)
+backend/app/api/model.py:86:@router.get("/model/info")
+backend/app/api/model.py:92:@router.get("/model/importance")
+backend/app/api/predict.py:86:@router.post("/predict", response_model=PredictResponse)
+backend/app/api/predict.py:108:@router.post("/predict/price", response_model=PriceResponse)
+backend/app/api/predict.py:140:@router.post("/predict/sale-probability", response_model=SaleProbabilityResponse)

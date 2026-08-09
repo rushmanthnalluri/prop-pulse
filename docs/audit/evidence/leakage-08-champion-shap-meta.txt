@@ -1,0 +1,15 @@
+=== champion.json structure (selection artifacts) ===
+top-level keys: ['classification', 'clustering', 'dataset_version', 'feature_version', 'rationale', 'regression', 'selected_at']
+regression: ridge | val RMSLE: 0.135437 | test RMSLE: 0.118689
+regression.bootstrap_vs_runner_up: {'runner_up': 'xgboost', 'observed_rmsle_diff': -0.004341, 'ci95': [-0.013336, 0.005985], 'n_resamples': 2000, 'seed': 42, 'significant': False}
+classification: random_forest threshold: 0.203292
+classification val metrics keys: ['brier', 'confusion_matrix', 'f1', 'pr_auc', 'precision', 'recall', 'roc_auc', 'threshold']
+selected_at: 2026-08-07T10:38:48.406646+00:00
+
+=== feature_importance.json metadata (SHAP background provenance) ===
+model: Ridge
+explainer: shap.LinearExplainer
+background_size: 200
+background_split: train
+val_sample_size: 200
+seed: 42

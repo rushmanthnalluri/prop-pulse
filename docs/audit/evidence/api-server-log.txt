@@ -1,0 +1,23 @@
+SERVER LOG EXCERPT (uvicorn backend.app.main:app --port 8300) — NaN/Inf 500 mechanism, captured Fri Aug  7 13:53:31 UTC 2026
+traceback lines containing 'Traceback': 20 (5 NaN/Inf requests x ASGI+app handler chains)
+
+ValueError: Out of range float values are not JSON compliant: nan
+when serializing dict item 'input'
+when serializing list item 0
+when serializing dict item 'detail'
+INFO:     127.0.0.1:49342 - "POST /predict HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+--
+ValueError: Out of range float values are not JSON compliant: nan
+when serializing dict item 'input'
+...
+INFO:     127.0.0.1:49342 - "POST /predict HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:49343 - "POST /predict HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:49344 - "POST /predict HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:49345 - "POST /predict HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:49366 - "POST /predict HTTP/1.1" 500 Internal Server Error
+
+(full log at /tmp/api-audit-server.log during audit window; tracebacks stay server-side, response body was generic)

@@ -1,0 +1,15 @@
+CMD: env -u DOM_PROVIDER -u DOM_CSV_PATH .venv/Scripts/python.exe -m ml.data.pipeline --output-dir /tmp/tmp.i0ZI0sokU6
+INFO __main__: Wrote C:\Users\rushm\AppData\Local\Temp\tmp.i0ZI0sokU6\test.csv (175 rows)
+INFO ml.data.validate: Wrote schema report to C:\Users\rushm\AppData\Local\Temp\tmp.i0ZI0sokU6\schema.json
+INFO __main__: Pipeline complete: {'train': 945, 'val': 338, 'test': 175}
+train.csv fresh=c237df1860d7310db31de7af24150a2f committed=c237df1860d7310db31de7af24150a2f match=YES
+val.csv fresh=c04b4ab6cfc538eee295ca29485bd7cb committed=c04b4ab6cfc538eee295ca29485bd7cb match=YES
+test.csv fresh=b576c82c7678ae48e0263d1124ba4404 committed=b576c82c7678ae48e0263d1124ba4404 match=YES
+schema.json identical
+outliers_report.json identical
+
+CMD: DOM_PROVIDER= (empty) .venv/Scripts/python.exe -m ml.data.pipeline --output-dir <tmp2>
+  File "C:\Machine_Learning\Prop-pulse\ml\data\pipeline.py", line 116, in select_dom_provider
+    raise ValueError(f"Unknown {DOM_PROVIDER_ENV}={kind!r}; expected 'simulated' or 'csv'.")
+ValueError: Unknown DOM_PROVIDER=''; expected 'simulated' or 'csv'.
+files written on failure: 0 (dir itself was pre-created)

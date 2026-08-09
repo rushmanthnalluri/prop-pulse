@@ -1,0 +1,17 @@
+=== no LISTENING sockets on my ports (TIME_WAIT ok) ===
+no LISTENING on 18000/18080/15000
+
+=== current log state ===
+29 logs/predictions.jsonl
+
+=== lines appended after my 19-line backup, with timestamps ===
+20 2026-08-07T14:09:51.440322+00:00 StoneBr 2Story 1850 2026-06-15
+21 2026-08-07T14:11:07.694419+00:00 NAmes 1Story 1400 None
+22 2026-08-07T14:11:08.686404+00:00 NAmes 1Story 1400 None
+23 2026-08-07T14:11:09.540109+00:00 NAmes 1Story 1400 None
+24 2026-08-07T14:11:10.419788+00:00 NAmes 1Story 1400 None
+25 2026-08-07T14:11:11.281934+00:00 NAmes 1Story 1400 None
+26 2026-08-07T14:12:34.392151+00:00 StoneBr 2Story 1850 2026-06-15
+27 2026-08-07T14:12:34.704155+00:00 NAmes 1Story 1400 None
+28 2026-08-07T14:12:34.972567+00:00 NAmes 1Story 1400 None
+29 2026-08-07T14:12:35.253100+00:00 NAmes 1Story 1400 None

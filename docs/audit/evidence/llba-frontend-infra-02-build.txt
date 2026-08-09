@@ -1,0 +1,27 @@
+=== EVIDENCE llba-frontend-infra-02: vite production build (to temp dir, dist/ untouched) ===
+outDir: /tmp/tmp.ak3JxMQp1X/dist
+vite v6.4.3 building for production...
+transforming...
+✓ 763 modules transformed.
+rendering chunks...
+computing gzip size...
+../../../Users/rushm/AppData/Local/Temp/tmp.ak3JxMQp1X/dist/index.html                          0.66 kB │ gzip:   0.40 kB
+../../../Users/rushm/AppData/Local/Temp/tmp.ak3JxMQp1X/dist/assets/index-BHEmUTlw.css          27.49 kB │ gzip:   9.58 kB
+../../../Users/rushm/AppData/Local/Temp/tmp.ak3JxMQp1X/dist/assets/useApi-1Va_alWE.js           0.40 kB │ gzip:   0.26 kB
+../../../Users/rushm/AppData/Local/Temp/tmp.ak3JxMQp1X/dist/assets/MarketMap-DSeIbYzu.js      158.39 kB │ gzip:  46.47 kB
+../../../Users/rushm/AppData/Local/Temp/tmp.ak3JxMQp1X/dist/assets/index-BDvWWcjG.js          311.45 kB │ gzip:  98.66 kB
+../../../Users/rushm/AppData/Local/Temp/tmp.ak3JxMQp1X/dist/assets/ModelInsights-CD41Hm6s.js  389.25 kB │ gzip: 108.32 kB
+✓ built in 7.84s
+vite build exit=0
+--- bundle contents (note fingerprinted assets/ names — validates nginx /assets/ immutable caching) ---
+/tmp/tmp.ak3JxMQp1X/dist:
+assets
+favicon.svg
+index.html
+
+/tmp/tmp.ak3JxMQp1X/dist/assets:
+MarketMap-DSeIbYzu.js
+ModelInsights-CD41Hm6s.js
+index-BDvWWcjG.js
+index-BHEmUTlw.css
+useApi-1Va_alWE.js

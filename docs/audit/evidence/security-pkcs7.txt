@@ -1,0 +1,18 @@
+=== pkcs7_decrypt usage in exercised dependency surface ===
+$ grep -rln "pkcs7_decrypt" .venv/Lib/site-packages/mlflow/ .venv/Lib/site-packages/google/
+hits: 1 (1 = none)
+
+=== where mlflow imports cryptography ===
+.venv/Lib/site-packages/mlflow/store/model_registry/dbmodels/models.py
+.venv/Lib/site-packages/mlflow/store/model_registry/dbmodels/__pycache__/models.cpython-314.pyc
+.venv/Lib/site-packages/mlflow/utils/crypto.py
+.venv/Lib/site-packages/mlflow/utils/__pycache__/crypto.cpython-314.pyc
+
+=== PropPulse code importing cryptography ===
+hits: 1 (1 = none)
+
+=== broader check: any pkcs7 usage anywhere in venv that our code path touches (google-auth) ===
+hits: 0 (1 = none)
+
+=== does anything import google-auth at runtime in serving path? ===
+hits: 0 (1 = none)

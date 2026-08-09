@@ -1,0 +1,55 @@
+=== raw files ===
+train.csv shape: (1460, 81)
+test.csv shape: (1459, 80) has SalePrice: False
+sample_submission shape: (1459, 2)
+raw train.csv missing cols count: 19
+LotFrontage raw missing frac: 0.1774
+raw neighborhoods: 25
+raw YrSold range: 2006 2010
+
+=== processed splits (keep_default_na=False) ===
+train: rows=945 cols=85 YrSold=[np.int64(2006), np.int64(2007), np.int64(2008)] NaNs=0
+  unique Neighborhood: 25
+  fast-sale rate: 0.2529 (239/945)
+  SalePrice median/mean/min/max: 164990.0 182125.13 35311 755000
+  skew raw: 1.967  skew log1p: 0.175
+  kurtosis raw: 7.55  kurt log1p: 0.82
+  OverallQual pearson r: 0.789  spearman: 0.795
+  GrLivArea pearson r: 0.752
+  price_per_sqft mean/median: 121.13 120.58
+  IQR fence: 341750.0  rows above: 39 (4.1%)
+  DOM median/IQR/max/skew: 41.0 30.0-54.0 141 1.26
+  nbhd median spread: 3.18 top: NridgHt 318000.0 bottom: BrDale 100000.0
+  n(Blueste): 1
+  n(NPkVill): 3
+  n(MeadowV): 9
+  peak month: 7 167  trough month: 2 27
+  median price 2006->2008 pct: 0.6
+val: rows=338 cols=85 YrSold=[np.int64(2009)] NaNs=0
+test: rows=175 cols=85 YrSold=[np.int64(2010)] NaNs=0
+
+=== outliers_report.json ===
+{
+  "partial_sale_grlivarea_gt_4000": {
+    "removed_ids": [
+      524,
+      1299
+    ],
+    "n_removed": 2,
+    "justification": "Known Ames caveat: ``GrLivArea > 4000`` sqft with a low price."
+  },
+  "summary": {
+    "rows_before": 947,
+    "rows_after": 945,
+    "applied_to": "train split only"
+  }
+}
+
+=== schema.json keys ===
+['dataset_version', 'source', 'columns', 'categories', 'numeric_ranges', 'lat_range', 'long_range', 'splits', 'simulated_target', 'notes']
+dom provenance: "(absent)"
+
+=== raw rows check: Ids 524 & 1299 ===
+  Id Neighborhood  GrLivArea  SalePrice SaleCondition
+ 524      Edwards       4676     184750       Partial
+1299      Edwards       5642     160000       Partial

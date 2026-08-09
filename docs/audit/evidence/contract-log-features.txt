@@ -1,0 +1,9 @@
+payload keys: ['bedrooms', 'bldg_type', 'bsmt_full_bath', 'bsmt_half_bath', 'central_air', 'exter_qual', 'fireplaces', 'first_flr_sf', 'full_bath', 'garage_area', 'garage_cars', 'gr_liv_area', 'half_bath', 'house_style', 'kitchen_qual', 'lot_area', 'ms_zoning', 'neighborhood', 'open_porch_sf', 'overall_cond', 'overall_qual', 'pool_area', 'screen_porch', 'tot_rms_abvgrd', 'total_bsmt_sf', 'wood_deck_sf', 'year_built', 'year_remod_add']
+feature PoolArea = 500
+feature GarageArea = 880.0
+feature KitchenQual = Ex
+feature ExterQual = Ex
+feature YearRemodAdd = 2020
+feature TotRmsAbvGrd = 10
+feature 1stFlrSF = 1800
+prediction: {'estimated_price': 192366.32, 'probability': 0.202214, 'cluster_id': 0}

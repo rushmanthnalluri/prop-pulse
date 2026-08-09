@@ -1,0 +1,19 @@
+=== CHECK C1: LotFrontage imputation fitted on train only ===
+raw=1460? 1460 | split sizes pre-outlier: train=947, val=338, test=175
+outlier rule removed 2 train rows -> 945
+val LotFrontage rows compared: 338, max |processed - train-fit-recomputed| = 0.0
+val rows with raw LotFrontage NA: 65
+ Id Neighborhood  LotFrontage_processed  LotFrontage_recomputed
+  8       NWAmes                   80.0                    80.0
+ 65      CollgCr                   70.0                    70.0
+ 85      Gilbert                   65.0                    65.0
+ 96      Gilbert                   65.0                    65.0
+117       Sawyer                   71.5                    71.5
+132      Gilbert                   65.0                    65.0
+NA-imputed val neighborhoods where val-own median != train median: 14 e.g. [('CollgCr', 70.0, np.float64(68.0)), ('Gilbert', 65.0, np.float64(71.0)), ('Sawyer', 71.5, np.float64(70.5)), ('Timber', 73.0, np.float64(87.0)), ('ClearCr', 80.5, np.float64(65.0))]
+electrical_mode fitted: 'SBrkr'; global LotFrontage fallback: 69.0
+
+=== CHECK C2: FEATURE_DEFAULTS computed from train only ===
+Traceback (most recent call last):
+  File "<stdin>", line 47, in <module>
+TypeError: compute_feature_defaults() got an unexpected keyword argument 'train'

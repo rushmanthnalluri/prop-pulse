@@ -1,0 +1,4 @@
+outside catch_warnings, _get_filters(): 9
+inside plain catch_warnings, _get_filters(): 9
+predict with emptied in-context filters: 1514 warnings
+predict inside plain catch_warnings(simplefilter default): 0 warnings

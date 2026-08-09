@@ -1,0 +1,1 @@
+{"detail":[{"type":"less_than_equal","loc":["body","bedrooms"],"msg":"Input should be less than or equal to 8","input":99,"ctx":{"le":8}}]}

@@ -1,0 +1,24 @@
+=== A. Repeat batch predict_proba x8 on test (n=175) ===
+run 1: max|diff|=2.220e-16  n_diff=88
+run 2: max|diff|=2.220e-16  n_diff=83
+run 3: max|diff|=1.665e-16  n_diff=83
+run 4: max|diff|=1.665e-16  n_diff=94
+run 5: max|diff|=2.220e-16  n_diff=91
+run 6: max|diff|=2.220e-16  n_diff=86
+run 7: max|diff|=1.110e-16  n_diff=85
+across 8 runs: global max spread per row = 2.776e-16
+
+=== B. Threshold-flip risk at t=0.203292 ===
+val: max spread=1.665e-16; rows whose >=threshold decision flips across 5 runs: 0; min distance of any mean prob to threshold: 2.417e-07
+test: max spread=2.776e-16; rows whose >=threshold decision flips across 5 runs: 0; min distance of any mean prob to threshold: 6.097e-06
+
+=== C. Same check with n_jobs forced to 1 inside the RF ===
+RF params: class_weight='balanced' n_jobs=-1 random_state=42 n_estimators=300 max_depth=12 min_samples_leaf=5
+n_jobs=1: two batch calls bit-identical: True
+restored n_jobs=-1; diff vs n_jobs=1 result: max|diff|=2.776e-16
+
+=== D. Champion structure sanity ===
+top-level type: CalibratedClassifierCV | method: sigmoid | n calibrated folds: 5
+classes_: [0 1]
+
+DONE

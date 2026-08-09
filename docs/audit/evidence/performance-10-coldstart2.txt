@@ -1,0 +1,5 @@
+server2_spawn_to_health_seconds=21.506 (t0 = spawn time inside launcher; poller started later, so this is exact)
+server2_pid=26808
+rss_after_health_mb=320.5
+server2_cold_first_predict_ms=419.4 status=200 price=151147.74
+server2_warm_predict_ms=431.4

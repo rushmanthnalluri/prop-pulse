@@ -1,0 +1,10 @@
+ambient_cpu_before_c1:
+22.2087413372575
+--- /predict c=1 x100 (claim p50~197.46 ms, 4.71 rps) ---
+POST /predict  concurrency=1
+  requests=100 errors=0 (0.00%) statuses={'200': 100}
+  latency ms: min=482.57 mean=569.44 p50=554.09 p90=646.6 p95=682.53 p99=723.94 max=943.1
+  wall=56.945s throughput=1.76 req/s
+{"method": "POST", "endpoint": "/predict", "concurrency": 1, "requests": 100, "errors": 0, "error_rate": 0.0, "throughput_rps": 1.76, "wall_seconds": 56.945, "latency_ms": {"min": 482.57, "mean": 569.44, "p50": 554.09, "p90": 646.6, "p95": 682.53, "p99": 723.94, "max": 943.1}, "statuses": {"200": 100}}
+ambient_cpu_after_c1:
+72.740954404774

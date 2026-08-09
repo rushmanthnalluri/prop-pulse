@@ -1,0 +1,80 @@
+"""artifacts-audit T1c runner: replay real API-served predictions from logs.
+
+Usage: .venv/Scripts/python.exe docs/audit/evidence/artifacts-T1c-replay.py.txt
+Fresh subprocess. For each line of logs/predictions.jsonl (real values the API
+served): rebuilds the feature row from the logged payload via the exact serving
+path (serving_payload_to_raw -> build_feature_frame), predicts with the
+REGISTRY champion artifacts loaded fresh from disk, and diffs against the
+logged prediction (estimated_price rounded 2dp, probability rounded 6dp, per
+PredictionService) and against the logged feature row. Exit 0 always; mismatches
+are printed, not raised.
+"""
+import json
+import sys
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO))
+
+def main() -> int:
+    import joblib
+    import numpy as np
+    import pandas as pd
+
+    from ml.features.pipeline import build_feature_frame
+    from ml.features.serving import serving_payload_to_raw
+
+    reg = joblib.load(REPO / "models/registry/regression_champion.joblib")
+    cls = joblib.load(REPO / "models/registry/classification_champion.joblib")
+    champ = json.loads((REPO / "models/champion.json").read_text())
+    q_low = champ["regression"]["residual_interval"]["q_low"]
+    q_high = champ["regression"]["residual_interval"]["q_high"]
+    threshold = champ["classification"]["threshold"]
+    print(f"THRESHOLD={threshold} Q_LOW={q_low} Q_HIGH={q_high}")
+
+    lines = (REPO / "logs/predictions.jsonl").read_text(encoding="utf-8").splitlines()
+    print(f"LOG_LINES={len(lines)}")
+    n_price_ok = n_prob_ok = n_feat_ok = 0
+    for i, line in enumerate(lines):
+        entry = json.loads(line)
+        payload = entry["payload"]
+        raw = serving_payload_to_raw(payload)
+        frame = build_feature_frame(pd.DataFrame([raw]))
+        pred_log = float(reg.predict(frame)[0])
+        price = round(float(np.expm1(pred_log)), 2)
+        classes = list(cls.classes_)
+        prob = round(float(cls.predict_proba(frame)[0][classes.index(1)]), 6)
+
+        logged_price = entry["prediction"]["estimated_price"]
+        logged_prob = entry["prediction"]["probability"]
+        price_ok = price == logged_price
+        prob_ok = prob == logged_prob
+
+        logged_feats = entry["features"]
+        rebuilt = frame.iloc[0].to_dict()
+        feat_diffs = []
+        for k, v in rebuilt.items():
+            lv = logged_feats.get(k, "<MISSING>")
+            if isinstance(v, float) and isinstance(lv, (int, float)):
+                if not np.isclose(float(v), float(lv), rtol=0, atol=1e-12):
+                    feat_diffs.append((k, lv, float(v)))
+            elif lv != (v.item() if hasattr(v, "item") else v):
+                feat_diffs.append((k, lv, v))
+        missing = [k for k in rebuilt if k not in logged_feats]
+        extra = [k for k in logged_feats if k not in rebuilt]
+        feat_ok = not feat_diffs and not missing and not extra
+        n_price_ok += price_ok
+        n_prob_ok += prob_ok
+        n_feat_ok += feat_ok
+        print(
+            f"LINE {i}: ts={entry['timestamp']} price served={logged_price} replay={price} match={price_ok} | "
+            f"prob served={logged_prob} replay={prob} match={prob_ok} | features match={feat_ok} "
+            f"(diffs={feat_diffs[:3]} missing={missing[:3]} extra={extra[:3]}) | "
+            f"logged_cluster={entry['prediction'].get('cluster_id')} model_version={entry.get('model_version')!r}"
+        )
+    print(f"SUMMARY: price {n_price_ok}/{len(lines)} match, probability {n_prob_ok}/{len(lines)} match, features {n_feat_ok}/{len(lines)} match")
+    print("RESULT=OK")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

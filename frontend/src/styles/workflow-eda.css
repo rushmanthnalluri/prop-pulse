@@ -1,0 +1,584 @@
+/* ==========================================================================
+   ML Workbench — EDA stages 01–05 (WORKFLOW §6.3, WF-F2)
+   Page-scoped styles for UploadStage / FeaturesStage / StatsStage /
+   MissingStage / VizStage and their components/workflow/* parts. Design
+   tokens from styles.css only: nothing below 11px, hairlines over boxes, no
+   shadows (the one allowed --shadow-pop stays reserved for floating layers),
+   hovers animate color/background/border only (--dur-hover). The shell's own
+   chrome (stepper, picker, banners) lives in workflow.css (WF-F1) — this file
+   never restyles those.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Shared bits
+   -------------------------------------------------------------------------- */
+
+/* ProvenanceBanner directly under the page head — tighten the rhythm. */
+.wfe-banner-slot { margin-top: -14px; }
+.wfe-banner-slot + .section { padding-top: 22px; }
+
+.wfe-sub-title { font-size: 13px; font-weight: 600; margin: 22px 0 10px; }
+
+/* Table cells that carry a second line (id subline, policy name) */
+.wfe-cell-sub { display: block; font-size: 11px; margin-top: 2px; }
+
+/* Column-name headers must keep their exact case (schema identifiers). */
+.wfe-th-raw { text-transform: none; letter-spacing: 0.02em; }
+.wfe-th-dtype { display: block; font-weight: 400; color: var(--text-3); }
+
+.wfe-head-scroll { max-height: 380px; }
+
+.wfe-retry-link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* --------------------------------------------------------------------------
+   01 Upload — dropzone
+   -------------------------------------------------------------------------- */
+
+.wfe-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 30px 20px;
+  background: var(--surface);
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color var(--dur-hover),
+    background var(--dur-hover);
+}
+.wfe-drop:hover { border-color: var(--text-3); }
+.wfe-drop:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.wfe-drop--drag { border-color: var(--accent); background: var(--accent-wash); }
+.wfe-drop--busy { cursor: progress; opacity: 0.75; }
+
+.wfe-drop-icon { color: var(--text-3); }
+.wfe-drop--drag .wfe-drop-icon { color: var(--accent); }
+
+.wfe-drop-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.wfe-drop-link { color: var(--accent); text-decoration: underline; }
+.wfe-drop-hint { font-size: 11px; color: var(--text-3); }
+.wfe-drop-input { display: none; }
+.wfe-drop-error { font-size: 12.5px; color: var(--danger); margin: 8px 0 0; }
+
+/* --------------------------------------------------------------------------
+   01 Upload — validation report (per-check rows, §3.1/§6.3-01)
+   -------------------------------------------------------------------------- */
+
+.wfe-report-slot { margin-top: 16px; }
+.wfe-report--ok { border-color: var(--accent-border); background: var(--accent-wash); }
+
+.wfe-checks {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.wfe-check {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+}
+.wfe-check:first-child { border-top: none; }
+.wfe-check-icon {
+  flex-shrink: 0;
+  align-self: center;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+}
+.wfe-check--pass .wfe-check-icon { background: var(--accent-dim); color: var(--accent); }
+.wfe-check--warn .wfe-check-icon { background: var(--warn-dim); color: var(--warn); }
+.wfe-check--fail .wfe-check-icon { background: var(--danger-dim); color: var(--danger); }
+.wfe-check-code {
+  flex-shrink: 0;
+  min-width: 128px;
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.wfe-check-detail { color: var(--text-2); }
+.wfe-check--fail .wfe-check-detail { color: var(--text); font-weight: 500; }
+
+.wfe-report-details {
+  margin-top: 10px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+.wfe-report-line { font-size: 12.5px; margin: 6px 0 0; }
+.wfe-report-block { margin-top: 8px; font-size: 12.5px; }
+.wfe-report-lead { display: block; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.wfe-report-list { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; }
+.wfe-report-list li { margin: 3px 0; }
+
+.wfe-upload-next {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 14px;
+}
+
+/* --------------------------------------------------------------------------
+   01 Upload — dataset manager
+   -------------------------------------------------------------------------- */
+
+.wfe-row-active { background: var(--accent-wash); }
+.wfe-actions-cell { white-space: nowrap; }
+.wfe-actions { display: inline-flex; align-items: center; gap: 8px; }
+.wfe-delete-btn {
+  padding: 3px 8px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-ui);
+  font-size: 11px;
+  color: var(--danger);
+  cursor: pointer;
+  transition: border-color var(--dur-hover);
+}
+.wfe-delete-btn:hover { border-color: rgba(182, 70, 60, 0.45); }
+.wfe-nuke-note { font-size: 11px; }
+
+.wfe-confirm-row td { background: var(--danger-dim); }
+.wfe-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+.wfe-confirm-text { font-size: 12.5px; color: var(--text-2); }
+.wfe-confirm-error { display: block; color: var(--danger); font-size: 12px; margin-top: 4px; }
+.wfe-confirm-actions { display: inline-flex; gap: 8px; }
+
+/* --------------------------------------------------------------------------
+   02 Features — target objective cards
+   -------------------------------------------------------------------------- */
+
+.wfe-targets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.wfe-target {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.wfe-target--off { opacity: 0.65; }
+.wfe-target-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.wfe-target-kicker {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.wfe-target-title { font-size: 15px; font-weight: 600; margin: 0; }
+.wfe-target-chips { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.wfe-chip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 7px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  background: var(--surface);
+  white-space: nowrap;
+}
+.wfe-target-meta { font-size: 11px; color: var(--text-3); margin: 0; }
+.wfe-target-note { font-size: 12.5px; color: var(--text-2); margin: 0; }
+
+/* --------------------------------------------------------------------------
+   02 Features — toolbar + table + inspect expansion
+   -------------------------------------------------------------------------- */
+
+.wfe-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  margin-bottom: 14px;
+}
+.wfe-toolbar-search { flex: 1 1 220px; max-width: 340px; }
+.wfe-toolbar-count { margin-left: auto; align-self: center; font-size: 11px; color: var(--text-3); }
+
+.wfe-chev-col { width: 36px; }
+.wfe-chev {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    border-color var(--dur-hover),
+    color var(--dur-hover);
+}
+.wfe-chev:hover { border-color: var(--text-3); color: var(--text); }
+.wfe-chev svg { transition: transform var(--dur-hover); }
+
+.wfe-feat-name { font-size: 12px; }
+.wfe-feat-name + .badge { margin-left: 8px; }
+.wfe-row-open td { background: var(--bg); }
+.wfe-detail-row td { padding: 0; background: var(--bg); }
+.wfe-detail-row:hover td { background: var(--bg); }
+
+.wfe-feat-detail { padding: 12px 16px; display: grid; gap: 10px; }
+.wfe-feat-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 22px;
+  font-size: 12.5px;
+  color: var(--text-2);
+}
+.wfe-fact-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-right: 5px;
+}
+
+.wfe-topvals { display: grid; gap: 5px; max-width: 540px; }
+.wfe-topval {
+  display: grid;
+  grid-template-columns: minmax(90px, 150px) 1fr 54px;
+  gap: 10px;
+  align-items: center;
+}
+.wfe-topval-value {
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wfe-topval-track {
+  height: 6px;
+  background: var(--raised);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.wfe-topval-fill { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.wfe-topval-count { font-size: 11px; color: var(--text-3); text-align: right; }
+
+/* Pipeline-derived features disclosure */
+.wfe-pipe { max-width: none; }
+.wfe-pipe-note { margin-bottom: 12px; }
+.wfe-pipe-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 24px;
+}
+.wfe-pipe-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12.5px;
+  padding: 4px 0;
+}
+.wfe-pipe-item .mono { font-size: 12px; }
+
+/* --------------------------------------------------------------------------
+   03 Stats — target spotlight
+   -------------------------------------------------------------------------- */
+
+.wfe-spot {
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-lg);
+}
+.wfe-spot-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; }
+.wfe-spot-title { font-size: 15px; font-weight: 600; margin: 0; }
+.wfe-spot-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+  gap: 12px 20px;
+}
+.wfe-spot-stat { min-width: 0; }
+.wfe-spot-label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 3px;
+}
+.wfe-spot-value { font-size: 16px; font-weight: 500; letter-spacing: -0.01em; }
+.wfe-spot-note { margin: 12px 0 0; }
+
+/* --------------------------------------------------------------------------
+   04 Missing — %-bars, treatment policy, notes
+   -------------------------------------------------------------------------- */
+
+.wfe-mbar-cell { display: inline-flex; align-items: center; gap: 8px; }
+.wfe-mbar {
+  display: inline-block;
+  width: 84px;
+  height: 6px;
+  background: var(--raised);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.wfe-mbar-fill { display: block; height: 100%; background: var(--accent); border-radius: 3px; }
+.wfe-policy { display: block; font-size: 11px; color: var(--text-3); margin-top: 3px; }
+.wfe-note-cell { white-space: normal; min-width: 260px; font-size: 12.5px; }
+
+.wfe-blocking-list { margin: 10px 0 0; padding-left: 18px; font-size: 12.5px; }
+.wfe-blocking-list li { margin: 4px 0; }
+.wfe-missing-notes { display: grid; gap: 8px; max-width: 720px; }
+.wfe-notes-section { padding-top: 0; }
+
+/* --------------------------------------------------------------------------
+   05 Viz — controls
+   -------------------------------------------------------------------------- */
+
+.wfe-viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.wfe-seg {
+  display: inline-flex;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.wfe-seg-btn {
+  padding: 7px 12px;
+  background: none;
+  border: none;
+  border-left: 1px solid var(--border);
+  font-family: var(--font-ui);
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  cursor: pointer;
+  transition:
+    color var(--dur-hover),
+    background var(--dur-hover);
+}
+.wfe-seg-btn:first-child { border-left: none; }
+.wfe-seg-btn:hover { color: var(--text); background: var(--raised); }
+.wfe-seg-btn--on,
+.wfe-seg-btn--on:hover { background: var(--accent-wash); color: var(--accent); font-weight: 600; }
+
+.wfe-viz-updating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* --------------------------------------------------------------------------
+   05 Viz — chart states + captions
+   -------------------------------------------------------------------------- */
+
+.wfe-viz-chart { height: 300px; }
+.wfe-viz-chart--auto { min-height: 200px; }
+.wfe-viz-dim { opacity: 0.55; transition: opacity var(--dur-hover); }
+.wfe-viz-stale { margin-bottom: 12px; font-size: 12.5px; }
+.wfe-viz-caption {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  font-size: 11px;
+  color: var(--text-3);
+  margin: 10px 0 0;
+}
+
+/* --------------------------------------------------------------------------
+   05 Viz — box-and-whisker (composed bars on a shared scale)
+   -------------------------------------------------------------------------- */
+
+.wfe-box { display: grid; gap: 2px; margin-top: 4px; }
+.wfe-box-row {
+  display: grid;
+  grid-template-columns: minmax(104px, 150px) 1fr 76px;
+  gap: 12px;
+  align-items: center;
+  padding: 3px 0;
+}
+.wfe-box-label {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+.wfe-box-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wfe-box-n { font-size: 11px; color: var(--text-3); white-space: nowrap; }
+.wfe-box-track { position: relative; display: block; height: 16px; }
+.wfe-box-whisker {
+  position: absolute;
+  top: 50%;
+  height: 1px;
+  margin-top: -0.5px;
+  background: var(--border-strong);
+}
+.wfe-box-cap {
+  position: absolute;
+  top: 50%;
+  width: 1px;
+  height: 9px;
+  margin-top: -4.5px;
+  background: var(--border-strong);
+}
+.wfe-box-iqr {
+  position: absolute;
+  top: 50%;
+  height: 10px;
+  margin-top: -5px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  border-radius: 2px;
+}
+.wfe-box-median {
+  position: absolute;
+  top: 50%;
+  width: 2px;
+  height: 14px;
+  margin-top: -7px;
+  margin-left: -1px;
+  background: var(--accent);
+}
+.wfe-box-med { font-size: 11px; color: var(--text-2); text-align: right; white-space: nowrap; }
+.wfe-box-scalerow { padding-top: 0; }
+.wfe-box-scale {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid var(--border);
+  padding-top: 4px;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* --------------------------------------------------------------------------
+   05 Viz — correlation heat grid (pure CSS cells colored from the matrix)
+   -------------------------------------------------------------------------- */
+
+.wfe-heat { overflow-x: auto; padding: 4px 0 8px; }
+.wfe-heat-grid { display: grid; gap: 2px; width: 100%; }
+.wfe-heat-colhead {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 96px;
+  justify-self: stretch;
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  padding: 4px 2px;
+}
+.wfe-heat-rowhead {
+  align-self: center;
+  text-align: right;
+  padding-right: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-3);
+  max-width: 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.wfe-heat-cell {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  border-radius: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive (UX §8; test widths 1440 / 1024 / 768 / 390)
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1024px) {
+  .wfe-targets { grid-template-columns: 1fr; }
+  .wfe-viz-chart { height: 260px; }
+}
+
+@media (max-width: 768px) {
+  .wfe-viz-chart { height: 220px; }
+  .wfe-box-row { grid-template-columns: minmax(84px, 120px) 1fr 64px; gap: 8px; }
+}
+
+@media (max-width: 640px) {
+  .wfe-drop { padding: 22px 14px; }
+  .wfe-toolbar-search { max-width: none; }
+  .wfe-toolbar-count { margin-left: 0; flex-basis: 100%; }
+  .wfe-viz-controls .field { flex: 1 1 100%; }
+  .wfe-viz-controls .wfe-seg { flex: 1 1 100%; }
+  .wfe-viz-updating { margin-left: 0; }
+  .wfe-viz-chart { height: 200px; }
+  .wfe-pipe-list { grid-template-columns: 1fr; }
+  .wfe-check-code { min-width: 0; }
+  .wfe-check { flex-wrap: wrap; }
+  .wfe-confirm { flex-direction: column; align-items: flex-start; }
+  .wfe-box-row { grid-template-columns: 1fr; gap: 2px; padding: 6px 0; }
+  .wfe-box-med { text-align: left; }
+  .wfe-box-scalerow { grid-template-columns: 1fr; }
+  .wfe-box-scalerow .wfe-box-label,
+  .wfe-box-scalerow .wfe-box-med { display: none; }
+}

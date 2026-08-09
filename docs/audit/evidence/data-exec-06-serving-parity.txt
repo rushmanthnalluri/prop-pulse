@@ -1,0 +1,18 @@
+RAW_INPUT_COLUMNS: 79 | payload-mappable raw cols: 54 | lat/long derived from Neighborhood
+un-mappable raw cols (fall back to FEATURE_DEFAULTS): 23
+['3SsnPorch', 'Alley', 'BsmtCond', 'BsmtExposure', 'BsmtFinSF2', 'BsmtFinType1', 'BsmtFinType2', 'Condition2', 'ExterCond', 'Exterior2nd', 'Fence', 'GarageCond', 'GarageQual', 'GarageYrBlt', 'Heating', 'LandContour', 'LowQualFinSF', 'MSSubClass', 'MasVnrType', 'MiscFeature', 'PoolQC', 'RoofMatl', 'Utilities']
+
+(a) Id=5 serving-built raw row: lat/long 42.0514 -93.6532 vs processed 42.0514 -93.6532 -> True
+differing feature columns: 5
+  BsmtExposure: train='Av' serving='No' | col un-mappable=True | serving==FEATURE_DEFAULTS[BsmtExposure]=True
+  BsmtFinType1: train='GLQ' serving='Unf' | col un-mappable=True | serving==FEATURE_DEFAULTS[BsmtFinType1]=True
+  GarageYrBlt: train=np.float64(2000.0) serving=np.float64(1977.0) | col un-mappable=True | serving==FEATURE_DEFAULTS[GarageYrBlt]=True
+  MSSubClass: train=np.int64(60) serving=np.int64(50) | col un-mappable=True | serving==FEATURE_DEFAULTS[MSSubClass]=True
+  MasVnrType: train='BrkFace' serving='None' | col un-mappable=True | serving==FEATURE_DEFAULTS[MasVnrType]=True
+=> all diffs explained by un-mappable cols taking FEATURE_DEFAULTS: True
+
+(b) train rows with all 23 un-mappable cols == FEATURE_DEFAULTS: 0
+FULL PARITY (maximally-specified payload): True
+
+(c) minimal SPEC-payload for Id=5: geo coords match processed row: True; feature cols differing: 24/94 (expected >0: unspecified fields take train defaults; year_remod_add defaults to year_built)
+    neighborhood stats cols equal: True

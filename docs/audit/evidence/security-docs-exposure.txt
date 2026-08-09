@@ -1,0 +1,4 @@
+=== /docs and /openapi.json exposure (live, MSYS_NO_PATHCONV=1) ===
+/docs -> HTTP 200
+/redoc -> HTTP 200
+/openapi.json -> HTTP 200

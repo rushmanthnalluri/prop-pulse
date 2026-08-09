@@ -1,0 +1,35 @@
+=== all deserialization call sites (joblib/pickle/cloudpickle/mlflow.load) ===
+ml/clustering/serve.py:73:        self._dbscan = joblib.load(model_dir / "dbscan.joblib")
+ml/clustering/serve.py:74:        self._scaler = joblib.load(model_dir / "dbscan_scaler.joblib")
+ml/evaluation/evaluate.py:634:    reg_champion_model = joblib.load(_regression_artifact(regression.champion))
+ml/evaluation/evaluate.py:635:    reg_runner_model = joblib.load(_regression_artifact(regression.runner_up))
+ml/evaluation/evaluate.py:646:    cls_champion_model = joblib.load(
+ml/evaluation/evaluate.py:681:                joblib.load(_regression_artifact(name)).predict(X_test), dtype=float
+ml/evaluation/evaluate.py:689:            model = joblib.load(_classification_artifact(name, calibrated=True))
+ml/explainability/explainer.py:142:        pipeline = joblib.load(model_path)
+backend/app/main.py:123:            regression_model=joblib.load(regression_path),
+backend/app/main.py:124:            classification_model=force_single_threaded(joblib.load(classification_path)),
+backend/tests/test_latency_fixes.py:92:    model = joblib.load(REPO_ROOT / champion["classification"]["path"])
+scripts/audit_reproducibility.py:246:        model = joblib.load(joblib_path)
+scripts/load_test.py:218:    regression_model = joblib.load(REPO_ROOT / champion["regression"]["path"])
+scripts/load_test.py:219:    classification_model = joblib.load(REPO_ROOT / champion["classification"]["path"])
+
+=== where do the loaded paths come from? (callers) ===
+ml/paths.py:16:REGISTRY_DIR = MODELS_DIR / "registry"
+backend/app/config.py:3:Reads the keys defined in ``.env.example`` (``MODEL_DIR``, ``DATA_DIR``,
+backend/app/config.py:34:    model_dir: str = "models"
+backend/app/config.py:53:    def resolved_model_dir(self) -> Path:
+backend/app/config.py:55:        return self._resolve(self.model_dir)
+ml/clustering/serve.py:38:__all__ = ["DEFAULT_MODEL_DIR", "MicroMarketLookup"]
+ml/clustering/serve.py:40:DEFAULT_MODEL_DIR: Path = MODELS_DIR / "clustering"
+ml/clustering/serve.py:49:        model_dir: Directory holding ``dbscan.joblib``, ``dbscan_scaler.joblib``,
+ml/clustering/serve.py:61:        model_dir: Path = DEFAULT_MODEL_DIR,
+ml/clustering/serve.py:65:        model_dir = Path(model_dir)
+ml/clustering/serve.py:67:        missing = [name for name in required if not (model_dir / name).exists()]
+ml/clustering/serve.py:70:                f"clustering artifacts missing in {model_dir}: {missing} — run `python -m ml.clustering.train`"
+ml/clustering/serve.py:73:        self._dbscan = joblib.load(model_dir / "dbscan.joblib")
+ml/clustering/serve.py:74:        self._scaler = joblib.load(model_dir / "dbscan_scaler.joblib")
+ml/clustering/serve.py:75:        payload = json.loads((model_dir / "cluster_stats.json").read_text(encoding="utf-8"))
+ml/clustering/serve.py:83:        assignments = pd.read_csv(model_dir / "cluster_assignments.csv")
+ml/explainability/explainer.py:32:from ml.paths import RANDOM_SEED, REGISTRY_DIR
+ml/explainability/explainer.py:46:REGRESSION_CHAMPION_PATH: Path = REGISTRY_DIR / "regression_champion.joblib"

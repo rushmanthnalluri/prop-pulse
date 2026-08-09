@@ -1,0 +1,37 @@
+
+=== linear_v1.joblib ===  estimator: LinearRegression()
+  metric             recomputed           recorded  match
+  mae        15888.103770966400 15888.103770966394   True
+  rmse       22809.020458964962 22809.020458964947   True
+  r2             0.920232501199     0.920232501199   True
+  rmsle          0.142462546544     0.142462546544   True
+  rmse_log       0.142462546544     0.142462546544   True
+  test recomputed: mae=15623.38 rmse=22518.15 r2=0.9212 rmsle=0.1223
+  test claimed (report sec.5): mae=15,623 rmse=22,518 r2=0.9212 rmsle=0.1223
+
+=== xgboost_v1.joblib ===  estimator: XGBRegressor(base_score=None, booster=None, callbacks=None,
+             colsample_bylevel=None, colsample_bynode=None,
+             colsample_bytree=0.8, device=None, early_stopping_rounds=None,
+             enable_categorical=True, eval_metric=None, feature_types=None,
+             feature_weights=None, gamma=None, grow_policy=None,
+             importance_type=None, interaction_constraints=None,
+             learning_rate=0.05, max_bin=None, max_cat_threshold=None,
+             max_cat_to_onehot=None, max_delta_step=None, max_depth=3,
+             max_leaves=None, min_child_weight=1, missing=nan,
+             monotone_constraints=None, multi_strategy=None, n_estimators=500,
+             n_jobs=None, num_parallel_tree=None, ...)
+  metric             recomputed           recorded  match
+  mae        15461.464138067997 15461.464138068000   True
+  rmse       23459.536571493518 23459.536571493511   True
+  r2             0.915617660454     0.915617660454   True
+  rmsle          0.139777204948     0.139777204948   True
+  rmse_log       0.139777204948     0.139777204948   True
+  test recomputed: mae=12929.23 rmse=18880.08 r2=0.9446 rmsle=0.1051
+  test claimed (report sec.5): mae=12,929 rmse=18,880 r2=0.9446 rmsle=0.1051
+
+=== paired bootstrap re-derived ===
+  observed_diff=-0.0043405357877082384  ci=[-0.013335953563988251, 0.005985330821469992]  prob_runner_up_better=0.1925  significant=False
+  claimed: observed=-0.004341 ci=[-0.013336, 0.005985] prob=0.1925 significant=False
+
+ranking: ['ridge', 'xgboost', 'lasso', 'linear', 'random_forest']
+champion: ridge | runner_up: xgboost

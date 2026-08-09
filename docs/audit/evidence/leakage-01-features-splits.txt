@@ -1,0 +1,16 @@
+=== CHECK A1: target-derived columns must NOT be model inputs ===
+MODEL_FEATURES count: 94
+banned tokens ['Id', 'SaleCondition', 'SalePrice', 'SaleType', 'days_on_market', 'price_per_sqft', 'sells_within_30_days']
+overlap with MODEL_FEATURES: NONE
+name-contains-target-stem features: ['neighborhood_median_price_per_sqft']
+EXCLUDED_RAW_COLUMNS: ['Id', 'SalePrice', 'days_on_market', 'sells_within_30_days', 'SaleType', 'SaleCondition']
+feature_list.json == MODEL_FEATURES: True
+
+=== CHECK A2: split integrity (data/processed/*.csv) ===
+train: n=945, YrSold min=2006 max=2008, unique years=[np.int64(2006), np.int64(2007), np.int64(2008)]
+val: n=338, YrSold min=2009 max=2009, unique years=[np.int64(2009)]
+test: n=175, YrSold min=2010 max=2010, unique years=[np.int64(2010)]
+Id overlap train&val: 0
+Id overlap test&train: 0
+Id overlap test&val: 0
+total rows=1458, union of Ids=1458, counts 945/338/175 claimed -> actual 945/338/175

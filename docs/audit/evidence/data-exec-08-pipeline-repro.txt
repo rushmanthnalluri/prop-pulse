@@ -1,0 +1,20 @@
+== in-memory pipeline re-run vs stored CSVs (value-level, dtype-normalized) ==
+train: rows=945 cols_match=True value_mismatches=NONE
+val: rows=338 cols_match=True value_mismatches=NONE
+test: rows=175 cols_match=True value_mismatches=NONE
+md5 data/processed/train.csv = c237df1860d7310db31de7af24150a2f
+md5 data/processed/val.csv = c04b4ab6cfc538eee295ca29485bd7cb
+md5 data/processed/test.csv = b576c82c7678ae48e0263d1124ba4404
+
+== outlier-comment claim check ==
+raw train-split rows with GrLivArea>4000:   Id  GrLivArea  SalePrice
+ 524       4676     184750
+ 692       4316     755000
+1183       4476     745000
+1299       5642     160000
+rows >4000 with SalePrice>=300k (comment: 'there are none'): 2
+dataset-wide rows >4000 (all splits):   Id  GrLivArea  SalePrice  YrSold
+ 524       4676     184750    2007
+ 692       4316     755000    2007
+1183       4476     745000    2007
+1299       5642     160000    2008

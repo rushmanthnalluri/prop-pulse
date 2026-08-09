@@ -1,0 +1,13 @@
+
+Running 5 tests using 1 worker
+
+(node:20148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 tests\dashboard.spec.js:68:1 › valuation flow: form → price, range, probability, micro-market, 5 factors (2.3s)
+  ok 2 tests\dashboard.spec.js:104:1 › validation error state: out-of-range living area surfaces the field name (1.2s)
+  ok 3 tests\dashboard.spec.js:124:1 › market map: leaflet renders >=20 markers, popup shows cluster stats (3.5s)
+  ok 4 tests\dashboard.spec.js:145:1 › model insights: champions, >=10 importance bars, drift panel (6.0s)
+  ok 5 tests\dashboard.spec.js:173:1 › API-down state: valuation submit shows a reachable error (LAST — stops backend) (5.0s)
+
+  5 passed (19.5s)
+EXIT:0

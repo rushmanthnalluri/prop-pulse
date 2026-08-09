@@ -1,0 +1,82 @@
+{
+  "version": 1,
+  "description": "Reference distribution of champion predictions on the validation split; the monitoring drift check bins incoming predictions with these edges and compares proportions (PSI-style).",
+  "generated_from": "data/processed/val.csv, champion models",
+  "generated_at": "2026-08-07T10:38:48.409633+00:00",
+  "dataset_version": "ames-1.0",
+  "feature_version": "9b0f8ba4201c",
+  "n_rows": 338,
+  "regression": {
+    "model": "ridge_v1",
+    "field": "estimated_price",
+    "unit": "usd",
+    "binning": "deciles of champion validation predictions",
+    "bin_edges": [
+      58172.299486676755,
+      104984.16616975506,
+      119688.69858999974,
+      133489.51902670466,
+      149282.59212015098,
+      161329.85772370067,
+      180443.92013239386,
+      200310.36852827226,
+      221680.75771365088,
+      285671.49001990625,
+      559226.6846866579
+    ],
+    "bin_proportions": [
+      0.10059171597633136,
+      0.10059171597633136,
+      0.10059171597633136,
+      0.09763313609467456,
+      0.10059171597633136,
+      0.10059171597633136,
+      0.09763313609467456,
+      0.10059171597633136,
+      0.10059171597633136,
+      0.10059171597633136
+    ],
+    "summary": {
+      "min": 58172.299486676755,
+      "mean": 180362.54966154488,
+      "max": 559226.6846866579
+    }
+  },
+  "classification": {
+    "model": "random_forest_calibrated_v1",
+    "field": "probability",
+    "threshold": 0.20329224173900778,
+    "binning": "deciles of champion validation probabilities",
+    "simulated_target": true,
+    "bin_edges": [
+      0.06984171838190154,
+      0.1185642351673085,
+      0.14457224078073214,
+      0.17506225903340192,
+      0.19666959773002052,
+      0.2275738808400179,
+      0.25392460117580173,
+      0.286620664267948,
+      0.32949659513659885,
+      0.3937411343580487,
+      0.5973518486437637
+    ],
+    "bin_proportions": [
+      0.10059171597633136,
+      0.10059171597633136,
+      0.10059171597633136,
+      0.09763313609467456,
+      0.10059171597633136,
+      0.10059171597633136,
+      0.09763313609467456,
+      0.10059171597633136,
+      0.10059171597633136,
+      0.10059171597633136
+    ],
+    "summary": {
+      "min": 0.06984171838190154,
+      "mean": 0.24169085004343985,
+      "max": 0.5973518486437637
+    }
+  }
+}

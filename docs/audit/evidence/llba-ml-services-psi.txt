@@ -1,0 +1,27 @@
+PSI manual: 0.2746530721670274 impl: 0.2746530721670274 match: True
+PSI identical: 0.0
+PSI empty-bin: 2.485830810165109
+ValueError OK: proportion vectors must have equal length, got 1 vs 2
+ValueError OK: proportion vectors must not be empty
+ValueError OK: proportions must be non-negative
+ValueError OK: proportion vectors must carry positive mass
+pool edges (dedup): [0.0, 700.0]
+pool ref proportions: [1.] sum: 1.0
+constant edges: [6.5, 7.0, 7.5]
+constant ref: [0. 1.] prod shift: [1. 0.]
+PSI constant vs shifted: 27.63096585394158
+below-range -> first bin: 1.0 rest 0: True
+above-range -> last bin: 1.0
+PSI out-of-range vs ref: 12.433835163691871
+mixed junk: [1.] (expect 2 clean values)
+all junk -> zero vector: [0.]
+ValueError OK: need at least two bin edges, got 1
+ValueError OK: bin edges must be strictly increasing
+ValueError OK: bin edges must be strictly increasing
+ValueError OK: n_bins must be >= 1, got 0
+ValueError OK: cannot derive bins from an empty sample
+GrLivArea edges match: True proportions match: True n bins: 10
+PoolArea edges match: True proportions match: True n bins: 1
+OverallQual edges match: True proportions match: True n bins: 5
+neighborhood_median_price edges match: True proportions match: True n bins: 9
+categorical Neighborhood match: True n cats: 25

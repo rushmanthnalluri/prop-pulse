@@ -1,0 +1,19 @@
+SMOKE_WINDOW_START 2026-08-07T14:09:49Z
+=== log line count now (shared live log) ===
+19 logs/predictions.jsonl
+
+=== 1. GET /health ===
+{"status":"ok","models_loaded":{"regression":true,"classification":true}}
+HTTP 200
+
+=== 2. POST /predict (StoneBr full contract) ===
+{"estimated_price":204881.59,"price_range":{"low":177945.52,"high":230227.22},"sale_probability":{"probability":0.408609,"sells_within_30_days":true,"threshold":0.203292},"micro_market":{"cluster_id":0,"label":"mid northwest","neighborhoods":["Blmngtn","BrDale","BrkSide","Crawfor","Gilbert","IDOTRR","NPkVill","NWAmes","NoRidge","NridgHt","OldTown","Somerst","StoneBr","Veenker"],"n_neighborhoods":14,"n_sales":461,"median_price":179900.0,"median_price_per_sqft":119.39218523878436,"sale_velocity_30d":0.27765726681127983,"centroid_lat":42.04567857142858,"centroid_long":-93.63607857142857,"fallback":false,"note":"sale_velocity_30d is the fraction of this cluster's TRAIN-split sales with sells_within_30_days==1. It is a DESCRIPTIVE statistic over the SIMULATED sale-speed target (ADR-3), not a real-world market measurement, and is never used as a model input."},"top_price_factors":[{"feature":"OverallQual","impact":"positive","magnitude":0.089386},{"feature":"neighborhood_median_price","impact":"positive","magnitude":0.088983},{"feature":"neighborhood_median_price_per_sqft","impact":"positive","magnitude":0.057562},{"feature":"neighborhood_mean_price","impact":"positive","magnitude":0.054321},{"feature":"GrLivArea","impact":"positive","magnitude":0.050053}],"model_version":{"regression":"ridge_v1","classification":"random_forest_v1","feature_version":"9b0f8ba4201c"}}
+HTTP 200
+
+=== 3. GET /market/clusters (first 300 chars) ===
+{"n_clusters":4,"clusters":[{"cluster_id":0,"label":"mid northwest","neighborhoods":["Blmngtn","BrDale","BrkSide","Crawfor","Gilbert","IDOTRR","NPkVill","NWAmes","NoRidge","NridgHt","OldTown","Somerst","StoneBr","Veenker"],"n_neighborhoods":14,"n_sales":461,"median_price":179900.0,"median_price_per_sqft":119.39218523878436,"sale_velocity_30d":0.27765726681127983,"centroid_lat":42.04567857142858,"c
+HTTP 200
+
+=== 4. GET /model/importance (first 300 chars) ===
+{"metadata":{"model":"Ridge","model_path":"models/registry/regression_champion.joblib","explainer":"shap.LinearExplainer","units":"log1p(SalePrice)","background_size":200,"background_split":"train","val_sample_size":200,"seed":42,"feature_version":"9b0f8ba4201c","dataset_version":"ames-1.0","generated_at":"2026-08-07T10:39:02.217783+00:00","aggregation":"one-hot dummy SHAP values summed back to ba
+HTTP 200

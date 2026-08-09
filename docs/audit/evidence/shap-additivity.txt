@@ -1,0 +1,17 @@
+COMMAND: .venv/Scripts/python.exe - <<EOF (additivity: sum(shap)+expected_value == pipeline.predict, 5 val rows)
+DATE: Fri Aug  7 13:01:22 UTC 2026
+---OUTPUT---
+explainer built in 3.41s : Ridge via LinearExplainer
+transformed=296 base=94 expected_value=12.00034143094705
+val rows: 338
+val iloc=  0 Id=6: pred=12.051764157772 E[shap]+sum=12.051764157772 abs_err=0.000e+00
+val iloc= 50 Id=276: pred=11.983499174272 E[shap]+sum=11.983499174272 abs_err=0.000e+00
+val iloc=100 Id=483: pred=12.065014525732 E[shap]+sum=12.065014525732 abs_err=0.000e+00
+val iloc=200 Id=883: pred=12.039023871514 E[shap]+sum=12.039023871514 abs_err=0.000e+00
+val iloc=337 Id=1455: pred=12.148409336662 E[shap]+sum=12.148409336662 abs_err=0.000e+00
+sum(transformed shap) == sum(aggregated shap): True
+aggregate_shap() output == explainer.explain() output: True
+base names identical: True
+transformed-space additivity max err: 0.0
+MAX ADDITIVITY ERROR (5 rows, base space): 0.000e+00  (tolerance 1e-6)
+ADDITIVITY: PASS

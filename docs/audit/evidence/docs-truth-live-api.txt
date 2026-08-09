@@ -1,0 +1,179 @@
+### DEMO.md payload (NridgHt 2Story 4bd 2500sqft 2005 q8)
+HTTP 200
+estimated_price: 250967.5 | DOC: ~250,968 (assignment quotes 250,967.50)
+price_range: {'low': 217972.48, 'high': 282014.33} | DOC: 217,972-282,014
+sale_probability: {'probability': 0.291813, 'sells_within_30_days': True, 'threshold': 0.203292} | DOC: ~29.2% @ 20.3% threshold, sells=True
+micro_market: 0 mid northwest fallback: False | DOC: 0 mid northwest false
+  median_price: 179900.0 ppsqf: 119.39 n_nbhd: 14 | DOC: 179900, 119/sqft, 14
+factors: [('OverallQual', 'positive'), ('GrLivArea', 'positive'), ('total_sf', 'positive'), ('neighborhood_median_price', 'positive'), ('neighborhood_mean_price', 'positive')]
+  DOC order: OverallQual, GrLivArea, total_sf, neighborhood_median_price, neighborhood_mean_price (all positive)
+
+### API.md StoneBr payload, HTTP 200
+estimated_price: 204881.59 | DOC: 204881.59
+price_range: {'low': 177945.52, 'high': 230227.22} | DOC: 177945.52 / 230227.22
+sale_probability: {'probability': 0.408609, 'sells_within_30_days': True, 'threshold': 0.203292} | DOC: 0.408609 true 0.203292
+micro_market: 0 mid northwest 14 179900.0 119.39218523878436 0.27765726681127983 42.04567857142858 -93.63607857142857
+factors: [('OverallQual', 'positive', 0.089386), ('neighborhood_median_price', 'positive', 0.088983), ('neighborhood_median_price_per_sqft', 'positive', 0.057562), ('neighborhood_mean_price', 'positive', 0.054321), ('GrLivArea', 'positive', 0.050053)]
+  DOC: OverallQual+0.089386, neighborhood_median_price+0.088983, neighborhood_median_price_per_sqft+0.057562, neighborhood_mean_price+0.054321, GrLivArea+0.050053
+model_version: {'regression': 'ridge_v1', 'classification': 'random_forest_v1', 'feature_version': '9b0f8ba4201c'} | DOC: ridge_v1 random_forest_v1 9b0f8ba4201c
+
+### /predict/price NAmes, HTTP 200
+{"estimated_price": 137105.86, "price_range": {"low": 119080.32, "high": 154067.09}, "model_version": {"regression": "ridge_v1", "classification": "random_forest_v1", "feature_version": "9b0f8ba4201c"}} | DOC: 137105.86, 119080.32, 154067.09
+
+### /predict/sale-probability NAmes, HTTP 200
+{"probability": 0.319553, "sells_within_30_days": true, "threshold": 0.203292, "model_version": {"regression": "ridge_v1", "classification": "random_forest_v1", "feature_version": "9b0f8ba4201c"}} | DOC: 0.319553 true 0.203292
+
+### PERFORMANCE.md payload, HTTP 200
+estimated_price: 151147.74 | DOC: 151147.74
+probability: 0.216313 | DOC: 0.216313
+
+### GET /model/info, HTTP 200
+{
+ "regression": {
+  "name": "ridge",
+  "version": "v1",
+  "path": "models/registry/regression_champion.joblib",
+  "val_metrics": {
+   "mae": 14526.572418,
+   "rmse": 21672.72103,
+   "r2": 0.927982,
+   "rmsle": 0.135437,
+   "rmse_log": 0.135437,
+   "residual_interval": {
+    "q_low": -0.140954,
+    "q_high": 0.116634
+   }
+  },
+  "test_metrics": {
+   "mae": 15075.473458,
+   "rmse": 21151.541687,
+   "r2": 0.93048,
+   "rmsle": 0.118689,
+   "interval_coverage": 0.782857
+  },
+  "residual_interval": {
+   "q_low": -0.140954,
+   "q_high": 0.116634
+  },
+  "bootstrap_vs_runner_up": {
+   "runner_up": "xgboost",
+   "observed_rmsle_diff": -0.004341,
+   "ci95": [
+    -0.013336,
+    0.005985
+   ],
+   "prob_runner_up_better": 0.1925,
+   "n_resamples": 2000,
+   "seed": 42,
+   "significant": false
+  }
+ },
+ "classification": {
+  "name": "random_forest",
+  "version": "v1",
+  "path": "models/registry/classification_champion.joblib",
+  "calibrated": true,
+  "threshold": 0.203292,
+  "val_metrics": {
+   "roc_auc": 0.721778,
+   "pr_auc": 0.525013,
+   "precision": 0.409091,
+   "recall": 0.818182,
+   "f1": 0.545455,
+   "brier": 0.18555,
+   "threshold": 0.203292,
+   "confusion_matrix": {
+    "tn": 122,
+    "fp": 117,
+    "fn": 18,
+    "tp": 81
+   }
+  },
+  "test_metrics": {
+   "roc_auc": 0.766602,
+   "pr_auc": 0.567363,
+   "precision": 0.366972,
+   "recall": 0.816327,
+   "f1": 0.506329,
+   "brier": 0.171026,
+   "threshold": 0.203292,
+   "confusion_matrix": {
+    "tn": 57,
+    "fp": 69,
+    "fn": 9,
+    "tp": 40
+   }
+  }
+ },
+ "clustering": {
+  "path": "models/clustering/dbscan.joblib",
+  "n_clusters": 4
+ },
+ "selected_at": "2026-08-07T10:38:48.406646+00:00",
+ "dataset_version": "ames-1.0",
+ "feature_version": "9b0f8ba4201c",
+ "n_features": 94,
+ "rationale": "Regression champion = ridge: best validation RMSLE (0.1354 vs runner-up xgboost 0.1398); the paired bootstrap (2000 resamples, seed 42) 95% CI for RMSLE(champion)-RMSLE(runner-up) is [-0.0133, 0.0060] \u2014 the gap is not statistically decisive (95% CI includes 0). ridge also posts the best val RMSE ($21,673 vs $23,460 runner-up), MAE and R\u00b2 (0.9280), and as a regularised linear model it is fully interpretable (signed coefficients), tiny on disk (~21 KB vs ~25 MB for the forest) and the fastest to serve, so it wins on performance + interpretability + latency; XGBoost offers no compensating gain. Classification champion = calibrated random_forest: best calibrated val PR-AUC (0.5250) AND best calibrated Brier (0.1856), so probabilities are both ranking-strong and well calibrated; sigmoid calibration (cv=5) was fitted on train only. Operating threshold 0.2033 maximises val F1 (precision 0.4091, recall 0.8182); SPEC \u00a714 \u2014 not 0.5, since calibrated probabilities sit near the ~25% prevalence. Classification target is SIMULATED (ADR-3) \u2014 not a real-world performance claim.",
+ "headline_metrics": {
+  "regression": {
+   "val_rmsle": 0.135437,
+   "val_rmse": 21672.72103,
+   "val_mae": 14526.572418,
+   "val_r2": 0.927982,
+   "test_rmsle": 0.118689
+  },
+  "classification": {
+   "val_pr_auc": 0.525013,
+   "val_roc_auc": 0.721778,
+   "val_brier": 0.18555,
+   "val_f1": 0.545455,
+   "threshold": 0.203292,
+   "simulated_target": true
+  }
+ }
+}
+
+### GET /model/importance, HTTP 200 entries: 94
+metadata: {"model": "Ridge", "model_path": "models/registry/regression_champion.joblib", "explainer": "shap.LinearExplainer", "units": "log1p(SalePrice)", "background_size": 200, "background_split": "train", "val_sample_size": 200, "seed": 42, "feature_version": "9b0f8ba4201c", "dataset_version": "ames-1.0", "generated_at": "2026-08-07T10:39:02.217783+00:00", "aggregation": "one-hot dummy SHAP values summed back to base MODEL_FEATURES names; mean taken over |aggregated shap| of the val sample"}
+  OverallQual: 0.057375233983035956
+  OverallCond: 0.04048447448013188
+  total_sf: 0.030004216713384775
+  GrLivArea: 0.026005173277184497
+  1stFlrSF: 0.021389103805206516
+  TotalBsmtSF: 0.02117149980429683
+
+### GET /market/clusters, HTTP 200
+n_clusters: 4 | neighborhoods: 25 | clusters: 4
+cluster0: {"cluster_id": 0, "label": "mid northwest", "n_neighborhoods": 14, "n_sales": 461, "median_price": 179900.0, "median_price_per_sqft": 119.39218523878436, "sale_velocity_30d": 0.27765726681127983, "centroid_lat": 42.04567857142858, "centroid_long": -93.63607857142857}
+cluster0 neighborhoods: ['Blmngtn', 'BrDale', 'BrkSide', 'Crawfor', 'Gilbert', 'IDOTRR', 'NPkVill', 'NWAmes', 'NoRidge', 'NridgHt', 'OldTown', 'Somerst', 'StoneBr', 'Veenker']
+Blmngtn: {'neighborhood': 'Blmngtn', 'name': 'Bloomington Heights', 'lat': 42.0627, 'long': -93.6418, 'cluster_id': 0, 'fallback': False}
+Blueste: {'neighborhood': 'Blueste', 'name': 'Bluestem', 'lat': 42.0094, 'long': -93.6457, 'cluster_id': 1, 'fallback': False}
+noise flags: {'CollgCr': (2, True), 'NAmes': (0, True), 'Timber': (3, True)}
+fallback count: 3
+
+### unknown neighborhood, HTTP 422
+{"detail": [{"type": "value_error", "loc": ["body", "neighborhood"], "msg": "Value error, unknown neighborhood 'NoSuchPlace'; must be one of: Blmngtn, Blueste, BrDale, BrkSide, ClearCr, CollgCr, Crawfor, Edwards, Gilbert, IDOTRR, MeadowV, Mitchel, NAmes, NPkVill, NWAmes, NoRidge, NridgHt, OldTown, SWISU, Sawyer, SawyerW, Somerst, StoneBr, Timber, Veenker", "input": "NoSuchPlace", "ctx": {"error": {}}}]}
+
+### bedrooms=99, HTTP 422
+{"detail": [{"type": "less_than_equal", "loc": ["body", "bedrooms"], "msg": "Input should be less than or equal to 8", "input": 99, "ctx": {"le": 8}}]}
+
+### CORS preflight http://localhost:8080 -> 200 ACAO=http://localhost:8080
+
+### CORS preflight http://localhost:5173 -> 200 ACAO=http://localhost:5173
+
+### CORS preflight http://localhost:4173 -> 400 ACAO=None
+
+### GET /metrics, HTTP 200 | requests_total: 16 errors_total: 0 drift.status: ok
+
+### 70KB body -> HTTP 413 {"detail":"Request body too large; limit is 65536 bytes"}
+### FINAL-RELEASE lead-smoke payload (bsmt 1200, porch omitted)
+estimated_price: 248220.67 | DOC: 248,220.67
+price_range: {'low': 215586.79, 'high': 278927.7} | DOC: 215,587-278,928
+probability: 0.321438 | DOC: p=0.321
+cluster: mid northwest factors: 5 {'regression': 'ridge_v1', 'classification': 'random_forest_v1', 'feature_version': '9b0f8ba4201c'}
+
+### E2E.md form payload (2200 sqft, 2003)
+estimated_price: 236950.33 | DOC observed: 236,950
+price_range: {'low': 205798.17, 'high': 266263.13} | DOC: 205,798-266,263
+probability: 0.31783 | DOC: 31.8%
+factors: 5 | DOC: 5 rows

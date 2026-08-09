@@ -1,0 +1,17 @@
+# PropPulse backend — slim serving subset (root requirements.txt is the full dev set).
+# Same verified pins (Python 3.14.5). shap is included — it installed cleanly.
+# numpy is held at <2.5 by numba (shap runtime dependency); see docs/DECISIONS.md ADR-6.
+fastapi==0.141.1
+uvicorn[standard]==0.52.1
+pydantic==2.13.4
+pydantic-settings==2.14.2
+python-dotenv==1.2.2
+joblib==1.5.3
+pandas==2.3.3
+numpy==2.4.6
+scikit-learn==1.9.0
+xgboost==3.4.0
+scipy==1.18.0
+httpx==0.28.1
+shap==0.52.0
+numba==0.66.0

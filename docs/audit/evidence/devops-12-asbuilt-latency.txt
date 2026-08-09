@@ -1,0 +1,7 @@
+=== warm /predict latency on AS-BUILT image (no wave-9b fix), 5 calls ===
+call 1: 0.654022s
+call 2: 0.879513s
+call 3: 0.776790s
+call 4: 0.751366s
+call 5: 0.740162s
+(ambient load: other wave-B auditors running bare-metal servers; treat as indicative)

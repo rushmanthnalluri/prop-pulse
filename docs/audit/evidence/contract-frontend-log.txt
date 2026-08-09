@@ -1,0 +1,9 @@
+
+> proppulse-frontend@1.0.0 dev
+> vite --port 5400 --strictPort
+
+
+  VITE v6.4.3  ready in 1070 ms
+
+  ➜  Local:   http://localhost:5400/
+  ➜  Network: use --host to expose

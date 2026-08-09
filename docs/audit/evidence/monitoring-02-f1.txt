@@ -1,0 +1,50 @@
+=== A. Degenerate-bin census (53 numeric features) ===
+1 bins (6): ['3SsnPorch', 'BsmtHalfBath', 'LowQualFinSF', 'MiscVal', 'PoolArea', 'ScreenPorch']
+2 bins (8): ['BsmtFinSF2', 'BsmtFullBath', 'EnclosedPorch', 'Fireplaces', 'HalfBath', 'KitchenAbvGr', 'YrSold', 'sale_year']
+3 bins (2): ['FullBath', 'sale_quarter']
+4 bins (3): ['BedroomAbvGr', 'GarageCars', 'OverallCond']
+5 bins (5): ['2ndFlrSF', 'MasVnrArea', 'OverallQual', 'WoodDeckSF', 'amenity_count']
+6 bins (4): ['MSSubClass', 'OpenPorchSF', 'TotRmsAbvGrd', 'total_bath']
+7 bins (1): ['BsmtFinSF1']
+9 bins (11): ['MoSold', 'YearRemodAdd', 'bathroom_bedroom_ratio', 'distance_to_city_center_km', 'lat', 'long', 'neighborhood_median_price', 'neighborhood_median_price_per_sqft', 'neighborhood_monthly_sale_velocity', 'sale_month', 'years_since_remod']
+10 bins (13): ['1stFlrSF', 'BsmtUnfSF', 'GarageArea', 'GarageYrBlt', 'GrLivArea', 'LotArea', 'LotFrontage', 'TotalBsmtSF', 'YearBuilt', 'living_area_per_bedroom', 'neighborhood_mean_price', 'property_age', 'total_sf']
+
+1-bin feature edges/proportions:
+  3SsnPorch: edges=[0.0, 407.0] expected=[1.0]
+  BsmtHalfBath: edges=[0.0, 2.0] expected=[1.0]
+  LowQualFinSF: edges=[0.0, 572.0] expected=[1.0]
+  MiscVal: edges=[0.0, 15500.0] expected=[1.0]
+  PoolArea: edges=[0.0, 738.0] expected=[1.0]
+  ScreenPorch: edges=[0.0, 480.0] expected=[1.0]
+
+=== B. Train zero-inflation for the 1-bin features ===
+train rows: 945
+  3SsnPorch: 98.31% zero, 16 non-zero rows, max=407
+  BsmtHalfBath: 93.54% zero, 61 non-zero rows, max=2
+  LowQualFinSF: 98.10% zero, 18 non-zero rows, max=572
+  MiscVal: 97.04% zero, 28 non-zero rows, max=15500
+  PoolArea: 99.37% zero, 6 non-zero rows, max=738
+  ScreenPorch: 92.28% zero, 73 non-zero rows, max=480
+
+=== C. Blind-spot proof on PoolArea (1 bin, edges [0.0, 738.0]) ===
+interior cuts used by bin_proportions: [] (empty -> single [-inf,+inf] bin)
+  in-range shift: 300 x 500.0 (train is ~98% zero)
+    props=[1.0] PSI=0.0
+  EXTREME out-of-range: 300 x 9,999,999.0
+    props=[1.0] PSI=0.0
+  in-distribution control: 294 x 0.0 + 6 x 500.0
+    props=[1.0] PSI=0.0
+
+=== D. Contrast — healthy 10-bin feature GrLivArea ===
+  +50% GrLivArea shift: PSI=1.3854 (drift threshold 0.2)
+  shuffled control:     PSI=0.0000
+
+=== E. 2-bin features — partial blind spot check (YrSold example) ===
+  YrSold edges=[2006.0, 2007.0, 2008.0] expected=[0.3322751322751323, 0.6677248677248677]
+  sale_year edges=[2006.0, 2007.0, 2008.0] expected=[0.3322751322751323, 0.6677248677248677]
+
+=== F. Any degenerate-feature flag in reference/report? ===
+reference top-level keys: ['categorical', 'categorical_features', 'created_at', 'dataset_version', 'feature_version', 'n_bins', 'n_rows', 'numeric', 'numeric_features', 'split']
+-> no 'degenerate'/'warning' field: True
+
+ALL TASK-2 CHECKS DONE

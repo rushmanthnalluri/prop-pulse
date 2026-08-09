@@ -1,0 +1,64 @@
+$ categorical option sets + numeric ranges vs PropertyInput schema
+date: 2026-08-07T13:04:32Z
+OK  HOUSE_STYLES       vs HouseStyle   (house_style)  js=8 py=8
+OK  BLDG_TYPES         vs BldgType     (bldg_type)  js=5 py=5
+OK  MS_ZONING          vs MSZoning     (ms_zoning)  js=5 py=5
+OK  QUALITY_WITH_NONE  vs FireplaceQu  (fireplace_qu)  js=6 py=6
+OK  QUALITY_NO_PO      vs QualityNoPo  (kitchen_qual/exter_qual)  js=4 py=4
+OK  BSMT_QUAL          vs BsmtQual     (bsmt_qual)  js=5 py=5
+OK  HEATING_QC         vs HeatingQC    (heating_qc)  js=5 py=5
+OK  GARAGE_TYPES       vs GarageType   (garage_type)  js=7 py=7
+OK  GARAGE_FINISH      vs GarageFinish (garage_finish)  js=4 py=4
+OK  FOUNDATION         vs Foundation   (foundation)  js=6 py=6
+OK  ELECTRICAL         vs Electrical   (electrical)  js=5 py=5
+OK  FUNCTIONAL         vs Functional   (functional)  js=7 py=7
+OK  LOT_SHAPE          vs LotShape     (lot_shape)  js=4 py=4
+OK  LOT_CONFIG         vs LotConfig    (lot_config)  js=5 py=5
+OK  LAND_SLOPE         vs LandSlope    (land_slope)  js=3 py=3
+OK  CONDITION1         vs Condition1   (condition1)  js=9 py=9
+OK  ROOF_STYLE         vs RoofStyle    (roof_style)  js=6 py=6
+OK  EXTERIOR_1ST       vs Exterior1st  (exterior1st)  js=12 py=12
+OK  PAVED_DRIVE        vs PavedDrive   (paved_drive)  js=3 py=3
+OK  STREET             vs Street       (street)  js=2 py=2
+
+OK  bedrooms         form=[0,8] schema=[0,8]
+OK  bsmt_fin_sf1     form=[0,2500] schema=[0,2500]
+OK  bsmt_full_bath   form=[0,3] schema=[0,3]
+OK  bsmt_half_bath   form=[0,2] schema=[0,2]
+OK  bsmt_unf_sf      form=[0,2500] schema=[0,2500]
+OK  enclosed_porch   form=[0,600] schema=[0,600]
+OK  fireplaces       form=[0,4] schema=[0,4]
+OK  first_flr_sf     form=[300,4000] schema=[300,4000]
+OK  full_bath        form=[0,4] schema=[0,4]
+OK  garage_area      form=[0,2000] schema=[0.0,2000.0]
+OK  garage_cars      form=[0,5] schema=[0,5]
+OK  gr_liv_area      form=[300,6000] schema=[300,6000]
+OK  half_bath        form=[0,2] schema=[0,2]
+OK  kitchen_abv_gr   form=[0,3] schema=[0,3]
+OK  lot_area         form=[500,200000] schema=[500,200000]
+OK  lot_frontage     form=[1,500] schema=[1.0,500.0]
+OK  mas_vnr_area     form=[0,2000] schema=[0.0,2000.0]
+OK  misc_val         form=[0,20000] schema=[0,20000]
+OK  mo_sold          form=[1,12] schema=[1,12]
+OK  open_porch_sf    form=[0,1000] schema=[0,1000]
+OK  overall_cond     form=[1,10] schema=[1,10]
+OK  overall_qual     form=[1,10] schema=[1,10]
+OK  pool_area        form=[0,1000] schema=[0,1000]
+OK  screen_porch     form=[0,800] schema=[0,800]
+OK  second_flr_sf    form=[0,3000] schema=[0,3000]
+OK  tot_rms_abvgrd   form=[1,15] schema=[1,15]
+OK  total_bsmt_sf    form=[0,4000] schema=[0,4000]
+OK  wood_deck_sf     form=[0,1500] schema=[0,1500]
+OK  year_built       form=[1870,2026] schema=[1870,2026]
+OK  year_remod_add   form=[1870,2026] schema=[1870,2026]
+OK  yr_sold          form=[2006,2026] schema=[2006,2026]
+
+DISCREPANCIES_FOUND
+exit=0
+
+=== CORRECTION (same data, fixed summary logic) ===
+date: 2026-08-07T13:05:56Z
+numeric min/max fields checked: 31
+mismatches: NONE
+RESULT: ALL_MATCH
+exit=0

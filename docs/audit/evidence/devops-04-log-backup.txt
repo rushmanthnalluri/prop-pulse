@@ -1,0 +1,16 @@
+=== predictions.jsonl current state ===
+19 logs/predictions.jsonl
+f2fef6841259953455a4ebd0fcdbd076 *logs/predictions.jsonl
+f2fef6841259953455a4ebd0fcdbd076 */tmp/predictions.jsonl.devops-backup
+
+=== drift latest.json current state ===
+total 8
+drwxr-xr-x 1 RUSHMANTH 197609    0 Aug  7 12:45 .
+drwxr-xr-x 1 RUSHMANTH 197609    0 Aug  7 17:16 ..
+-rw-r--r-- 1 RUSHMANTH 197609 3951 Aug  7 16:45 latest.json
+34d643185f775ca91362a68ea1f46356 *reports/drift/latest.json
+drift backup ok
+
+=== last 2 log lines (truncated to 120 chars) ===
+{"timestamp": "2026-08-07T13:43:35.955998+00:00", "payload": {"neighborhood": "NAmes", "house_style": "1Story", "bldg_ty
+{"timestamp": "2026-08-07T13:44:38.521664+00:00", "payload": {"neighborhood": "NAmes", "house_style": "1Story", "bldg_ty

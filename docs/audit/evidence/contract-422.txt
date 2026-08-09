@@ -1,0 +1,7 @@
+=== 422: out-of-range gr_liv_area + bad enum + unknown neighborhood + extra field ===
+{"detail":[{"type":"value_error","loc":["body","neighborhood"],"msg":"Value error, unknown neighborhood 'NotAPlace'; must be one of: Blmngtn, Blueste, BrDale, BrkSide, ClearCr, CollgCr, Crawfor, Edwards, Gilbert, IDOTRR, MeadowV, Mitchel, NAmes, NPkVill, NWAmes, NoRidge, NridgHt, OldTown, SWISU, Sawyer, SawyerW, Somerst, StoneBr, Timber, Veenker","input":"NotAPlace","ctx":{"error":{}}},{"type":"literal_error","loc":["body","house_style"],"msg":"Input should be '1.5Fin', '1.5Unf', '1Story', '2.5Fin', '2.5Unf', '2Story', 'SFoyer' or 'SLvl'","input":"Castle","ctx":{"expected":"'1.5Fin', '1.5Unf', '1Story', '2.5Fin', '2.5Unf', '2Story', 'SFoyer' or 'SLvl'"}},{"type":"less_than_equal","loc":["body","gr_liv_area"],"msg":"Input should be less than or equal to 6000","input":99999,"ctx":{"le":6000}},{"type":"extra_forbidden","loc":["body","surprise_field"],"msg":"Extra inputs are not permitted","input":1}]}
+HTTP 422
+
+=== 422: wrong type (string for int) ===
+{"detail":[{"type":"int_parsing","loc":["body","bedrooms"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"three"}]}
+HTTP 422

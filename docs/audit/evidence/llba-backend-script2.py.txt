@@ -1,0 +1,165 @@
+"""llba-backend exec check 2: runtime behavior via in-process TestClient (NO ports bound).
+App uses a tmp prediction log — logs/predictions.jsonl is never touched.
+Run: .venv/Scripts/python.exe docs/audit/evidence/llba-backend-script2.py.txt
+"""
+import json
+import os
+import tempfile
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from backend.app.config import Settings
+from backend.app.main import create_app
+from backend.app.security import MAX_BODY_BYTES, SECURITY_HEADERS
+
+tmp = Path(tempfile.mkdtemp(prefix="llba_backend_"))
+log_path = tmp / "predictions.jsonl"
+app = create_app(Settings(prediction_log_path=str(log_path)))
+
+MIN = {"neighborhood": "NAmes", "bedrooms": 3, "full_bath": 2, "half_bath": 1,
+       "bsmt_full_bath": 1, "bsmt_half_bath": 0, "gr_liv_area": 1500, "lot_area": 9000,
+       "total_bsmt_sf": 900, "year_built": 1995, "overall_qual": 6, "overall_cond": 5,
+       "garage_cars": 2, "fireplaces": 1, "central_air": True}
+
+
+def hdrs(r):
+    return {h: r.headers.get(h) for h in SECURITY_HEADERS}
+
+
+with TestClient(app, raise_server_exceptions=False) as c:
+    # --- happy path ---
+    r = c.get("/health")
+    print("GET /health ->", r.status_code, r.json())
+    r = c.post("/predict", json=MIN)
+    print("POST /predict ->", r.status_code)
+    body = r.json()
+    print("  keys:", sorted(body))
+    print("  estimated_price:", body["estimated_price"], "range:", body["price_range"])
+    print("  sale_probability:", body["sale_probability"])
+    print("  micro_market keys:", sorted(body["micro_market"]))
+    print("  top_price_factors n:", len(body["top_price_factors"]), "first:", body["top_price_factors"][:1])
+    print("  model_version:", body["model_version"])
+    print("  security headers on 200:", hdrs(r) == SECURITY_HEADERS)
+
+    champ = json.loads(Path("models/champion.json").read_text())
+    print("  threshold == champion.json:",
+          body["sale_probability"]["threshold"] == champ["classification"]["threshold"],
+          f'({champ["classification"]["threshold"]})')
+
+    rec = json.loads(log_path.read_text("utf-8").splitlines()[-1])
+    flist = json.loads(Path("models/feature_list.json").read_text())["features"]
+    print("  log record keys:", sorted(rec))
+    print("  log features order == feature_list.json:", list(rec["features"]) == flist,
+          f"({len(flist)} features)")
+    print("  log payload keys (note defaults incl.):", sorted(rec["payload"]))
+    print("  timestamp:", rec["timestamp"])
+    print("  model_version string:", rec["model_version"])
+
+    # --- narrow endpoints ---
+    rp = c.post("/predict/price", json=MIN)
+    print("\nPOST /predict/price ->", rp.status_code, sorted(rp.json()))
+    rs = c.post("/predict/sale-probability", json=MIN)
+    print("POST /predict/sale-probability ->", rs.status_code, sorted(rs.json()))
+    print("  narrow values == full predict:",
+          rp.json()["estimated_price"] == body["estimated_price"],
+          rs.json()["probability"] == body["sale_probability"]["probability"])
+
+    # --- static GETs ---
+    print("\nGET /model/info ->", c.get("/model/info").status_code)
+    print("GET /model/importance ->", c.get("/model/importance").status_code)
+    print("GET /market/clusters ->", c.get("/market/clusters").status_code)
+    print("GET /metrics ->", c.get("/metrics").status_code)
+
+    # --- 422 shape ---
+    r = c.post("/predict", json={**MIN, "overall_qual": 99})
+    print("\n422 range violation:", r.status_code, "detail is list:", isinstance(r.json()["detail"], list),
+          "| headers ok:", hdrs(r) == SECURITY_HEADERS, "| no traceback:", "Traceback" not in r.text)
+    r = c.post("/predict", json={**MIN, "jacuzzi": 1})
+    print("422 extra=forbid:", r.status_code, "| headers ok:", hdrs(r) == SECURITY_HEADERS)
+    r = c.post("/predict", json={**MIN, "neighborhood": "Gotham"})
+    print("422 unknown neighborhood:", r.status_code, "| leaks fs path:", ("C:\\" in r.text or "C:/" in r.text))
+
+    # --- 404 ---
+    r = c.get("/no-such-route-llba")
+    print("\n404 unknown route:", r.status_code, r.json(), "| headers ok:", hdrs(r) == SECURITY_HEADERS)
+
+    # --- 413 ---
+    oversized = json.dumps(MIN).encode() + b" " * (MAX_BODY_BYTES + 1)
+    r = c.post("/predict", content=oversized, headers={"Content-Type": "application/json"})
+    print("\n413 oversized (with Content-Length):", r.status_code, r.json(),
+          "| headers ok:", hdrs(r) == SECURITY_HEADERS)
+
+    # --- chunked bypass (no Content-Length) ---
+    def gen():
+        yield json.dumps(MIN).encode()
+        yield b" " * (MAX_BODY_BYTES + 100)  # >64 KiB total, chunked => no Content-Length
+    r = c.post("/predict/price", content=gen(), headers={"Content-Type": "application/json"})
+    verdict = "BYPASS (accepted)" if r.status_code == 200 else "blocked"
+    print("chunked >64KiB body (no Content-Length) ->", r.status_code, "|", verdict)
+
+    # --- NaN / Inf in JSON (Python json.loads accepts these constants) ---
+    cases = [
+        ("NaN lot_frontage", b'"lot_frontage": NaN'),
+        ("Infinity lot_frontage", b'"lot_frontage": Infinity'),
+        ("-Infinity gr_liv_area", b'"gr_liv_area": -Infinity'),
+        ("NaN gr_liv_area", b'"gr_liv_area": NaN'),
+        ("Infinity garage_area", b'"garage_area": Infinity'),
+        ("1e400 lot_frontage (overflow)", b'"lot_frontage": 1e400'),
+        ("NaN mas_vnr_area", b'"mas_vnr_area": NaN'),
+    ]
+    for label, fragment in cases:
+        payload = json.dumps(MIN).encode()[:-1] + b", " + fragment + b"}"
+        r = c.post("/predict/price", content=payload, headers={"Content-Type": "application/json"})
+        print(f"  {label}: -> {r.status_code}")
+
+    r = c.post("/predict/price", json={**MIN, "sale_date": "not-a-date"})
+    print("  bad sale_date ->", r.status_code)
+
+    # --- 500 generic (route exists only in this test app instance) ---
+    @app.get("/_llba_boom", include_in_schema=False)
+    def _boom():
+        raise RuntimeError("llba-sentinel-do-not-leak")
+
+    m_before = c.get("/metrics").json()
+    r = c.get("/_llba_boom", headers={"Origin": "http://localhost:5173"})
+    m_after = c.get("/metrics").json()
+    print("\n500 unhandled:", r.status_code, r.json())
+    print("  sentinel leaked:", "llba-sentinel" in r.text, "| traceback:", "Traceback" in r.text)
+    print("  security headers on 500:", hdrs(r) == SECURITY_HEADERS)
+    print("  CORS allow-origin on 500:", r.headers.get("access-control-allow-origin"))
+    print("  metrics requests_total before/after boom:",
+          m_before["requests_total"], "->", m_after["requests_total"])
+    print("  metrics errors_total before/after boom:",
+          m_before["errors_total"], "->", m_after["errors_total"])
+    print("  404 path recorded in requests_by_path:",
+          "/no-such-route-llba" in m_after["requests_by_path"])
+
+    # --- 503 cached-error path ---
+    app.state.model_importance = {"error": "llba test error state"}
+    r = c.get("/model/importance", headers={"Origin": "http://localhost:5173"})
+    print("\n503 importance error state:", r.status_code, r.json(),
+          "| headers ok:", hdrs(r) == SECURITY_HEADERS,
+          "| CORS on 503:", r.headers.get("access-control-allow-origin"))
+    m2 = c.get("/metrics").json()
+    print("  errors_total after 503:", m2["errors_total"], "(503 counted; 500 was not)")
+
+    # --- CORS ---
+    r = c.options("/predict", headers={
+        "Origin": "http://localhost:5173", "Access-Control-Request-Method": "POST"})
+    print("\nCORS preflight allowed origin:", r.status_code,
+          "allow-origin:", r.headers.get("access-control-allow-origin"))
+    r = c.options("/predict", headers={
+        "Origin": "http://evil.example", "Access-Control-Request-Method": "POST"})
+    print("CORS preflight evil origin:", r.status_code,
+          "allow-origin:", r.headers.get("access-control-allow-origin"))
+    r = c.get("/health", headers={"Origin": "http://localhost:5173"})
+    print("CORS simple request allow-origin:", r.headers.get("access-control-allow-origin"))
+    print("CORS allow-credentials:", r.headers.get("access-control-allow-credentials"))
+
+    # --- openapi exposure ---
+    print("\nGET /openapi.json ->", c.get("/openapi.json").status_code,
+          "| GET /docs ->", c.get("/docs").status_code)
+
+print("\nfinal tmp log line count:", len(log_path.read_text("utf-8").splitlines()))
+print("SCRIPT 2 DONE")

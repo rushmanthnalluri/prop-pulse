@@ -1,0 +1,239 @@
+INFO ml.clustering.dataset: built neighborhood matrix: 25 rows x 4 features
+INFO ml.clustering.serve: MicroMarketLookup ready: 4 clusters, 25 assignments, eps=1.3170, min_samples=2
+INFO ml.clustering.serve: neighborhood 'CollgCr' is DBSCAN noise; nearest-centroid fallback -> 2
+INFO ml.clustering.serve: neighborhood 'NAmes' is DBSCAN noise; nearest-centroid fallback -> 0
+INFO ml.clustering.serve: neighborhood 'Timber' is DBSCAN noise; nearest-centroid fallback -> 3
+INFO ml.explainability.explainer: RegressionExplainer ready: Ridge via LinearExplainer, 296 transformed -> 94 base features, background 200 rows, expected_value=12.0003
+INFO backend.app.main: SHAP explainer warmed during startup
+INFO backend.app.main: PropPulse API ready: regression=ridge_v1 classification=random_forest_v1 feature_version=9b0f8ba4201c
+INFO ml.clustering.serve: neighborhood 'NAmes' is DBSCAN noise; nearest-centroid fallback -> 0
+INFO ml.clustering.serve: neighborhood 'NAmes' is DBSCAN noise; nearest-centroid fallback -> 0
+INFO ml.clustering.serve: neighborhood 'NAmes' is DBSCAN noise; nearest-centroid fallback -> 0
+WARNING backend.app.services.prediction_service: explanation unavailable, returning empty factors: llba-shap-boom
+INFO ml.clustering.serve: neighborhood 'NAmes' is DBSCAN noise; nearest-centroid fallback -> 0
+WARNING backend.app.monitoring.prediction_log: prediction log write failed (C:\Users\rushm\AppData\Local\Temp\llba_backend3_y8b1fvix\blocker\sub\pred.jsonl): [WinError 183] Cannot create a file when that file already exists: 'C:\\Users\\rushm\\AppData\\Local\\Temp\\llba_backend3_y8b1fvix\\blocker'
+INFO ml.clustering.serve: neighborhood 'NAmes' is DBSCAN noise; nearest-centroid fallback -> 0
+WARNING backend.app.monitoring.prediction_log: prediction log write failed (C:\Users\rushm\AppData\Local\Temp\llba_backend3_y8b1fvix\blocker\sub\pred.jsonl): [WinError 183] Cannot create a file when that file already exists: 'C:\\Users\\rushm\\AppData\\Local\\Temp\\llba_backend3_y8b1fvix\\blocker'
+ERROR backend.app.main: unhandled error on GET /_llba_boom2
+  + Exception Group Traceback (most recent call last):
+  |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\_utils.py", line 85, in create_collapsing_task_group
+  |     async with anyio.create_task_group() as tg:
+  |                ~~~~~~~~~~~~~~~~~~~~~~~^^
+  |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 815, in __aexit__
+  |     raise BaseExceptionGroup(
+  |         "unhandled errors in a TaskGroup", self._exceptions
+  |     ) from None
+  | ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    |     await self.app(scope, receive, _send)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Machine_Learning\Prop-pulse\backend\app\security.py", line 42, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Machine_Learning\Prop-pulse\backend\app\security.py", line 74, in dispatch
+    |     return await call_next(request)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    |     response = await self.dispatch_func(request, call_next)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Machine_Learning\Prop-pulse\backend\app\monitoring\middleware.py", line 23, in dispatch
+    |     response = await call_next(request)
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    |     raise app_exc from app_exc.__cause__ or app_exc.__context__
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    |     await self.app(scope, receive_or_disconnect, send_no_error)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    |     await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    |     await self.app(scope, receive, send)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    |     await self.middleware_stack(scope, receive, send)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    |     await route.handle(scope, receive, send)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 1281, in handle
+    |     await super().handle(scope, receive, send)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\routing.py", line 276, in handle
+    |     await self.app(scope, receive, send)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    |     await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    |     raise exc
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    |     await app(scope, receive, sender)
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    |     response = await f(request)
+    |                ^^^^^^^^^^^^^^^^
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    |     raw_response = await run_endpoint_function(
+    |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     ...<3 lines>...
+    |     )
+    |     ^
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 354, in run_endpoint_function
+    |     return await run_in_threadpool(dependant.call, **values)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    |     return await anyio.to_thread.run_sync(func)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    |     return await get_async_backend().run_sync_in_worker_thread(
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |         func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    |     )
+    |     ^
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2641, in run_sync_in_worker_thread
+    |     return await future
+    |            ^^^^^^^^^^^^
+    |   File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1033, in run
+    |     result = context.run(func, *args)
+    |   File "C:\Machine_Learning\Prop-pulse\docs\audit\evidence\llba-backend-script3.py.txt", line 126, in _boom2
+    |     raise RuntimeError("x")
+    | RuntimeError: x
+    +------------------------------------
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\errors.py", line 164, in __call__
+    await self.app(scope, receive, _send)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\backend\app\security.py", line 42, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\backend\app\security.py", line 74, in dispatch
+    return await call_next(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 193, in __call__
+    response = await self.dispatch_func(request, call_next)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\backend\app\monitoring\middleware.py", line 23, in dispatch
+    response = await call_next(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 168, in call_next
+    raise app_exc from app_exc.__cause__ or app_exc.__context__
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\base.py", line 144, in coro
+    await self.app(scope, receive_or_disconnect, send_no_error)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\cors.py", line 88, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\middleware\exceptions.py", line 63, in __call__
+    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\middleware\asyncexitstack.py", line 18, in __call__
+    await self.app(scope, receive, send)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\routing.py", line 660, in __call__
+    await self.middleware_stack(scope, receive, send)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 2734, in app
+    await route.handle(scope, receive, send)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 1281, in handle
+    await super().handle(scope, receive, send)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\routing.py", line 276, in handle
+    await self.app(scope, receive, send)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 158, in app
+    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\_exception_handler.py", line 53, in wrapped_app
+    raise exc
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\_exception_handler.py", line 42, in wrapped_app
+    await app(scope, receive, sender)
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 144, in app
+    response = await f(request)
+               ^^^^^^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 706, in app
+    raw_response = await run_endpoint_function(
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\fastapi\routing.py", line 354, in run_endpoint_function
+    return await run_in_threadpool(dependant.call, **values)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\starlette\concurrency.py", line 34, in run_in_threadpool
+    return await anyio.to_thread.run_sync(func)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\anyio\to_thread.py", line 65, in run_sync
+    return await get_async_backend().run_sync_in_worker_thread(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        func, args, abandon_on_cancel=abandon_on_cancel, limiter=limiter
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 2641, in run_sync_in_worker_thread
+    return await future
+           ^^^^^^^^^^^^
+  File "C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\anyio\_backends\_asyncio.py", line 1033, in run
+    result = context.run(func, *args)
+  File "C:\Machine_Learning\Prop-pulse\docs\audit\evidence\llba-backend-script3.py.txt", line 126, in _boom2
+    raise RuntimeError("x")
+RuntimeError: x
+served fold-forest n_jobs: [1, 1, 1, 1, 1] | template n_jobs: 1
+SHAP singleton warmed at startup: True
+
+/predict/price -> 200 | classifier calls: 0 | SHAP calls: 0 | price calls: 1 (expect 0/0/1)
+/predict/sale-probability -> 200 | classifier calls: 1 | SHAP calls: 0 | price calls: 0 (expect 1/0/0)
+/predict -> 200 | classifier calls: 1 | SHAP calls: 1 | price calls: 1 (expect 1/1/1)
+
+explain-failure: /predict -> 200 | top_price_factors: [] | warning logged: True
+
+log() to unwritable path returns: False (expect False, no exception)
+endpoint with broken logger -> 200 | prediction_log warning emitted: True
+
+500 invisibility: boom in requests_by_path: False | errors_total: 0 -> 0 | requests_total delta (only the /metrics self-count expected): 1
+
+--- JSONL writer thread-safety ---
+threads: 8 x 25 writes | exceptions: 0 | lines: 200 | all valid JSON: True | distinct tags: 8
+
+--- config parsing ---
+cors split messy: ['http://a', 'http://b']
+cors empty: []
+resolve relative: True
+resolve absolute passthrough: True
+env var overrides default: ['http://env-override.example']
+resolved_drift_report_path: reports\drift\latest.json
+resolved_prediction_log_path: logs\predictions.jsonl
+
+--- schema unit checks ---
+known_neighborhoods count: 25
+to_serving_payload keys (unset excluded): ['bedrooms', 'bsmt_full_bath', 'bsmt_half_bath', 'central_air', 'fireplaces', 'full_bath', 'garage_cars', 'gr_liv_area', 'half_bath', 'lot_area', 'neighborhood', 'overall_cond', 'overall_qual', 'total_bsmt_sf', 'year_built']
+sale_date excluded when unset: True
+sale_date type in serving payload: date 2009-06-15
+log payload dump includes defaults: ['bedrooms', 'bldg_type', 'bsmt_full_bath', 'bsmt_half_bath', 'central_air', 'fireplaces'] ...
+central_air='yes' coerced: True
+SCRIPT 3 DONE

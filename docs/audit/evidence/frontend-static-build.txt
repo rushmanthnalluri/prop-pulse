@@ -1,0 +1,20 @@
+$ npm run build
+cwd: /c/Machine_Learning/Prop-pulse/frontend
+date: 2026-08-07T13:02:34Z
+
+> proppulse-frontend@1.0.0 build
+> vite build
+
+vite v6.4.3 building for production...
+transforming...
+✓ 763 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                          0.66 kB │ gzip:   0.40 kB
+dist/assets/index-BHEmUTlw.css          27.49 kB │ gzip:   9.58 kB
+dist/assets/useApi-1Va_alWE.js           0.40 kB │ gzip:   0.26 kB
+dist/assets/MarketMap-DSeIbYzu.js      158.39 kB │ gzip:  46.47 kB
+dist/assets/index-BDvWWcjG.js          311.45 kB │ gzip:  98.66 kB
+dist/assets/ModelInsights-CD41Hm6s.js  389.25 kB │ gzip: 108.32 kB
+✓ built in 7.36s
+exit=0

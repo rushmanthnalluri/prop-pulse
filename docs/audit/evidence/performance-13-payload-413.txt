@@ -1,0 +1,6 @@
+64 KiB exact (65536): actual_bytes=65536 status=422 time_ms=40.2 detail='{"detail":[{"type":"missing","loc":["body","bedrooms"],"msg":"Field required","input":{"neighborhood'
+64 KiB + 1 (65537): actual_bytes=65537 status=413 time_ms=4.0 detail='{"detail":"Request body too large; limit is 65536 bytes"}'
+200 KiB: actual_bytes=204800 status=413 time_ms=4.0 detail='{"detail":"Request body too large; limit is 65536 bytes"}'
+1 MiB: actual_bytes=1048576 status=413 time_ms=4.9 detail='{"detail":"Request body too large; limit is 65536 bytes"}'
+10x 1 MiB rejects: all 413, p50=5.1 ms max=27.8 ms
+rss_after_413_mb=346.1

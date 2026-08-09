@@ -1,0 +1,25 @@
+=== 1. merged (base+override, no -f flags, as users/CI run it) ===
+MERGED CONFIG VALID (exit 0)
+
+=== 2. base file alone ===
+BASE CONFIG VALID (exit 0)
+
+=== 3. published ports — merged (no -f) ===
+        target: 8000
+        published: "18000"
+        target: /app/logs
+        target: /app/reports/drift
+        target: 80
+        published: "18080"
+
+=== 4. published ports — base alone ===
+        target: 8000
+        published: "8000"
+        target: /app/logs
+        target: /app/reports/drift
+        target: 80
+        published: "8080"
+
+=== 5. compose + docker versions ===
+Docker Compose version v5.1.1
+Server: 29.4.0

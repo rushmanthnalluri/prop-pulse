@@ -1,0 +1,22 @@
+split sizes: {'train': 947, 'val': 338, 'test': 175}
+Id overlaps: train&val=0 train&test=0 val&test=0
+years per split: {'train': [np.int64(2006), np.int64(2007), np.int64(2008)], 'val': [np.int64(2009)], 'test': [np.int64(2010)]}
+outlier report: [524, 1299] {'rows_before': 947, 'rows_after': 945, 'applied_to': 'train split only'}
+removed rows GrLivArea/SalePrice: [[4676, 184750, 2007], [5642, 160000, 2008]]
+cleaner: n nbhd medians=25 global=69.0 electrical_mode=SBrkr
+val rows with imputed LotFrontage: 65
+  Id=8 nb=NWAmes train_median=80.0 imputed=80.0 match=True
+  Id=65 nb=CollgCr train_median=70.0 imputed=70.0 match=True
+  Id=85 nb=Gilbert train_median=65.0 imputed=65.0 match=True
+  Id=96 nb=Gilbert train_median=65.0 imputed=65.0 match=True
+  Id=117 nb=Sawyer train_median=71.5 imputed=71.5 match=True
+shuffle-invariant per Id: True
+different seed changes values: True | frac changed: 0.982010582010582
+same seed reproduces: True
+DOM stats train: min=8 max=141 median=41
+noise mean=0.0029 std=0.3422 (expect ~0, ~0.35)
+noise deterministic on repeat: True
+30-day flag consistent: True
+unfitted transform raises RuntimeError: SaleSpeedSimulator must be fitted before transform().
+unseen nbhd falls back to global median (no NaN): True | value: 56
+partial_sale_rule keeps expensive large home: True

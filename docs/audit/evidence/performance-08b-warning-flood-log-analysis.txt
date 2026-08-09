@@ -1,0 +1,64 @@
+Warning-flood log analysis — server1 (PID 31320, port 8500), 2026-08-07
+=====================================================================
+
+Server1 was launched with stderr/stdout captured by the task harness. The harness
+killed the process after 16 MiB of output ("Output limit exceeded"). The full log
+lives outside the repo at:
+C:/Users/rushm/.kimi-code/sessions/wd_prop-pulse_a8f293192551/session_fc3edd85-1df1-40ac-9255-4a2ac24472da/agents/agent-47/tasks/bash-3fldtrsk/output.log
+(107,819 lines, 16,776,651 bytes)
+
+Measurements over that log (grep counts):
+
+  total_lines=107819
+  UserWarning blocks=53111        (each block = 2 lines: location + `warnings.warn(`)
+  POST /predict access lines=1188
+  POST /predict/price access lines=404
+  GET access lines ~= remainder (health + GETs)
+
+  ALL 53,111 warnings are the same single warning:
+    C:\Machine_Learning\Prop-pulse\.venv\Lib\site-packages\sklearn\utils\parallel.py:144:
+    UserWarning: `sklearn.utils.parallel.delayed` should be used with
+    `sklearn.utils.parallel.Parallel` to make it possible to propagate the
+    scikit-learn configuration of the current thread to the joblib workers.
+
+Timing correlation (line numbers):
+
+  first warning at log line 1223
+  predict lines before first warning = 813
+  price lines before first warning   = 404
+
+  Server1 request order was: 3 cold/warm predicts, c=1 x100 (x3 runs), c=10 x200,
+  /predict/price c=10 x200 (x2 runs), reliability 300 (3x100), THEN bursts 1-15 of
+  25-concurrent x25. 813 + 404 + warmups (~14) ~= all pre-burst requests, i.e.
+  THE FIRST WARNING COINCIDES WITH THE START OF THE c=25 BURST PHASE.
+  Zero warnings during ~1,217 requests at c<=10; ~53k warnings during the
+  15 completed bursts (375 requests) => ~140 warnings per burst-phase request.
+
+Warnings per 20,000-line bucket (flood is continuous once started):
+  lines      0-19999:  9,361
+  lines  20000-39999:  9,953
+  lines  40000-59999:  9,950
+  lines  60000-79999:  9,975
+  lines  80000-99999: 10,000
+  lines 100000-107819: 3,872
+
+Server2 (PID 26808, stderr redirected to a file to avoid the harness cap):
+  - served 20/20 bursts: 500 requests, 0 errors, all HTTP 200, process stayed alive
+  - UserWarning count over its lifetime: 65,592 (burst phase again)
+  - output file grew to 20,736,695 bytes in ~25 minutes
+  - deleted after analysis (transient runtime log, not project content)
+
+Mechanism reproduction (in-process, Python 3.14.5, sklearn 1.9.0):
+  - sequential / worker-thread / anyio-thread / 25-concurrent-thread warm predicts
+    with default warning filters: 0 warnings (performance-09-warning-repro.txt,
+    performance-09b-warning-concurrency.txt, performance-09c-warning-25threads.txt)
+  - after warnings.resetwarnings() (empties the 3.14 context-local filter list):
+    ONE warm svc.predict(payload) emitted 1,514 UserWarnings
+    (performance-09e-warning-final.txt)
+  - sklearn/utils/parallel.py:143: `if not config or not warning_filters:` -> warn.
+    Parallel.__call__ (lines 78-81) captures filters via warnings._get_filters()
+    (Python 3.14 ContextVar-based). An EMPTY caller-context filter list at dispatch
+    makes every dispatched _FuncWrapper task emit the warning.
+  - The exact agent that empties the request contexts' warning filters inside the
+    uvicorn process only under c=25 concurrency was NOT identified (no
+    resetwarnings/catch_warnings in joblib runtime or anyio; project code has none).

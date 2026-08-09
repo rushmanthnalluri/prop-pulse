@@ -1,0 +1,7 @@
+$ .venv/Scripts/python.exe scripts-style cross-check: form payload keys vs PropertyInput fields
+date: 2026-08-07T13:03:21Z
+schema field count : 55
+payload key count  : 55 (always=3, core=13, advanced=39)
+payload keys NOT in schema (would 422): NONE
+schema fields never sent by form (OK: server defaults): []
+exit=0

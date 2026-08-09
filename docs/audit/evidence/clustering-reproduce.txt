@@ -1,0 +1,45 @@
+=== STEP 1: rebuild matrix from source artifacts ===
+matrix shape: (25, 6) | columns: ['Neighborhood', 'name', 'lat', 'long', 'median_price_per_sqft', 'monthly_sale_velocity']
+
+=== STEP 2: saved artifacts vs fresh fit ===
+scaler mean_ match: True
+scaler scale_ match: True
+saved model eps: 1.317004520305001 min_samples: 2
+saved dbscan labels_ == cluster_assignments.csv: True
+
+=== STEP 3: re-run eps selection on rebuilt matrix ===
+rationale: k-distance knee accepted: min_samples=2, eps=1.3170 -> 4 clusters, 3 noise (within 3-10 clusters)
+selected: min_samples=2 eps=1.3170045189879962
+clusters=4 noise=3 noise_neighborhoods=['CollgCr', 'NAmes', 'Timber']
+re-run labels == cluster_assignments.csv: True
+eps matches cluster_stats.json (1.3170045189879962): True
+
+=== STEP 4: k-distance curves + knee sanity ===
+k=2: knee idx=21 knee eps=1.317005
+  curve: [0.8114, 0.8114, 0.8574, 0.8574, 0.8841, 0.9359, 0.9437, 0.9554, 0.9554, 0.9604, 0.9927, 0.9933, 1.0346, 1.0683, 1.0683, 1.0882, 1.0882, 1.1212, 1.1212, 1.2371, 1.2754, 1.317, 1.4836, 1.9695, 2.7243]
+k=3: knee idx=18 knee eps=1.518148
+  curve: [0.8841, 0.8848, 0.8848, 0.9437, 0.9604, 0.9927, 0.9933, 1.1103, 1.1103, 1.1353, 1.3435, 1.3435, 1.4028, 1.4342, 1.4355, 1.4355, 1.4996, 1.4996, 1.5181, 1.6122, 1.9176, 1.9848, 2.0074, 2.1835, 3.0924]
+distinct k=2 rungs: [0.8114, 0.8574, 0.8841, 0.9359, 0.9437, 0.9554, 0.9604, 0.9927, 0.9933, 1.0346, 1.0683, 1.0882, 1.1212, 1.2371, 1.2754, 1.317, 1.4836, 1.9695, 2.7243]
+  neighbor rung eps=1.275423 -> clusters=4 noise=4
+  neighbor rung eps=1.483564 -> clusters=3 noise=2
+k=3 knee eps=1.518148 -> clusters=1 noise=4 (degenerate if <3 clusters)
+
+=== STEP 5: full valid-candidate trace (sorted) ===
+  k=2 eps=1.4836 [grid] clusters=3 noise=2
+  k=2 eps=1.3170 [knee] clusters=4 noise=3
+  k=2 eps=1.2754 [grid] clusters=4 noise=4
+  k=2 eps=1.2371 [grid] clusters=4 noise=5
+  k=2 eps=1.1212 [grid] clusters=5 noise=6
+  k=2 eps=1.0882 [grid] clusters=5 noise=8
+  k=2 eps=1.0683 [grid] clusters=4 noise=10
+  k=3 eps=1.1353 [grid] clusters=3 noise=10
+
+=== STEP 6: recompute cluster stats from TRAIN split ===
+all per-cluster stat fields match: True
+meta match: True True True
+assignments df equals saved csv: True
+note present on every cluster: True
+sum n_sales clustered=675 of train rows=945 (rest = noise-hood sales)
+
+=== STEP 7: stability — second independent in-memory run ===
+run2 identical labels: True | eps identical: True | min_samples: True

@@ -1,0 +1,30 @@
+=== A. Mixed-garbage log: skip counting ===
+lines written: 12 (2 blank)
+valid=3 n_invalid=7
+expected valid=3 (incl. NaN-value rec), n_invalid=7, blanks uncounted
+
+=== B. Empty file -> no_data, exit-safe ===
+status=no_data n=0 drift=False reason=No usable prediction data (log is empty: C:\Users\rushm\AppData\Local\Temp\tmpok
+
+=== C. Missing file -> no_data ===
+status=no_data reason=No usable prediction data (log not found: C:\Users\rushm\AppData\Local\Temp\tmpo
+
+=== D. All-garbage file -> no_data with n_invalid counted ===
+status=no_data n_invalid_lines=3
+
+=== E. Huge line (1 MB valid + 1 MB malformed) ===
+file size = 2.00 MB
+valid=2 n_invalid=1 (expected 2 valid, 1 invalid) — no crash
+
+=== F. Non-numeric feature values -> dropped, feature skipped if all junk ===
+valid=8 n_invalid=0
+per_feature_psi keys: ['GrLivArea', 'OverallQual']
+  GrLivArea present? True (True coerced to 1.0 -> single value -> PSI computable)
+  OverallQual PSI=3.056295
+all-junk GrLivArea: per_feature_psi={} max_psi=None status=ok
+  -> feature silently skipped, report still 'ok', recommendation text explains
+
+=== G. Window = last N RAW lines (invalid lines consume window slots) ===
+8 lines, window=6 -> valid=1 n_invalid=5 (last 6 raw lines = 1 valid + 5 bad)
+
+ALL TASK-5 CHECKS DONE

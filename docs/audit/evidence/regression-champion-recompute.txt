@@ -1,0 +1,43 @@
+loaded model type: Pipeline | steps: ['preprocess', 'model']
+estimator: Ridge(alpha=100.0, max_iter=10000)
+md5 registry/regression_champion.joblib: eee200e5d969dbc83c9e5a86869a5999
+md5 regression/ridge_v1.joblib        : eee200e5d969dbc83c9e5a86869a5999 | identical: True
+feature_version recomputed: 9b0f8ba4201c | champion.json: 9b0f8ba4201c | match: True
+
+=== val (n=338) recomputed from registry champion ===
+  mae: 14526.572418438847
+  rmse: 21672.721030394012
+  r2: 0.9279822437448195
+  rmsle: 0.13543666916035035
+  rmse_log: 0.13543666916035035
+  residual_interval recomputed: {'q_low': -0.14095417729722773, 'q_high': 0.11663421200817777}
+  CLAIMED val: {"mae": 14526.572418, "rmse": 21672.72103, "r2": 0.927982, "rmsle": 0.135437, "rmse_log": 0.135437, "residual_interval": {"q_low": -0.140954, "q_high": 0.116634}}
+
+=== test (n=175) recomputed from registry champion ===
+  mae: 15075.473458046345
+  rmse: 21151.541687388686
+  r2: 0.9304804522464808
+  rmsle: 0.11868860145100557
+  rmse_log: 0.11868860145100557
+  interval_coverage (stored interval): 0.7828571428571428  (137/175)
+  interval_coverage (recomputed val interval): 0.7828571428571428
+  CLAIMED test: {"mae": 15075.473458, "rmse": 21151.541687, "r2": 0.93048, "rmsle": 0.118689, "interval_coverage": 0.782857}
+
+--- test prediction sanity (dollars) ---
+  min=66618.12 max=531894.55 mean=175505.29 median=154834.80
+  pred_log min=11.106747 -> negatives after expm1: 0
+  actual SalePrice: min=55000 max=611657 mean=177393.67
+
+--- interval ordering (10 samples) ---
+  row0: low=133,305 < price=153,484 < high=172,471 -> True
+  row1: low=134,385 < price=154,728 < high=173,869 -> True
+  row2: low=113,986 < price=131,241 < high=147,477 -> True
+  row3: low=257,695 < price=296,703 < high=333,407 -> True
+  row4: low=143,970 < price=165,763 < high=186,270 -> True
+  row5: low=117,430 < price=135,206 < high=151,932 -> True
+  row6: low=252,277 < price=290,465 < high=326,398 -> True
+  row7: low=88,390 < price=101,770 < high=114,360 -> True
+  row8: low=114,945 < price=132,344 < high=148,716 -> True
+  row9: low=203,203 < price=233,962 < high=262,906 -> True
+  all 10 ordered low<price<high: True
+  all 175 ordered: True

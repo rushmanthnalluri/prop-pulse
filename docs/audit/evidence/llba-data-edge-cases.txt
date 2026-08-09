@@ -1,0 +1,46 @@
+E1 empty csv -> ValueError: Real DOM CSV C:\Users\rushm\AppData\Local\Temp\tmpt0llhpud\empty.csv: 'Id' must 
+E2 blank day -> ValueError: Real DOM CSV C:\Users\rushm\AppData\Local\Temp\tmpt0llhpud\blank.csv: 
+E3 whole-float days -> ValueError: Real DOM CSV C:\Users\rushm\AppData\Local\Temp\tmpt0llhpud\float.csv: 
+E4 boundary 1/365 accepted, median: 183
+E5 min_coverage=0.0 -> ValueError: min_coverage must be in (0, 1], got 0.0
+E5 min_coverage=1.0 accepted
+E6 empty df transform: len=0 dtype=int64 name=days_on_market
+Traceback (most recent call last):
+  File "<stdin>", line 48, in <module>
+  File "C:\Machine_Learning\Prop-pulse\ml\data\sale_speed.py", line 286, in attach_sale_speed
+    int(out["days_on_market"].median()), 100.0 * out["sells_within_30_days"].mean(),
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: cannot convert float NaN to integer
+E6b empty attach (sim) -> ValueError: cannot convert float NaN to integer
+E7 extra columns ignored: OK
+E8 median of [10,20,81,90]: 50 (float median 50.5 -> int() truncation)
+S1 unexpected year -> ValueError: Unexpected YrSold values: [np.int64(2011)]
+S2 duplicated raw row: ACCEPTED (length check catches only net loss)
+V-missing col -> SchemaError: raw: missing required columns: ['Alley']
+V-bad category -> SchemaError: raw: column 'MSZoning' has unexpected categories: ['XX'] (allowed: ['A
+V-out of range -> SchemaError: raw: column 'OverallQual' has 1 values outside [1, 10] (e.g. 99)
+V-dup Id: ACCEPTED - BUG
+C1 all-NaN nbhd excluded from medians dict: True
+C2 residual NA -> ValueError: Cleaning left 1 unexpected NAs in columns: ['LotArea']
+C3 input not mutated: True
+I1 missing raw -> FileNotFoundError: Raw training file not found at C:\Users\rushm\AppData\Local\
+I2 geo missing cols -> ValueError: neighborhood_geo.csv is missing columns: ['long', 'note']
+P1 DOM_PROVIDER=' CSV ' -> RealDomProvider
+P1 DOM_PROVIDER='Csv' -> RealDomProvider
+P1 DOM_PROVIDER='SIMULATED' -> SaleSpeedSimulator
+P1 DOM_PROVIDER='' -> ValueError: Unknown DOM_PROVIDER=''; expected 'simulated' or 'csv'.
+P1 DOM_PROVIDER='real' -> ValueError: Unknown DOM_PROVIDER='real'; expected 'simulated' or 'csv'.
+J1 unknown nbhd -> ValueError: No geo centroid for neighborhoods: ['Atlantis']
+VP1 inconsistent flag -> SchemaError: processed[val-broken]: sells_within_30_days is not consistent with day
+VP2 dom=400 -> SchemaError: processed[val-broken2]: days_on_market outside [1, 365]
+V-dup Id (corrected) -> SchemaError: raw: duplicate Id values found: [2]
+ml/data/sale_speed.py:96:            rng = np.random.default_rng([self.seed, int(prop_id)])
+  144 ml/data/clean.py
+   56 ml/data/ingest.py
+   67 ml/data/outliers.py
+  188 ml/data/pipeline.py
+  288 ml/data/sale_speed.py
+   54 ml/data/split.py
+  262 ml/data/validate.py
+   30 ml/paths.py
+ 1089 total

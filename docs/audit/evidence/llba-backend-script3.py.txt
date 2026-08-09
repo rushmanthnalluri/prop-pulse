@@ -1,0 +1,185 @@
+"""llba-backend exec check 3: services, spies, swallow paths, thread-safety, config.
+Run: PYTHONPATH=. .venv/Scripts/python.exe docs/audit/evidence/llba-backend-script3.py.txt
+"""
+import json
+import logging
+import os
+import tempfile
+import threading
+from pathlib import Path
+
+from fastapi.testclient import TestClient
+
+from backend.app.config import Settings
+from backend.app.main import create_app
+from backend.app.monitoring.prediction_log import PredictionLogger
+from backend.app.services.prediction_service import PredictionService
+
+tmp = Path(tempfile.mkdtemp(prefix="llba_backend3_"))
+log_path = tmp / "predictions.jsonl"
+app = create_app(Settings(prediction_log_path=str(log_path)))
+
+MIN = {"neighborhood": "NAmes", "bedrooms": 3, "full_bath": 2, "half_bath": 1,
+       "bsmt_full_bath": 1, "bsmt_half_bath": 0, "gr_liv_area": 1500, "lot_area": 9000,
+       "total_bsmt_sf": 900, "year_built": 1995, "overall_qual": 6, "overall_cond": 5,
+       "garage_cars": 2, "fireplaces": 1, "central_air": True}
+
+
+class LogCapture(logging.Handler):
+    def __init__(self):
+        super().__init__()
+        self.records = []
+
+    def emit(self, record):
+        self.records.append((record.name, record.levelname, record.getMessage()))
+
+
+cap = LogCapture()
+logging.getLogger().addHandler(cap)
+
+with TestClient(app, raise_server_exceptions=False) as c:
+    service: PredictionService = c.app.state.prediction_service
+
+    # --- served classification instance is really pinned (not just a fresh load) ---
+    folds = [cc.estimator.steps[-1][1].n_jobs for cc in service._classification.calibrated_classifiers_]
+    print("served fold-forest n_jobs:", folds, "| template n_jobs:",
+          service._classification.estimator.steps[-1][1].n_jobs)
+
+    # --- SHAP singleton really warmed at startup ---
+    import ml.explainability.service as shap_mod
+    print("SHAP singleton warmed at startup:", shap_mod._explainer is not None)
+
+    # --- narrow endpoints: independent call-count spies ---
+    calls = {"probability": 0, "explain": 0, "price": 0}
+    orig_probability = service._probability
+    orig_explain = service._explain
+    orig_price = service._price
+
+    def spy_probability(features):
+        calls["probability"] += 1
+        return orig_probability(features)
+
+    def spy_explain(features, top_n=5):
+        calls["explain"] += 1
+        return orig_explain(features, top_n=top_n)
+
+    def spy_price(features):
+        calls["price"] += 1
+        return orig_price(features)
+
+    service._probability = spy_probability
+    service._explain = spy_explain
+    service._price = spy_price
+    r = c.post("/predict/price", json=MIN)
+    print("\n/predict/price ->", r.status_code,
+          "| classifier calls:", calls["probability"], "| SHAP calls:", calls["explain"],
+          "| price calls:", calls["price"], "(expect 0/0/1)")
+    calls.update(probability=0, explain=0, price=0)
+    r = c.post("/predict/sale-probability", json=MIN)
+    print("/predict/sale-probability ->", r.status_code,
+          "| classifier calls:", calls["probability"], "| SHAP calls:", calls["explain"],
+          "| price calls:", calls["price"], "(expect 1/0/0)")
+    calls.update(probability=0, explain=0, price=0)
+    r = c.post("/predict", json=MIN)
+    print("/predict ->", r.status_code,
+          "| classifier calls:", calls["probability"], "| SHAP calls:", calls["explain"],
+          "| price calls:", calls["price"], "(expect 1/1/1)")
+    service._probability = orig_probability
+    service._explain = orig_explain
+    service._price = orig_price
+
+    # --- _explain swallow: explain_instance raises -> [] + warning logged, 200 ---
+    cap.records.clear()
+    def boom_explain(*a, **k):
+        raise RuntimeError("llba-shap-boom")
+    shap_mod.explain_instance = boom_explain
+    r = c.post("/predict", json=MIN)
+    shap_mod.explain_instance = orig_explain.__wrapped__ if hasattr(orig_explain, "__wrapped__") else None
+    # restore properly: re-import fresh reference is impossible; set back the real one
+    from ml.explainability.service import explain_instance as _real  # module attr now boom; reload:
+    import importlib
+    importlib.reload(shap_mod)
+    warn = [m for n, lvl, m in cap.records if n == "backend.app.services.prediction_service"]
+    print("\nexplain-failure: /predict ->", r.status_code,
+          "| top_price_factors:", r.json()["top_price_factors"],
+          "| warning logged:", any("explanation unavailable" in m for m in warn))
+
+    # --- prediction-log write failure: never raises, warns, request still 200 ---
+    cap.records.clear()
+    blocker = tmp / "blocker"
+    blocker.write_text("x")  # a FILE used as parent dir -> mkdir/open must fail
+    bad_logger = PredictionLogger(blocker / "sub" / "pred.jsonl")
+    ok = bad_logger.log(payload={}, features={}, prediction={}, model_version="t")
+    print("\nlog() to unwritable path returns:", ok, "(expect False, no exception)")
+    c.app.state.prediction_logger = bad_logger
+    r = c.post("/predict/price", json=MIN)
+    warns = [m for n, lvl, m in cap.records
+             if n == "backend.app.monitoring.prediction_log" and "write failed" in m]
+    print("endpoint with broken logger ->", r.status_code,
+          "| prediction_log warning emitted:", len(warns) > 0)
+
+    # --- 500-invisibility precise check (exclude /metrics self-count) ---
+    good_logger = PredictionLogger(log_path)
+    c.app.state.prediction_logger = good_logger
+    @app.get("/_llba_boom2", include_in_schema=False)
+    def _boom2():
+        raise RuntimeError("x")
+    m1 = c.get("/metrics").json()
+    c.get("/_llba_boom2")
+    m2 = c.get("/metrics").json()
+    print("\n500 invisibility: boom in requests_by_path:",
+          "/_llba_boom2" in m2["requests_by_path"],
+          "| errors_total:", m1["errors_total"], "->", m2["errors_total"],
+          "| requests_total delta (only the /metrics self-count expected):",
+          m2["requests_total"] - m1["requests_total"])
+
+print("\n--- JSONL writer thread-safety ---")
+mt_log = tmp / "mt.jsonl"
+logger = PredictionLogger(mt_log)
+errors = []
+
+def writer(tag):
+    try:
+        for i in range(25):
+            logger.log(payload={"tag": tag, "i": i}, features={"f": i},
+                       prediction={"estimated_price": 1.0, "probability": None, "cluster_id": 0},
+                       model_version="t")
+    except Exception as exc:  # noqa: BLE001
+        errors.append(exc)
+
+threads = [threading.Thread(target=writer, args=(t,)) for t in range(8)]
+for t in threads: t.start()
+for t in threads: t.join()
+lines = mt_log.read_text("utf-8").splitlines()
+parsed = [json.loads(line) for line in lines]
+print("threads: 8 x 25 writes | exceptions:", len(errors),
+      "| lines:", len(lines), "| all valid JSON:", len(parsed) == 200,
+      "| distinct tags:", len({p['payload']['tag'] for p in parsed}))
+
+print("\n--- config parsing ---")
+from backend.app.config import Settings as S
+from ml.paths import REPO_ROOT
+print("cors split messy:", S(cors_origins=" http://a , , http://b ,").cors_origin_list)
+print("cors empty:", S(cors_origins="").cors_origin_list)
+print("resolve relative:", S()._resolve("models") == REPO_ROOT / "models")
+print("resolve absolute passthrough:", S()._resolve(str(REPO_ROOT / "x")) == REPO_ROOT / "x")
+os.environ["CORS_ORIGINS"] = "http://env-override.example"
+print("env var overrides default:", S().cors_origin_list)
+del os.environ["CORS_ORIGINS"]
+print("resolved_drift_report_path:", S().resolved_drift_report_path.relative_to(REPO_ROOT))
+print("resolved_prediction_log_path:", S().resolved_prediction_log_path.relative_to(REPO_ROOT))
+
+print("\n--- schema unit checks ---")
+from backend.app.schemas.property import PropertyInput, known_neighborhoods
+print("known_neighborhoods count:", len(known_neighborhoods()))
+p = PropertyInput(**MIN)
+sp = p.to_serving_payload()
+print("to_serving_payload keys (unset excluded):", sorted(sp))
+print("sale_date excluded when unset:", "sale_date" not in sp)
+p2 = PropertyInput(**{**MIN, "sale_date": "2009-06-15"})
+sp2 = p2.to_serving_payload()
+print("sale_date type in serving payload:", type(sp2.get("sale_date")).__name__, sp2.get("sale_date"))
+print("log payload dump includes defaults:", sorted(p.model_dump(mode="json", exclude_none=True))[:6], "...")
+# bool coercion check
+print("central_air='yes' coerced:", PropertyInput(**{**MIN, "central_air": "yes"}).central_air is True)
+print("SCRIPT 3 DONE")

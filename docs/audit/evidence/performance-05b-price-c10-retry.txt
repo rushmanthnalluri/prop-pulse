@@ -1,0 +1,7 @@
+--- /predict/price c=10 x200 (retry, quieter window) ---
+POST /predict/price  concurrency=10
+  requests=200 errors=0 (0.00%) statuses={'200': 200}
+  latency ms: min=87.56 mean=628.17 p50=607.27 p90=883.2 p95=957.99 p99=1066.87 max=1116.13
+  wall=12.618s throughput=15.85 req/s
+{"method": "POST", "endpoint": "/predict/price", "concurrency": 10, "requests": 200, "errors": 0, "error_rate": 0.0, "throughput_rps": 15.85, "wall_seconds": 12.618, "latency_ms": {"min": 87.56, "mean": 628.17, "p50": 607.27, "p90": 883.2, "p95": 957.99, "p99": 1066.87, "max": 1116.13}, "statuses": {"200": 200}}
+ambient_during: n=25 mean=35.7% median=31.6% max=72.8%

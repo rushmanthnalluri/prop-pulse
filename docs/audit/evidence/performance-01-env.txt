@@ -1,0 +1,36 @@
+=== performance audit environment ===
+UTC 2026-08-07T13:46:40Z
+--- CPU/RAM/OS ---
+
+
+Name                      : Intel(R) Core(TM) 7 150U
+NumberOfLogicalProcessors : 12
+
+
+
+
+
+TotalPhysicalMemory : 16876888064
+
+
+
+
+
+Caption     : Microsoft Windows 11 Home
+BuildNumber : 26200
+
+
+
+--- ambient load sample 1 (5 s avg) ---
+13.8494276543
+--- python / libs ---
+python 3.14.5
+sklearn 1.9.0
+fastapi 0.141.1
+httpx 0.28.1
+shap 0.52.0
+--- port 8500 listeners (expect none) ---
+PORT 8500 FREE
+--- logs/predictions.jsonl baseline ---
+d3fd2a8c679d3f1b5135881384c1e3a6f13ef95c109622db5112b1255157d7ec *logs/predictions.jsonl
+64532 logs/predictions.jsonl

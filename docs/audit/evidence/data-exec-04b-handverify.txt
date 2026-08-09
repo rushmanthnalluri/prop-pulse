@@ -1,0 +1,26 @@
+sample Ids: {'train': 5, 'val': 6, 'test': 34}
+
+== HAND VERIFICATION (3 rows) ==
+--- train Id=5 (NoRidge, lat=42.0514, long=-93.6532)
+  property_age = 2008 - 2000 = 8 | frame=8.0 | match=True
+  total_bath = 2 + 0.5*1 + 1 + 0.5*0 = 3.5 | frame=3.5 | match=True
+  living_area_per_bedroom = 2198 / 4 = 549.500000 | frame=549.500000 | match=True
+  distance_to_city_center_km = haversine((42.0514,-93.6532)->(42.0347,-93.6199)) = 3.318124 | frame=3.318124 | match=True
+  amenity_count = (FP=1>0)1+(Pool=0>0)0+(WD=192>0)1+(OP=84>0)1+(SP=0>0)0+(GC=3>0)1+(CA=='Y')1+(PD=='Y')1 = 6 | frame=6 | match=True
+--- val Id=6 (Mitchel, lat=41.992, long=-93.6049)
+  property_age = 2009 - 1993 = 16 | frame=16.0 | match=True
+  total_bath = 1 + 0.5*1 + 1 + 0.5*0 = 2.5 | frame=2.5 | match=True
+  living_area_per_bedroom = 1362 / 1 = 1362.000000 | frame=1362.000000 | match=True
+  distance_to_city_center_km = haversine((41.992,-93.6049)->(42.0347,-93.6199)) = 4.907083 | frame=4.907083 | match=True
+  amenity_count = (FP=0>0)0+(Pool=0>0)0+(WD=40>0)1+(OP=30>0)1+(SP=0>0)0+(GC=2>0)1+(CA=='Y')1+(PD=='Y')1 = 5 | frame=5 | match=True
+--- test Id=34 (NAmes, lat=42.0424, long=-93.6176)
+  property_age = 2010 - 1959 = 51 | frame=51.0 | match=True
+  total_bath = 1 + 0.5*1 + 0 + 0.5*1 = 2.0 | frame=2.0 | match=True
+  living_area_per_bedroom = 1700 / 4 = 425.000000 | frame=425.000000 | match=True
+  distance_to_city_center_km = haversine((42.0424,-93.6176)->(42.0347,-93.6199)) = 0.877017 | frame=0.877017 | match=True
+  amenity_count = (FP=1>0)1+(Pool=0>0)0+(WD=0>0)0+(OP=38>0)1+(SP=0>0)0+(GC=2>0)1+(CA=='Y')1+(PD=='Y')1 = 5 | frame=5 | match=True
+
+== full-population independent recompute (all rows, all splits) ==
+train {'property_age': True, 'years_since_remod': True, 'total_bath': True, 'living_area_per_bedroom': True, 'bathroom_bedroom_ratio': True, 'total_sf': True, 'sale_month': True, 'sale_quarter': True, 'sale_year': True, 'amenity_count': True, 'distance_to_city_center_km': True} ALL: True
+val {'property_age': True, 'years_since_remod': True, 'total_bath': True, 'living_area_per_bedroom': True, 'bathroom_bedroom_ratio': True, 'total_sf': True, 'sale_month': True, 'sale_quarter': True, 'sale_year': True, 'amenity_count': True, 'distance_to_city_center_km': True} ALL: True
+test {'property_age': True, 'years_since_remod': True, 'total_bath': True, 'living_area_per_bedroom': True, 'bathroom_bedroom_ratio': True, 'total_sf': True, 'sale_month': True, 'sale_quarter': True, 'sale_year': True, 'amenity_count': True, 'distance_to_city_center_km': True} ALL: True

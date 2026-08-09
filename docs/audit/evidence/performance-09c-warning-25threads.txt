@@ -1,0 +1,2 @@
+25 concurrent full predicts, warnings per thread: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+total: 0

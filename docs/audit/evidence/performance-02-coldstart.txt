@@ -1,0 +1,8 @@
+spawn_to_health_seconds=46.956 (t0 recorded ~0.2 s before launch; polls=1)
+server_pid=31320
+rss_after_health_mb=321.6
+cold_first_predict_ms=386.7 status=200 price=151147.74
+warm_predict_2_ms=406.2
+warm_predict_3_ms=281.8
+same_price_warm=True
+rss_after_3_predicts_mb=322.8

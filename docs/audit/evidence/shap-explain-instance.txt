@@ -1,0 +1,26 @@
+COMMAND: .venv/Scripts/python.exe - <<EOF (explain_instance top-5 vs independent ranking, 3 val rows)
+DATE: Fri Aug  7 13:03:43 UTC 2026
+---OUTPUT---
+
+val iloc=0 Id=6: order=True signs=True magnitudes=True keys=True base-names=True sum(magnitudes)=0.397520 (<=1: True)
+    living_area_per_bedroom      positive  mag=0.128258  raw shap=+0.090589
+    3SsnPorch                    positive  mag=0.122698  raw shap=+0.086663
+    OverallQual                  negative  mag=0.068965  raw shap=-0.048711
+    BedroomAbvGr                 negative  mag=0.043873  raw shap=-0.030988
+    OverallCond                  negative  mag=0.033726  raw shap=-0.023821
+
+val iloc=150 Id=695: order=True signs=True magnitudes=True keys=True base-names=True sum(magnitudes)=0.240573 (<=1: True)
+    OverallQual                  negative  mag=0.092003  raw shap=-0.048711
+    BsmtFinSF1                   negative  mag=0.040623  raw shap=-0.021508
+    OverallCond                  positive  mag=0.037562  raw shap=+0.019887
+    neighborhood_median_price    negative  mag=0.036284  raw shap=-0.019211
+    property_age                 negative  mag=0.034101  raw shap=-0.018055
+
+val iloc=337 Id=1455: order=True signs=True magnitudes=True keys=True base-names=True sum(magnitudes)=0.272577 (<=1: True)
+    OverallQual                  positive  mag=0.095988  raw shap=+0.045416
+    OverallCond                  negative  mag=0.050345  raw shap=-0.023821
+    neighborhood_median_price    positive  mag=0.043747  raw shap=+0.020699
+    YearBuilt                    positive  mag=0.041717  raw shap=+0.019738
+    GrLivArea                    negative  mag=0.040780  raw shap=-0.019295
+
+EXPLAIN_INSTANCE CONTRACT: PASS

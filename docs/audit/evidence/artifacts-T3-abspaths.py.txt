@@ -1,0 +1,61 @@
+"""artifacts-audit T3 runner: absolute-path scan of model artifacts.
+
+Usage: .venv/Scripts/python.exe docs/audit/evidence/artifacts-T3-abspaths.py.txt
+Scans (1) every models/**/*.json, (2) every models/**/*.joblib (raw bytes),
+(3) clustering CSV + explainability NPZ, for absolute-path / user-home
+signatures: 'C:/', 'C:\\', '/Users/', '/home/', the machine user name, and the
+repo dir name. Also reports whether mlruns/*/meta.yaml embeds absolute
+artifact_location URIs (side observation; mlruns is a run store, not a served
+artifact). Exit 0; prints HIT lines for any match.
+"""
+import sys
+from pathlib import Path
+
+BS = chr(92)  # backslash, kept out of source literals for clarity
+PATTERNS = {
+    "C:/": b"C:/",
+    "C:" + BS + BS: ("C:" + BS + BS).encode(),
+    "C:" + BS + "(single)": ("C:" + BS).encode(),
+    "/Users/": b"/Users/",
+    "/home/": b"/home/",
+    "user-home-name": "RUSHMANTH".encode(),
+    "repo-dir-name": "Machine_Learning".encode(),
+}
+
+def scan(path: Path) -> list[str]:
+    data = path.read_bytes()
+    out = []
+    for name, pat in PATTERNS.items():
+        if pat in data:
+            i = data.find(pat)
+            ctx = data[max(0, i - 50) : i + 70]
+            out.append(f"HIT {path}: pattern {name!r} at byte {i}: ...{ctx!r}...")
+    return out
+
+def main() -> int:
+    print("== 1. models/**/*.json ==")
+    jsons = sorted(Path("models").rglob("*.json"))
+    hits = [h for p in jsons for h in scan(p)]
+    print("\n".join(hits) if hits else "(no hits)")
+    print(f"scanned={len(jsons)} hits={len(hits)}")
+
+    print("== 2. models/**/*.joblib (raw bytes incl. pickle stream) ==")
+    joblibs = sorted(Path("models").rglob("*.joblib"))
+    hits = [h for p in joblibs for h in scan(p)]
+    print("\n".join(hits) if hits else "(no hits)")
+    print(f"scanned={len(joblibs)} hits={len(hits)}")
+
+    print("== 3. other model artifacts (csv/npz) ==")
+    others = ["models/clustering/cluster_assignments.csv", "models/explainability/shap_values_sample.npz"]
+    hits = [h for p in map(Path, others) for h in scan(p)]
+    print("\n".join(hits) if hits else "(no hits)")
+
+    print("== 4. mlruns metadata (side observation) ==")
+    metas = sorted(Path("mlruns").glob("*/meta.yaml"))
+    n_abs = sum(1 for m in metas if b"file:///C:/" in m.read_bytes())
+    print(f"mlruns/*/meta.yaml with absolute file:///C:/ artifact_location: {n_abs}/{len(metas)}")
+    print("RESULT=OK")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,514 @@
+COMMAND: .venv/Scripts/python.exe C:/tmp/api_audit.py validation
+DATE: Fri Aug  7 13:47:51 UTC 2026
+
+=== POST /predict valid minimal payload ===
+HTTP 200
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"estimated_price":151147.74,"price_range":{"low":131276.1,"high":169846.06},"sale_probability":{"probability":0.216313,"sells_within_30_days":true,"threshold":0.203292},"micro_market":{"cluster_id":0,"label":"mid northwest","neighborhoods":["Blmngtn","BrDale","BrkSide","Crawfor","Gilbert","IDOTRR","NPkVill","NWAmes","NoRidge","NridgHt","OldTown","Somerst","StoneBr","Veenker"],"n_neighborhoods":14,"n_sales":461,"median_price":179900.0,"median_price_per_sqft":119.39218523878436,"sale_velocity_30d":0.27765726681127983,"centroid_lat":42.04567857142858,"centroid_long":-93.63607857142857,"fallback":true,"note":"sale_velocity_30d is the fraction of this cluster's TRAIN-split sales with sells_within_30_days==1. It is a DESCRIPTIVE statistic over the SIMULATED sale-speed target (ADR-3), not a real-world market measurement, and is never used as a model input."},"top_price_factors":[{"feature":"OverallCond","impact":"negative","magnitude":0.07063},{"feature":"2ndFlrSF","impact":"negative","magnitude":0.056018},{"feature":"neighborhood_median_price","impact":"negative","magnitude":0.041343},{"feature":"total_bath","impact":"positive","magnitude":0.039469},{"feature":"YrSold","impact":"negative","magnitude":0.038197}],"model_version":{"regression":"ridge_v1","classification":"random_forest_v1","feature_version":"9b0f8ba4201c"}}
+stack-trace-in-body: False
+
+  CHECK status==200: PASS
+  CHECK PredictResponse keys: PASS
+  CHECK price_range keys: PASS
+  CHECK sale_probability keys + types: PASS
+  CHECK micro_market keys: PASS
+  CHECK model_version keys: PASS
+  CHECK top_price_factors item schema: PASS
+  threshold served: 0.203292
+=== POST /predict/price valid minimal payload ===
+HTTP 200
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"estimated_price":151147.74,"price_range":{"low":131276.1,"high":169846.06},"model_version":{"regression":"ridge_v1","classification":"random_forest_v1","feature_version":"9b0f8ba4201c"}}
+stack-trace-in-body: False
+
+  CHECK status==200: PASS
+  CHECK PriceResponse keys: PASS
+=== POST /predict/sale-probability valid minimal payload ===
+HTTP 200
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"probability":0.216313,"sells_within_30_days":true,"threshold":0.203292,"model_version":{"regression":"ridge_v1","classification":"random_forest_v1","feature_version":"9b0f8ba4201c"}}
+stack-trace-in-body: False
+
+  CHECK status==200: PASS
+  CHECK SaleProbabilityResponse keys: PASS
+  threshold served: 0.203292
+=== POST /predict — missing required field (bedrooms removed) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"missing","loc":["body","bedrooms"],"msg":"Field required","input":{"neighborhood":"NAmes","full_bath":2,"half_bath":0,"bsmt_full_bath":1,"bsmt_half_bath":0,"gr_liv_area":1500,"lot_area":8000,"total_bsmt_sf":1000,"year_built":1975,"overall_qual":6,"overall_cond":5,"garage_cars":2,"fireplaces":1,"central_air":true}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — wrong type (bedrooms='three') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_parsing","loc":["body","bedrooms"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"three"}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — wrong type (central_air='yes please') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"bool_parsing","loc":["body","central_air"],"msg":"Input should be a valid boolean, unable to interpret input","input":"yes please"}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — invalid enum (house_style='Castle') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"literal_error","loc":["body","house_style"],"msg":"Input should be '1.5Fin', '1.5Unf', '1Story', '2.5Fin', '2.5Unf', '2Story', 'SFoyer' or 'SLvl'","input":"Castle","ctx":{"expected":"'1.5Fin', '1.5Unf', '1Story', '2.5Fin', '2.5Unf', '2Story', 'SFoyer' or 'SLvl'"}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — unknown category (neighborhood='Gotham') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"value_error","loc":["body","neighborhood"],"msg":"Value error, unknown neighborhood 'Gotham'; must be one of: Blmngtn, Blueste, BrDale, BrkSide, ClearCr, CollgCr, Crawfor, Edwards, Gilbert, IDOTRR, MeadowV, Mitchel, NAmes, NPkVill, NWAmes, NoRidge, NridgHt, OldTown, SWISU, Sawyer, SawyerW, Somerst, StoneBr, Timber, Veenker","input":"Gotham","ctx":{"error":{}}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — unexpected extra field (foo=1) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"extra_forbidden","loc":["body","foo"],"msg":"Extra inputs are not permitted","input":1}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — empty string in numeric (gr_liv_area='') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_parsing","loc":["body","gr_liv_area"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":""}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — negative (bedrooms=-1) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"greater_than_equal","loc":["body","bedrooms"],"msg":"Input should be greater than or equal to 0","input":-1,"ctx":{"ge":0}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — negative (lot_area=-500) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"greater_than_equal","loc":["body","lot_area"],"msg":"Input should be greater than or equal to 500","input":-500,"ctx":{"ge":500}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — extremely large (gr_liv_area=1e15) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"less_than_equal","loc":["body","gr_liv_area"],"msg":"Input should be less than or equal to 6000","input":1000000000000000,"ctx":{"le":6000}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — extremely large (lot_frontage=1e15) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"less_than_equal","loc":["body","lot_frontage"],"msg":"Input should be less than or equal to 500","input":1000000000000000,"ctx":{"le":500.0}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — float into int field (bedrooms=3.5) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_from_float","loc":["body","bedrooms"],"msg":"Input should be a valid integer, got a number with a fractional part","input":3.5}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict — null into required field (bedrooms=null) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_type","loc":["body","bedrooms"],"msg":"Input should be a valid integer","input":null}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — missing required field (bedrooms removed) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"missing","loc":["body","bedrooms"],"msg":"Field required","input":{"neighborhood":"NAmes","full_bath":2,"half_bath":0,"bsmt_full_bath":1,"bsmt_half_bath":0,"gr_liv_area":1500,"lot_area":8000,"total_bsmt_sf":1000,"year_built":1975,"overall_qual":6,"overall_cond":5,"garage_cars":2,"fireplaces":1,"central_air":true}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — wrong type (bedrooms='three') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_parsing","loc":["body","bedrooms"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"three"}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — wrong type (central_air='yes please') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"bool_parsing","loc":["body","central_air"],"msg":"Input should be a valid boolean, unable to interpret input","input":"yes please"}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — invalid enum (house_style='Castle') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"literal_error","loc":["body","house_style"],"msg":"Input should be '1.5Fin', '1.5Unf', '1Story', '2.5Fin', '2.5Unf', '2Story', 'SFoyer' or 'SLvl'","input":"Castle","ctx":{"expected":"'1.5Fin', '1.5Unf', '1Story', '2.5Fin', '2.5Unf', '2Story', 'SFoyer' or 'SLvl'"}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — unknown category (neighborhood='Gotham') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"value_error","loc":["body","neighborhood"],"msg":"Value error, unknown neighborhood 'Gotham'; must be one of: Blmngtn, Blueste, BrDale, BrkSide, ClearCr, CollgCr, Crawfor, Edwards, Gilbert, IDOTRR, MeadowV, Mitchel, NAmes, NPkVill, NWAmes, NoRidge, NridgHt, OldTown, SWISU, Sawyer, SawyerW, Somerst, StoneBr, Timber, Veenker","input":"Gotham","ctx":{"error":{}}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — unexpected extra field (foo=1) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"extra_forbidden","loc":["body","foo"],"msg":"Extra inputs are not permitted","input":1}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — empty string in numeric (gr_liv_area='') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_parsing","loc":["body","gr_liv_area"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":""}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — negative (bedrooms=-1) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"greater_than_equal","loc":["body","bedrooms"],"msg":"Input should be greater than or equal to 0","input":-1,"ctx":{"ge":0}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — negative (lot_area=-500) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"greater_than_equal","loc":["body","lot_area"],"msg":"Input should be greater than or equal to 500","input":-500,"ctx":{"ge":500}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — extremely large (gr_liv_area=1e15) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"less_than_equal","loc":["body","gr_liv_area"],"msg":"Input should be less than or equal to 6000","input":1000000000000000,"ctx":{"le":6000}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — extremely large (lot_frontage=1e15) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"less_than_equal","loc":["body","lot_frontage"],"msg":"Input should be less than or equal to 500","input":1000000000000000,"ctx":{"le":500.0}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — float into int field (bedrooms=3.5) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_from_float","loc":["body","bedrooms"],"msg":"Input should be a valid integer, got a number with a fractional part","input":3.5}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/price — null into required field (bedrooms=null) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_type","loc":["body","bedrooms"],"msg":"Input should be a valid integer","input":null}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — missing required field (bedrooms removed) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"missing","loc":["body","bedrooms"],"msg":"Field required","input":{"neighborhood":"NAmes","full_bath":2,"half_bath":0,"bsmt_full_bath":1,"bsmt_half_bath":0,"gr_liv_area":1500,"lot_area":8000,"total_bsmt_sf":1000,"year_built":1975,"overall_qual":6,"overall_cond":5,"garage_cars":2,"fireplaces":1,"central_air":true}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — wrong type (bedrooms='three') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_parsing","loc":["body","bedrooms"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"three"}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — wrong type (central_air='yes please') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"bool_parsing","loc":["body","central_air"],"msg":"Input should be a valid boolean, unable to interpret input","input":"yes please"}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — invalid enum (house_style='Castle') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"literal_error","loc":["body","house_style"],"msg":"Input should be '1.5Fin', '1.5Unf', '1Story', '2.5Fin', '2.5Unf', '2Story', 'SFoyer' or 'SLvl'","input":"Castle","ctx":{"expected":"'1.5Fin', '1.5Unf', '1Story', '2.5Fin', '2.5Unf', '2Story', 'SFoyer' or 'SLvl'"}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — unknown category (neighborhood='Gotham') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"value_error","loc":["body","neighborhood"],"msg":"Value error, unknown neighborhood 'Gotham'; must be one of: Blmngtn, Blueste, BrDale, BrkSide, ClearCr, CollgCr, Crawfor, Edwards, Gilbert, IDOTRR, MeadowV, Mitchel, NAmes, NPkVill, NWAmes, NoRidge, NridgHt, OldTown, SWISU, Sawyer, SawyerW, Somerst, StoneBr, Timber, Veenker","input":"Gotham","ctx":{"error":{}}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — unexpected extra field (foo=1) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"extra_forbidden","loc":["body","foo"],"msg":"Extra inputs are not permitted","input":1}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — empty string in numeric (gr_liv_area='') ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_parsing","loc":["body","gr_liv_area"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":""}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — negative (bedrooms=-1) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"greater_than_equal","loc":["body","bedrooms"],"msg":"Input should be greater than or equal to 0","input":-1,"ctx":{"ge":0}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — negative (lot_area=-500) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"greater_than_equal","loc":["body","lot_area"],"msg":"Input should be greater than or equal to 500","input":-500,"ctx":{"ge":500}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — extremely large (gr_liv_area=1e15) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"less_than_equal","loc":["body","gr_liv_area"],"msg":"Input should be less than or equal to 6000","input":1000000000000000,"ctx":{"le":6000}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — extremely large (lot_frontage=1e15) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"less_than_equal","loc":["body","lot_frontage"],"msg":"Input should be less than or equal to 500","input":1000000000000000,"ctx":{"le":500.0}}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — float into int field (bedrooms=3.5) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_from_float","loc":["body","bedrooms"],"msg":"Input should be a valid integer, got a number with a fractional part","input":3.5}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS
+=== POST /predict/sale-probability — null into required field (bedrooms=null) ===
+HTTP 422
+content-type: application/json
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+body: {"detail":[{"type":"int_type","loc":["body","bedrooms"],"msg":"Input should be a valid integer","input":null}]}
+stack-trace-in-body: False
+
+  CHECK status==422: PASS
+  CHECK error shape {detail:[{loc,msg,type,...}]: PASS

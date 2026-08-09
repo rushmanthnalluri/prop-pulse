@@ -1,0 +1,47 @@
+== A. champion paths + byte identity ==
+regression: name=ridge version=v1 source=models\regression\ridge_v1.joblib exists=True
+  registry=models/registry/regression_champion.joblib exists=True sha256_equal=True -> CONSISTENT
+classification: name=random_forest version=v1 source=models\classification\random_forest_calibrated_v1.joblib exists=True
+  registry=models/registry/classification_champion.joblib exists=True sha256_equal=True -> CONSISTENT
+clustering: path=models/clustering/dbscan.joblib exists=True
+== B. feature_version ==
+ml.tracking.feature_version(feature_list.json)=9b0f8ba4201c champion.json=9b0f8ba4201c -> CONSISTENT
+feature_list.json sha1 field=7601f2f66c747fe43b5900019dd9762ad86ea75f recomputed=7601f2f66c747fe43b5900019dd9762ad86ea75f match=True; MODEL_FEATURES n=94 == file n=94 order_equal=True
+== C. regression metrics recompute ==
+val.mae: recomputed=14526.57241844 champion=14526.572418 -> CONSISTENT
+  metrics.json ridge.val.mae=14526.5724184388 match=True
+val.rmse: recomputed=21672.72103039 champion=21672.72103 -> CONSISTENT
+  metrics.json ridge.val.rmse=21672.7210303940 match=True
+val.r2: recomputed=0.92798224 champion=0.927982 -> CONSISTENT
+  metrics.json ridge.val.r2=0.9279822437 match=True
+val.rmsle: recomputed=0.13543667 champion=0.135437 -> INCONSISTENT
+  metrics.json ridge.val.rmsle=0.1354366692 match=True
+residual_interval.q_low: recomputed=-0.14095418 champion=-0.140954 -> INCONSISTENT
+residual_interval.q_high: recomputed=0.11663421 champion=0.116634 -> INCONSISTENT
+test.mae: recomputed=15075.47345805 champion=15075.473458 -> CONSISTENT
+test.rmse: recomputed=21151.54168739 champion=21151.541687 -> CONSISTENT
+test.r2: recomputed=0.93048045 champion=0.93048 -> CONSISTENT
+test.rmsle: recomputed=0.11868860 champion=0.118689 -> INCONSISTENT
+test.interval_coverage: recomputed=0.78285714 champion=0.782857 -> CONSISTENT
+== D. classification metrics recompute ==
+pick_f1_threshold(val)=0.203292 champion.threshold=0.203292 -> INCONSISTENT
+val.roc_auc: recomputed=0.72177845 champion=0.721778 -> INCONSISTENT
+test.roc_auc: recomputed=0.76660188 champion=0.766602 -> CONSISTENT
+val.pr_auc: recomputed=0.52501285 champion=0.525013 -> CONSISTENT
+test.pr_auc: recomputed=0.56736326 champion=0.567363 -> CONSISTENT
+val.precision: recomputed=0.40909091 champion=0.409091 -> CONSISTENT
+test.precision: recomputed=0.36697248 champion=0.366972 -> INCONSISTENT
+val.recall: recomputed=0.81818182 champion=0.818182 -> CONSISTENT
+test.recall: recomputed=0.81632653 champion=0.816327 -> INCONSISTENT
+val.f1: recomputed=0.54545455 champion=0.545455 -> INCONSISTENT
+test.f1: recomputed=0.50632911 champion=0.506329 -> CONSISTENT
+val.brier: recomputed=0.18555024 champion=0.18555 -> INCONSISTENT
+test.brier: recomputed=0.17102593 champion=0.171026 -> CONSISTENT
+val.confusion_matrix: recomputed={'tn': 122, 'fp': 117, 'fn': 18, 'tp': 81} champion={'tn': 122, 'fp': 117, 'fn': 18, 'tp': 81} -> CONSISTENT
+test.confusion_matrix: recomputed={'tn': 57, 'fp': 69, 'fn': 9, 'tp': 40} champion={'tn': 57, 'fp': 69, 'fn': 9, 'tp': 40} -> CONSISTENT
+== E. metrics.json vs champion.json (classification) ==
+val_calibrated.roc_auc: metrics.json=0.72177845 champion=0.721778 match=True
+val_calibrated.pr_auc: metrics.json=0.52501285 champion=0.525013 match=True
+val_calibrated.brier: metrics.json=0.18555024 champion=0.18555 match=False
+threshold-dependent block differs BY DESIGN: metrics.json threshold=0.5 confusion={'tn': 238, 'fp': 1, 'fn': 91, 'tp': 8} vs champion threshold=0.203292 confusion={'tn': 122, 'fp': 117, 'fn': 18, 'tp': 81}
+RESULT=OK

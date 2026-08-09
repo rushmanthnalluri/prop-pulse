@@ -1,0 +1,21 @@
+COMMAND: .venv/Scripts/python.exe - <<EOF (recompute global importance + npz + figure integrity)
+DATE: Fri Aug  7 13:04:56 UTC 2026
+---OUTPUT---
+stored metadata: {'model': 'Ridge', 'explainer': 'shap.LinearExplainer', 'background_size': 200, 'val_sample_size': 200, 'seed': 42, 'feature_version': '9b0f8ba4201c'}
+feature counts: stored 94 recomputed 94
+ordering identical (all 94): True
+max |stored - recomputed| value diff: 0.000e+00
+top-10 recomputed: ['OverallQual=0.0574', 'OverallCond=0.0405', 'total_sf=0.0300', 'GrLivArea=0.0260', '1stFlrSF=0.0214', 'TotalBsmtSF=0.0212', '2ndFlrSF=0.0209', 'BsmtFinSF1=0.0199', 'neighborhood_median_price=0.0187', 'living_area_per_bedroom=0.0177']
+
+npz keys: ['expected_value', 'feature_names', 'shap_values', 'val_ids']
+npz shap shape: (200, 94) feature_names: 94
+npz feature_names == explainer base_feature_names: True
+npz expected_value: 12.00034143094705 == explainer: True
+npz val_ids == recomputed sample Ids: True
+npz shap_values max abs diff vs recomputed: 0.0
+figures/shap_bar.png: size=100574B png_sig=True shape=(1050, 1350, 4) pixel_std=0.2093 nonwhite_frac=0.152
+figures/shap_summary.png: size=265383B png_sig=True shape=(1200, 1500, 4) pixel_std=0.1379 nonwhite_frac=0.080
+models/explainability/shap_bar.png: size=100574B png_sig=True shape=(1050, 1350, 4) pixel_std=0.2093 nonwhite_frac=0.152
+models/explainability/shap_summary.png: size=265383B png_sig=True shape=(1200, 1500, 4) pixel_std=0.1379 nonwhite_frac=0.080
+
+GLOBAL IMPORTANCE + ARTIFACTS: PASS

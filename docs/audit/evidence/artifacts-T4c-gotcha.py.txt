@@ -1,0 +1,68 @@
+"""artifacts-audit T4c runner: reproduce the mlflow 3.15 'artifacts'-path gotcha.
+
+Usage: .venv/Scripts/python.exe docs/audit/evidence/artifacts-T4c-gotcha.py.txt
+Creates TWO throwaway file stores under the system temp dir:
+  case A: <tmp>/artifacts_gotcha/mlruns   (path contains an 'artifacts' component)
+  case B: <tmp>/gotcha_control/mlruns     (no 'artifacts' component)
+For each: set_tracking_uri -> set_experiment -> start_run (create_run).
+Expected per scripts/audit_reproducibility.py lines 50-54: case A fails with
+"Run '<uuid>' not found" (FileStore._is_valid_run_directory rejects run dirs
+under an 'artifacts' path part — ZDI-CAN-26649 traversal defense); case B works.
+Both dirs are deleted afterwards. Exit 0 if the gotcha reproduces exactly.
+"""
+import os
+import shutil
+import sys
+import tempfile
+
+os.environ.setdefault("MLFLOW_ALLOW_FILE_STORE", "true")
+
+def attempt(root):
+    import mlflow
+    from pathlib import Path
+
+    uri = Path(root).resolve().as_uri()
+    mlflow.set_tracking_uri(uri)
+    try:
+        mlflow.set_experiment("gotcha_probe")
+        with mlflow.start_run(run_name="probe"):
+            pass
+        return ("OK", uri, "")
+    except Exception as exc:  # noqa: BLE001 - we WANT the failure text
+        return ("FAIL", uri, f"{type(exc).__name__}: {exc}")
+
+def main() -> int:
+    tmp = tempfile.gettempdir()
+    case_a = os.path.join(tmp, "artifacts", "mlruns")            # exact 'artifacts' component
+    case_a2 = os.path.join(tmp, "artifacts_gotcha", "mlruns")    # prefix only - negative control
+    case_b = os.path.join(tmp, "gotcha_control", "mlruns")       # no 'artifacts' at all
+    results = {}
+    for label, root in (
+        ("A(exact 'artifacts' component)", case_a),
+        ("A2(prefix 'artifacts_gotcha' only)", case_a2),
+        ("B(control)", case_b),
+    ):
+        status, uri, err = attempt(root)
+        results[label] = status
+        print(f"case {label}: {status}")
+        print(f"  uri={uri}")
+        if err:
+            print(f"  error={err[:400]}")
+    for root in (
+        os.path.join(tmp, "artifacts"),
+        os.path.join(tmp, "artifacts_gotcha"),
+        os.path.join(tmp, "gotcha_control"),
+    ):
+        shutil.rmtree(root, ignore_errors=True)
+        print(f"cleaned {root}: exists={os.path.exists(root)}")
+    gotcha = (
+        results["A(exact 'artifacts' component)"] == "FAIL"
+        and results["A2(prefix 'artifacts_gotcha' only)"] == "OK"
+        and results["B(control)"] == "OK"
+    )
+    print(f"GOTCHA_REPRODUCED={gotcha}")
+    print("RESULT=OK" if gotcha else "RESULT=GOTCHA-NOT-REPRODUCED")
+    return 0 if gotcha else 1
+
+if __name__ == "__main__":
+    sys.exit(main())

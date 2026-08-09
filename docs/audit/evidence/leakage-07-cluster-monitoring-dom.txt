@@ -1,0 +1,22 @@
+=== CHECK F1: cluster_stats.json descriptive stats from TRAIN only ===
+clusters checked: 4 (n_clusters field=4), mismatches vs train recompute: NONE
+clusters whose stats WOULD change if val were included: 4 of 4
+
+=== CHECK F2: monitoring reference_stats.json from TRAIN only ===
+payload split='train', n_rows=945 (train rows=945)
+GrLivArea: bin_edges match train recompute: True; expected_proportions match: True
+OverallQual: bin_edges match train recompute: True; expected_proportions match: True
+GrLivArea edges train-only : [334.0, 912.0, 1061.6, 1200.0, 1336.6, 1456.0] ...
+GrLivArea edges train+val  : [334.0, 912.0, 1072.0, 1216.6, 1344.0, 1466.0] ...
+identical? False
+
+=== CHECK F3: DOM simulator fitted on train stats only ===
+train: days_on_market reproduced by TRAIN-fit simulator: 945/945
+val: days_on_market reproduced by TRAIN-fit simulator: 338/338
+val: rows where train+val-fit simulator gives a DIFFERENT value: 147/338 (discrimination)
+train: sells_within_30_days == (days_on_market<=30): True; positive rate=0.2529
+val: sells_within_30_days == (days_on_market<=30): True; positive rate=0.2929
+test: sells_within_30_days == (days_on_market<=30): True; positive rate=0.2800
+
+=== CHECK F4: prediction_reference.json provenance (expect: val predictions, by design) ===
+generated_from: data/processed/val.csv, champion models | n_rows: 338 (val rows: 338 )

@@ -1,0 +1,45 @@
+"""Task 3 supplement — proper in-distribution control for the retraining guard.
+
+The task-3 'control' used a constant GrLivArea=1500, which IS a genuine
+distribution shift (delta vs spread-out train) — bad control design, not a
+code bug. Redo with values resampled from the real train split (seed 42).
+"""
+import json
+import tempfile
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+from ml.monitoring.drift_check import run_drift_check
+
+rng = np.random.default_rng(42)
+train = pd.read_csv("data/processed/train.csv", keep_default_na=False)
+gl = pd.to_numeric(train["GrLivArea"], errors="coerce").dropna().to_numpy()
+oq = pd.to_numeric(train["OverallQual"], errors="coerce").dropna().to_numpy()
+
+with tempfile.TemporaryDirectory() as tmp:
+    log = Path(tmp) / "log.jsonl"
+    out = Path(tmp) / "report.json"
+    n = 300
+    gl_draw = rng.choice(gl, size=n, replace=True)
+    oq_draw = rng.choice(oq, size=n, replace=True)
+    with log.open("w", encoding="utf-8") as fh:
+        for g, q in zip(gl_draw, oq_draw):
+            rec = {
+                "timestamp": "2026-08-07T00:00:00+00:00",
+                "payload": {},
+                "features": {"GrLivArea": float(g), "OverallQual": float(q)},
+                "prediction": {"estimated_price": 200000.0, "probability": 0.5, "cluster_id": 0},
+                "model_version": "test",
+            }
+            fh.write(json.dumps(rec) + "\n")
+    report = run_drift_check(log_path=log, output_path=out)
+    print(f"in-distribution control @ n=300:")
+    print(f"  status={report['status']} n={report['n_predictions']}")
+    print(f"  per_feature_psi={report['per_feature_psi']}")
+    print(f"  max_psi={report['max_psi']}")
+    print(f"  drift_detected={report['drift_detected']}  retraining_recommended={report['retraining_recommended']}")
+    print(f"  text: {report['recommendation_text']}")
+    assert report["drift_detected"] is False and report["retraining_recommended"] is False
+    print("CONTROL PASS: no drift -> no retraining flag even at n=300 >= 200")

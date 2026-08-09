@@ -1,0 +1,2027 @@
+{
+  "1920/": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "Overview"
+      },
+      {
+        "size": 11,
+        "sel": "p.ov-hero-meta",
+        "text": "Champions ridge_v1 + random_fo"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Calibrated"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Simulated target"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "sealed 2010 test split"
+      }
+    ]
+  },
+  "1920/valuation": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      }
+    ]
+  },
+  "1920/valuation-submitted": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      }
+    ]
+  },
+  "1920/market": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "MARKET INTELLIGENCE"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "25 neighborhoods · 4 micro-mar"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "THE MAP — APPROXIMATE NEIGHBOR"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "tab to a point · Enter for det"
+      },
+      {
+        "size": 11,
+        "sel": "label.map-toolbar-label",
+        "text": "Highlight a neighborhood"
+      }
+    ]
+  },
+  "1920/model": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Insights"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "dataset ames-1.0 · 94 features"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "The champions"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /model/info"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Champion"
+      }
+    ]
+  },
+  "1920/health": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Health"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "API ok · models 2/2 loaded · f"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "Service status"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /health · live liveness"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "ok"
+      }
+    ]
+  },
+  "1440/": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "Overview"
+      },
+      {
+        "size": 11,
+        "sel": "p.ov-hero-meta",
+        "text": "Champions ridge_v1 + random_fo"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Calibrated"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Simulated target"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "sealed 2010 test split"
+      }
+    ]
+  },
+  "1440/valuation": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      }
+    ]
+  },
+  "1440/valuation-submitted": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      }
+    ]
+  },
+  "1440/market": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "MARKET INTELLIGENCE"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "25 neighborhoods · 4 micro-mar"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "THE MAP — APPROXIMATE NEIGHBOR"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "tab to a point · Enter for det"
+      },
+      {
+        "size": 11,
+        "sel": "label.map-toolbar-label",
+        "text": "Highlight a neighborhood"
+      }
+    ]
+  },
+  "1440/model": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Insights"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "dataset ames-1.0 · 94 features"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "The champions"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /model/info"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Champion"
+      }
+    ]
+  },
+  "1440/health": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Health"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "API ok · models 2/2 loaded · f"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "Service status"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /health · live liveness"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "ok"
+      }
+    ]
+  },
+  "1280/": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "Overview"
+      },
+      {
+        "size": 11,
+        "sel": "p.ov-hero-meta",
+        "text": "Champions ridge_v1 + random_fo"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Calibrated"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Simulated target"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "sealed 2010 test split"
+      }
+    ]
+  },
+  "1280/valuation": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      }
+    ]
+  },
+  "1280/valuation-submitted": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      }
+    ]
+  },
+  "1280/market": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "MARKET INTELLIGENCE"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "25 neighborhoods · 4 micro-mar"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "THE MAP — APPROXIMATE NEIGHBOR"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "tab to a point · Enter for det"
+      },
+      {
+        "size": 11,
+        "sel": "label.map-toolbar-label",
+        "text": "Highlight a neighborhood"
+      }
+    ]
+  },
+  "1280/model": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Insights"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "dataset ames-1.0 · 94 features"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "The champions"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /model/info"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Champion"
+      }
+    ]
+  },
+  "1280/health": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Health"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "API ok · models 2/2 loaded · f"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "Service status"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /health · live liveness"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "ok"
+      }
+    ]
+  },
+  "1024/": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "Overview"
+      },
+      {
+        "size": 11,
+        "sel": "p.ov-hero-meta",
+        "text": "Champions ridge_v1 + random_fo"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Calibrated"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Simulated target"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "sealed 2010 test split"
+      }
+    ]
+  },
+  "1024/valuation": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      }
+    ]
+  },
+  "1024/valuation-submitted": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      }
+    ]
+  },
+  "1024/market": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "MARKET INTELLIGENCE"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "25 neighborhoods · 4 micro-mar"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "THE MAP — APPROXIMATE NEIGHBOR"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "tab to a point · Enter for det"
+      },
+      {
+        "size": 11,
+        "sel": "label.map-toolbar-label",
+        "text": "Highlight a neighborhood"
+      }
+    ]
+  },
+  "1024/model": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Insights"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "dataset ames-1.0 · 94 features"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "The champions"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /model/info"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Champion"
+      }
+    ]
+  },
+  "1024/health": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Health"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "API ok · models 2/2 loaded · f"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "Service status"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /health · live liveness"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "ok"
+      }
+    ]
+  },
+  "768/": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "Overview"
+      },
+      {
+        "size": 11,
+        "sel": "p.ov-hero-meta",
+        "text": "Champions ridge_v1 + random_fo"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Calibrated"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Simulated target"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "sealed 2010 test split"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "sealed 2010 test split"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "~80% nominal range"
+      }
+    ]
+  },
+  "768/valuation": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Property"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,872–2,008"
+      }
+    ]
+  },
+  "768/valuation-submitted": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Property"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,872–2,008"
+      }
+    ]
+  },
+  "768/market": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "MARKET INTELLIGENCE"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "25 neighborhoods · 4 micro-mar"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "THE MAP — APPROXIMATE NEIGHBOR"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "tab to a point · Enter for det"
+      },
+      {
+        "size": 11,
+        "sel": "label.map-toolbar-label",
+        "text": "Highlight a neighborhood"
+      },
+      {
+        "size": 11,
+        "sel": "b.",
+        "text": "$179,900"
+      },
+      {
+        "size": 11,
+        "sel": "b.",
+        "text": "119.4"
+      }
+    ]
+  },
+  "768/model": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Insights"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "dataset ames-1.0 · 94 features"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "The champions"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /model/info"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Champion"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "selection metric"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "variance explained"
+      }
+    ]
+  },
+  "768/health": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Health"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "API ok · models 2/2 loaded · f"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "Service status"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /health · live liveness"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "ok"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Loaded"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Loaded"
+      }
+    ]
+  },
+  "390/": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "Overview"
+      },
+      {
+        "size": 11,
+        "sel": "p.ov-hero-meta",
+        "text": "Champions ridge_v1 + random_fo"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Calibrated"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Simulated target"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "sealed 2010 test split"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "sealed 2010 test split"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "~80% nominal range"
+      }
+    ]
+  },
+  "390/valuation": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Property"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,872–2,008"
+      }
+    ]
+  },
+  "390/valuation-submitted": {
+    "overflowX": 235,
+    "offenders": [
+      "form.valuation-form right=625",
+      "fieldset.fieldset right=625",
+      "div.field-row right=608",
+      "div.field right=608",
+      "label.field-label right=608",
+      "select.select right=608",
+      "div.field right=608",
+      "label.field-label right=608"
+    ],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Valuation"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "Champion ridge_v1 · test RMSLE"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Location & lot"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,533–164,660"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "blank → training median"
+      },
+      {
+        "size": 11,
+        "sel": "legend.",
+        "text": "Property"
+      },
+      {
+        "size": 11,
+        "sel": "span.field-hint",
+        "text": "train range 1,872–2,008"
+      }
+    ]
+  },
+  "390/market": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "p.kicker",
+        "text": "MARKET INTELLIGENCE"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "25 neighborhoods · 4 micro-mar"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "THE MAP — APPROXIMATE NEIGHBOR"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "tab to a point · Enter for det"
+      },
+      {
+        "size": 11,
+        "sel": "label.map-toolbar-label",
+        "text": "Highlight a neighborhood"
+      },
+      {
+        "size": 11,
+        "sel": "b.",
+        "text": "$179,900"
+      },
+      {
+        "size": 11,
+        "sel": "b.",
+        "text": "119.4"
+      }
+    ]
+  },
+  "390/model": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Insights"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "dataset ames-1.0 · 94 features"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "The champions"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /model/info"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Champion"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "selection metric"
+      },
+      {
+        "size": 11,
+        "sel": "div.metric-hint",
+        "text": "variance explained"
+      }
+    ]
+  },
+  "390/health": {
+    "overflowX": 0,
+    "offenders": [],
+    "smallest": [
+      {
+        "size": 11,
+        "sel": "div.side-brand-tag",
+        "text": "Property Intelligence"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Analyze"
+      },
+      {
+        "size": 11,
+        "sel": "div.nav-caption",
+        "text": "Platform"
+      },
+      {
+        "size": 11,
+        "sel": "span.kicker",
+        "text": "Model Health"
+      },
+      {
+        "size": 11,
+        "sel": "p.page-meta",
+        "text": "API ok · models 2/2 loaded · f"
+      },
+      {
+        "size": 11,
+        "sel": "h2.section-title",
+        "text": "Service status"
+      },
+      {
+        "size": 11,
+        "sel": "span.section-note",
+        "text": "GET /health · live liveness"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "ok"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Loaded"
+      },
+      {
+        "size": 11,
+        "sel": "span.badge",
+        "text": "Loaded"
+      }
+    ]
+  }
+}

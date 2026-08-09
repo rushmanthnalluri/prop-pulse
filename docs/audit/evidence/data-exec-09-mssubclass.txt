@@ -1,0 +1,8 @@
+MSSubClass dtype in model feature frame (from processed CSV): int64
+preprocessor numeric cols: 53 | categorical cols: 41
+MSSubClass in numeric: True | in categorical: False
+clean.py:136 intent: cast MSSubClass to str (categorical code) | schema.json says dtype: object
+train MSSubClass codes: [20, 30, 40, 45, 50, 60, 70, 75, 80, 85, 90, 120, 160, 180, 190]
+FEATURE_DEFAULTS['MSSubClass']: 50 (median of codes; train mode is 20 )
+
+serving default (no sale_date): YrSold = 2026 MoSold = 8 -> sale_year outside train range 2006-2010: True

@@ -1,0 +1,2 @@
+after 10000ms: fetch still pending? true  (UI would still show "Scoring the property…" / Loading spinner)
+with AbortSignal.timeout(2000): rejected after 2095ms (TimeoutError)

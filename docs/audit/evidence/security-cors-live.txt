@@ -1,0 +1,50 @@
+===================== CORS preflight: UNKNOWN origin =====================
+$ curl -si -X OPTIONS /predict -H "Origin: http://evil.example" -H "Access-Control-Request-Method: POST"
+HTTP/1.1 400 Bad Request
+date: Fri, 07 Aug 2026 13:05:59 GMT
+server: uvicorn
+vary: Origin
+access-control-allow-methods: DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
+access-control-max-age: 600
+access-control-allow-credentials: true
+access-control-allow-headers: content-type
+content-length: 22
+content-type: text/plain; charset=utf-8
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+
+Disallowed CORS origin
+===================== CORS preflight: CONFIGURED origin (localhost:5173) =====================
+$ curl -si -X OPTIONS /predict -H "Origin: http://localhost:5173" ...
+HTTP/1.1 200 OK
+date: Fri, 07 Aug 2026 13:05:59 GMT
+server: uvicorn
+vary: Origin
+access-control-allow-methods: DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT
+access-control-max-age: 600
+access-control-allow-credentials: true
+access-control-allow-origin: http://localhost:5173
+access-control-allow-headers: content-type
+content-length: 2
+content-type: text/plain; charset=utf-8
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+
+OK
+===================== CORS: simple GET with evil origin =====================
+HTTP/1.1 200 OK
+date: Fri, 07 Aug 2026 13:05:59 GMT
+server: uvicorn
+content-length: 73
+content-type: application/json
+access-control-allow-credentials: true
+x-content-type-options: nosniff
+x-frame-options: DENY
+referrer-policy: no-referrer
+cache-control: no-store
+
+{"status":"ok","models_loaded":{"regression":true,"classification":true}}

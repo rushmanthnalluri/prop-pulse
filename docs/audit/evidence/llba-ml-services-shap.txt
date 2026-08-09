@@ -1,0 +1,27 @@
+unrecognized categorical base in 'cat__UnknownFeat_x'; using rsplit fallback
+unrecognized categorical base in 'cat__B_x'; using rsplit fallback
+unrecognized categorical base in 'cat__B_y'; using rsplit fallback
+explainer kind: LinearExplainer model: Ridge
+background shape: (200, 296) dtype: float64
+expected_value: 12.00034143094705
+n transformed: 296 n base: 94
+unparsed transformed names: []
+MSZoning_C (all) present: True
+MSZoning dummies: ['cat__MSZoning_C (all)', 'cat__MSZoning_FV', 'cat__MSZoning_RH', 'cat__MSZoning_RL', 'cat__MSZoning_RM'] -> ['MSZoning', 'MSZoning', 'MSZoning', 'MSZoning', 'MSZoning']
+parse cat__MSZoning_C (all): MSZoning
+parse cat__Neighborhood_NridgHt: Neighborhood
+parse num__GrLivArea: GrLivArea
+parse num__neighborhood_median_price: neighborhood_median_price
+parse cat__UnknownFeat_x (warn expected): UnknownFeat
+collision probe (MS, MSZoning known): MSZoning MS
+additivity max abs err: 1.7763568394002505e-15
+synthetic agg: {'A': 1.0, 'B': 5.0, 'C': 4.0} (expect A=1, B=5, C=4)
+explain_instance top5: [{'feature': 'OverallCond', 'impact': 'positive', 'magnitude': 0.101844}, {'feature': 'OverallQual', 'impact': 'negative', 'magnitude': 0.078008}, {'feature': 'Fireplaces', 'impact': 'positive', 'magnitude': 0.05859}, {'feature': 'amenity_count', 'impact': 'positive', 'magnitude': 0.038412}, {'feature': 'ScreenPorch', 'impact': 'positive', 'magnitude': 0.03637}]
+sum of returned magnitudes: 0.313224 <= 1: True
+coef shape: (296,) intercept: 11.945132179201256
+mean prediction on background: 12.00034143094705 vs expected_value: 12.00034143094705
+importance recompute mismatches: {}
+top5 recomputed: [('OverallQual', 0.057375233983035956), ('OverallCond', 0.04048447448013188), ('total_sf', 0.030004216713384775), ('GrLivArea', 0.026005173277184497), ('1stFlrSF', 0.021389103805206516)]
+metadata: {'model': 'Ridge', 'model_path': 'models/registry/regression_champion.joblib', 'explainer': 'shap.LinearExplainer', 'units': 'log1p(SalePrice)', 'background_size': 200, 'background_split': 'train', 'val_sample_size': 200, 'seed': 42, 'feature_version': '9b0f8ba4201c', 'dataset_version': 'ames-1.0', 'generated_at': '2026-08-07T10:39:02.217783+00:00', 'aggregation': 'one-hot dummy SHAP values summed back to base MODEL_FEATURES names; mean taken over |aggregated shap| of the val sample'}
+npz shap shape: (200, 94) expected_value: 12.00034143094705 n ids: 200
+npz matches recompute: True

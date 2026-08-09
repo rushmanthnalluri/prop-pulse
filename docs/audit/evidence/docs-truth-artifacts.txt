@@ -1,0 +1,68 @@
+=== feature_list.json ===
+type: dict
+keys: ['features', 'generated_from', 'sha1']
+keys: ['features', 'generated_from', 'sha1']
+keys: ['features', 'generated_from', 'sha1']
+n_features: 94
+sha1(full): 9b0f8ba4201c8d98020ad00c960ffd9d278ea255
+sha1(12): 9b0f8ba4201c
+first 10: ['MSSubClass', 'MSZoning', 'LotFrontage', 'LotArea', 'Street', 'Alley', 'LotShape', 'LandContour', 'Utilities', 'LotConfig']
+last 6: ['distance_to_city_center_km', 'amenity_count', 'neighborhood_median_price', 'neighborhood_mean_price', 'neighborhood_median_price_per_sqft', 'neighborhood_monthly_sale_velocity']
+
+=== feature_importance.json (top 12) ===
+metadata: {
+ "model": "Ridge",
+ "model_path": "models/registry/regression_champion.joblib",
+ "explainer": "shap.LinearExplainer",
+ "units": "log1p(SalePrice)",
+ "background_size": 200,
+ "background_split": "train",
+ "val_sample_size": 200,
+ "seed": 42,
+ "feature_version": "9b0f8ba4201c",
+ "dataset_version": "ames-1.0",
+ "generated_at": "2026-08-07T10:39:02.217783+00:00",
+ "aggregation": "one-hot dummy SHAP values summed back to base MODEL_FEATURES names; mean taken over |aggregated shap| of the val sample"
+}
+n_importance_entries: 94
+  OverallQual: 0.057375233983035956
+  OverallCond: 0.04048447448013188
+  total_sf: 0.030004216713384775
+  GrLivArea: 0.026005173277184497
+  1stFlrSF: 0.021389103805206516
+  TotalBsmtSF: 0.02117149980429683
+  2ndFlrSF: 0.020866435131508713
+  BsmtFinSF1: 0.019882726679743376
+  neighborhood_median_price: 0.018701960463901143
+  living_area_per_bedroom: 0.017678322850423228
+  Fireplaces: 0.015208090969118317
+  YearBuilt: 0.014484281831738732
+sorted desc check: True
+
+=== regression/metrics.json ===
+linear {'mae': 15888.103770966394, 'rmse': 22809.020458964947, 'r2': 0.9202325011987125, 'rmsle': 0.14246254654408058}
+ridge {'mae': 14526.57241843885, 'rmse': 21672.721030393997, 'r2': 0.9279822437448196, 'rmsle': 0.13543666916035035}
+lasso {'mae': 15354.721969452745, 'rmse': 23297.755241759754, 'r2': 0.9167774800826273, 'rmsle': 0.14072446647541653}
+random_forest {'mae': 18279.46816670844, 'rmse': 27698.449669574795, 'r2': 0.8823685019015454, 'rmsle': 0.15897383817704103}
+xgboost {'mae': 15461.464138068, 'rmse': 23459.53657149351, 'r2': 0.9156176604537375, 'rmsle': 0.1397772049480586}
+
+=== classification/metrics.json ===
+logistic val {'roc_auc': 0.6955749968302269, 'pr_auc': 0.5047125064648472, 'f1': 0.43386243386243384, 'precision': 0.45555555555555555, 'recall': 0.41414141414141414, 'brier': 0.1983249817096901}
+logistic val_calibrated {'roc_auc': 0.699590042686277, 'pr_auc': 0.5088930902633477, 'f1': 0.07692307692307693, 'precision': 0.8, 'recall': 0.04040404040404041, 'brier': 0.19130928632077238}
+logistic best_params {}
+decision_tree val {'roc_auc': 0.600608596424496, 'pr_auc': 0.36889921067352494, 'f1': 0.37815126050420167, 'precision': 0.3237410071942446, 'recall': 0.45454545454545453, 'brier': 0.27414591577966857}
+decision_tree val_calibrated {'roc_auc': 0.701343983770762, 'pr_auc': 0.4666302260917221, 'f1': 0.0, 'precision': 0.0, 'recall': 0.0, 'brier': 0.19730257406699792}
+decision_tree best_params {}
+random_forest val {'roc_auc': 0.7291745910992772, 'pr_auc': 0.536837102400229, 'f1': 0.4385026737967914, 'precision': 0.4659090909090909, 'recall': 0.41414141414141414, 'brier': 0.1934790587314492}
+random_forest val_calibrated {'roc_auc': 0.7217784539960272, 'pr_auc': 0.5250128463826431, 'f1': 0.14814814814814814, 'precision': 0.8888888888888888, 'recall': 0.08080808080808081, 'brier': 0.1855502446493561}
+random_forest best_params {}
+xgboost val {'roc_auc': 0.7254976543679472, 'pr_auc': 0.514752534486038, 'f1': 0.425, 'precision': 0.5573770491803278, 'recall': 0.3434343434343434, 'brier': 0.19421015901393812}
+xgboost val_calibrated {'roc_auc': 0.7186932082329571, 'pr_auc': 0.5031633316185901, 'f1': 0.14545454545454545, 'precision': 0.7272727272727273, 'recall': 0.08080808080808081, 'brier': 0.1903826623787548}
+xgboost best_params {}
+
+=== artifact file sizes ===
+  models/registry/regression_champion.joblib: 21,490 bytes = 21.0 KiB / 0.02 MiB
+  models/registry/classification_champion.joblib: 14,630,853 bytes = 14287.9 KiB / 13.95 MiB
+  models/regression/random_forest_v1.joblib: 25,168,259 bytes = 24578.4 KiB / 24.00 MiB
+  models/regression/ridge_v1.joblib: 21,490 bytes = 21.0 KiB / 0.02 MiB
+  models/classification/random_forest_calibrated_v1.joblib: 14,630,853 bytes = 14287.9 KiB / 13.95 MiB
