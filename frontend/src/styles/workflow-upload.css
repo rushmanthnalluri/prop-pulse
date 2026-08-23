@@ -1,0 +1,96 @@
+/* ==========================================================================
+   ML Workbench — stage 01 Upload Dataset (blueprint §8.2)
+   Page-scoped styles for UploadStage + UploadDropzone + ValidationReport.
+   The dropzone, loaded panel, metrics, tables, alerts and buttons are the
+   shared styles.css vocabulary (.upload-drop, .loaded-panel, .metrics,
+   .table, .alert); only stage-specific pieces live here. Tokens are never
+   redefined; hairlines over boxes; no shadows/gradients; radius 4/6/8 only.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Dropzone — states the shared .upload-drop doesn't cover
+   -------------------------------------------------------------------------- */
+
+/* Mid-upload lock: selection is frozen while the POST is in flight. */
+.upload-drop.is-disabled { opacity: 0.6; cursor: default; }
+.upload-drop.is-disabled:hover { border-color: var(--border-strong); background: none; }
+
+/* Client-side pre-check failure (extension / empty / size) — one inline line. */
+.wfu-drop-error { font-size: 12.5px; color: var(--danger); margin: 8px 0 0; }
+
+/* --------------------------------------------------------------------------
+   Validation report — per-check rows inside the alert (§3.1/§6.3-01)
+   -------------------------------------------------------------------------- */
+
+.wfu-report-slot { margin-top: 16px; }
+.wfu-report--ok { border-color: var(--accent-border); background: var(--accent-wash); }
+
+.wfu-checks {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.wfu-check {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 12.5px;
+}
+.wfu-check:first-child { border-top: none; }
+/* Status badge sits centered against the baseline-aligned text row; the
+   PASS/WARN/FAIL colours come from the shared .badge-* modifiers. */
+.wfu-check-status {
+  flex-shrink: 0;
+  align-self: center;
+}
+.wfu-check-code {
+  flex-shrink: 0;
+  min-width: 128px;
+  font-size: 11px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.wfu-check-detail { color: var(--text-2); }
+.wfu-check--fail .wfu-check-detail { color: var(--text); font-weight: 500; }
+
+.wfu-report-details {
+  margin-top: 10px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border);
+}
+.wfu-report-line { font-size: 12.5px; margin: 6px 0 0; }
+.wfu-report-block { margin-top: 8px; font-size: 12.5px; }
+.wfu-report-lead { display: block; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+.wfu-report-list { margin: 8px 0 0; padding-left: 18px; font-size: 12.5px; }
+.wfu-report-list li { margin: 3px 0; }
+
+/* --------------------------------------------------------------------------
+   Loaded panel — Remove-file inline confirm (never window.confirm)
+   -------------------------------------------------------------------------- */
+
+.wfu-remove-confirm { margin: 0 0 18px; }
+.wfu-remove-error { color: var(--danger); font-size: 12.5px; margin: 8px 0 0; }
+
+/* --------------------------------------------------------------------------
+   Tables — schema identifiers keep their exact case in preview headers
+   (mixed-case Ames columns uppercased by .table th would no longer match
+   the CSV header a user validates against).
+   -------------------------------------------------------------------------- */
+
+.wfu-th-raw { text-transform: none; letter-spacing: 0.02em; }
+
+/* --------------------------------------------------------------------------
+   Responsive (blueprint §10)
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .wfu-check { flex-wrap: wrap; }
+  .wfu-check-code { min-width: 0; }
+}

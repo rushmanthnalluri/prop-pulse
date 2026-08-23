@@ -18,8 +18,9 @@ import NotFoundPage from './pages/NotFound'
 const MarketPage = lazy(() => import('./pages/Market'))
 const ModelInsightsPage = lazy(() => import('./pages/ModelInsights'))
 const HealthPage = lazy(() => import('./pages/Health'))
-// Guided ML workbench (WORKFLOW §6.1): one lazy route group; the shell owns
-// the stepper and lazily loads each stage page itself.
+// Guided ML workbench (WORKFLOW §6.1): one lazy route group; the sidebar in
+// Layout owns the stepper, the shell owns gating + the stage pager and lazily
+// loads each stage page itself.
 const WorkflowShell = lazy(() => import('./pages/workflow/WorkflowShell'))
 
 const guarded = (element, key) => (

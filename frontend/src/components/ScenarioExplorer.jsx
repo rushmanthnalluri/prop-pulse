@@ -12,7 +12,7 @@
  * the submitted payload, so a new valuation remounts it and drops all lever
  * state.
  */
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import { api } from '../api/client'
 import { formatNumber, formatUsd, formatYear } from '../format'
 
@@ -89,6 +89,7 @@ export default function ScenarioExplorer({ basePayload, basePrice }) {
   const [deltas, setDeltas] = useState({})
   const timersRef = useRef({})
   const abortsRef = useRef({})
+  const tipBaseId = useId()
 
   // Cancel pending debounces and in-flight re-scores on unmount.
   useEffect(() => {
@@ -123,7 +124,7 @@ export default function ScenarioExplorer({ basePayload, basePrice }) {
       .then((res) => {
         const price = Number(res?.estimated_price)
         // Surface the additive confidence block: reduced = scored outside
-        // the training range; keep the first reason for the hover tooltip.
+        // the training range; keep the first reason for the badge tooltip.
         const reducedReason =
           res?.confidence?.level === 'reduced'
             ? res.confidence.reasons?.[0] || 'Outside the training range'
@@ -177,7 +178,7 @@ export default function ScenarioExplorer({ basePayload, basePrice }) {
         <span className="panel-title">What-if scenarios</span>
       </div>
       <div className="panel-body">
-        <p className="note" style={{ marginBottom: 14 }}>
+        <p className="note mb-14">
           Re-scores the same model with one change at a time — deltas are versus the
           estimate above.
         </p>
@@ -219,7 +220,7 @@ export default function ScenarioExplorer({ basePayload, basePrice }) {
         </div>
         {touchedNames.length > 0 && (
           <>
-            <dl className="kv" style={{ marginTop: 16 }}>
+            <dl className="kv mt-16">
               {touchedNames.map((name) => {
                 const lever = LEVERS.find((l) => l.name === name)
                 const delta = deltas[name]
@@ -233,8 +234,19 @@ export default function ScenarioExplorer({ basePayload, basePrice }) {
                       {delta?.status === 'ok' && delta.reducedReason && (
                         <>
                           {' '}
-                          <span className="badge badge-warn" title={delta.reducedReason}>
+                          <span
+                            className="badge badge-warn tip-badge"
+                            tabIndex={0}
+                            aria-describedby={`${tipBaseId}-${name}`}
+                          >
                             Reduced confidence
+                            <span
+                              className="tip-text"
+                              id={`${tipBaseId}-${name}`}
+                              role="tooltip"
+                            >
+                              {delta.reducedReason}
+                            </span>
                           </span>
                         </>
                       )}
@@ -251,7 +263,12 @@ export default function ScenarioExplorer({ basePayload, basePrice }) {
                           Retry
                         </button>
                       )}
-                      {(!delta || delta.status === 'loading') && '…'}
+                      {(!delta || delta.status === 'loading') && (
+                        <>
+                          <span className="skeleton scenario-delta-skeleton" aria-hidden="true" />
+                          <span className="visually-hidden">Updating…</span>
+                        </>
+                      )}
                     </dd>
                   </div>
                 )
@@ -259,8 +276,7 @@ export default function ScenarioExplorer({ basePayload, basePrice }) {
             </dl>
             <button
               type="button"
-              className="btn btn-secondary btn-sm"
-              style={{ marginTop: 12 }}
+              className="btn btn-secondary btn-sm mt-12"
               onClick={reset}
             >
               Reset scenarios

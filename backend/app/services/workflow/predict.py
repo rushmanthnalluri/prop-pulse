@@ -40,18 +40,30 @@ class WorkflowPredictService:
         self._models: dict[tuple[str, str], Any] = {}
 
     def _sandbox_model(self, dataset_id: str, job_id: str) -> Any:
-        """Cached ``SandboxModelService`` per ``(dataset_id, job_id)``; 503 pre-WF-B2."""
+        """Cached ``SandboxModelService`` per ``(dataset_id, job_id)``; 503 pre-WF-B2.
+
+        The ml layer raises ``UnknownDataset``/``UnknownJobError`` for missing
+        state (404 per its contract); those can still surface here when the
+        dataset or status file is deleted between ``_job_dir_for`` and this
+        construction, so they are mapped rather than leaking as a 500.
+        """
         key = (dataset_id, job_id)
         if key not in self._models:
             try:
-                from ml.workflow.predict import SandboxModelService  # noqa: PLC0415
+                from ml.workflow.predict import (  # noqa: PLC0415
+                    SandboxModelService,
+                    UnknownJobError,
+                )
             except ImportError as exc:
                 raise HTTPException(
                     status_code=503,
                     detail="the workflow training engine (ml.workflow.predict) is not "
                     "available in this build",
                 ) from exc
-            self._models[key] = SandboxModelService(dataset_id, job_id)
+            try:
+                self._models[key] = SandboxModelService(dataset_id, job_id)
+            except (UnknownDataset, UnknownJobError) as exc:
+                raise HTTPException(status_code=404, detail=str(exc)) from exc
         return self._models[key]
 
     def predict(

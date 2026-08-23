@@ -1,5 +1,5 @@
 /**
- * Stage 10 — Neighbourhood Intelligence (WORKFLOW §6.3-10). A bridge stage
+ * Stage 10 — Market Intelligence (WORKFLOW §6.3-10). A bridge stage
  * with one piece of real sandbox output on top:
  *
  * - SANDBOX TEASER: when the active dataset has a completed clustering job,
@@ -65,21 +65,23 @@ export default function MarketStage() {
   return (
     <>
       <header className="page-head">
-        <span className="kicker">Stage 10 · Neighbourhood Intelligence</span>
+        <span className="kicker">Stage 10 · Market Intelligence</span>
         <h1 className="page-title">Micro-markets, yours and the champion&rsquo;s</h1>
         <p className="page-desc">
           See what DBSCAN found in your own dataset, then open the product&rsquo;s
-          neighbourhood intelligence — an interactive map of the Ames micro-markets the
+          market intelligence — an interactive map of the Ames micro-markets the
           champion models use.
         </p>
       </header>
+
+      <hr className="divider" />
 
       <section className="section" aria-labelledby="wf-sb-cluster-title">
         <div className="section-head">
           <h2 className="section-title" id="wf-sb-cluster-title">
             Your model — sandbox clustering
           </h2>
-          <span className="section-note">GET /workflow/jobs/…/evaluation/dbscan</span>
+          <span className="section-note">Live from the sandbox job&rsquo;s evaluation</span>
         </div>
 
         {loading && <PanelSkeleton height={150} />}
@@ -156,12 +158,14 @@ export default function MarketStage() {
         )}
       </section>
 
+      <hr className="divider" aria-hidden="true" />
+
       <section className="section" aria-labelledby="wf-market-bridge-title">
         <div className="wf-bridge">
           <div className="wf-bridge-head">
             <span className="badge badge-accent">Champion</span>
             <h2 className="wf-bridge-title" id="wf-market-bridge-title">
-              Neighbourhood Intelligence on /market
+              Market Intelligence on /market
             </h2>
           </div>
           <p className="wf-bridge-copy">
@@ -209,7 +213,7 @@ export default function MarketStage() {
             listings.
           </p>
           <Link className="btn btn-primary wf-bridge-cta" to="/market">
-            Open Neighbourhood Intelligence →
+            Open Market Intelligence →
           </Link>
         </div>
       </section>

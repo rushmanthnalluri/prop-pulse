@@ -1,0 +1,60 @@
+/* ==========================================================================
+   Stage 06 — Preprocessing (blueprint §8.7)
+   Page-scoped styles for PreprocessStage + BeforeAfterPanel. Imported AFTER
+   styles/workflow-train.css (whose .wf-flow / .wf-step / .wf-leakage base
+   rules this page reuses) so equal-specificity rules below win. Tokens from
+   styles.css only — hairlines over boxes, no shadows, 4/6/8 radii, nothing
+   below 10px; user-facing errors/hints ≥ 11px (see styles.css .field-error).
+   ========================================================================== */
+
+/* Pipeline-flow node status line — mono microcopy + 6px status dot. Every
+   step present in the persisted PrepareReport completed (a failed step
+   raises server-side and no report persists), so "done" is a statement of
+   fact; a disabled outlier rule reads "skipped", the caps "source"/"persisted". */
+.wfpp-node-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.wfpp-node-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+.wfpp-node-dot--muted { background: var(--text-3); }
+
+/* Flow nodes take the chart-card hover (border-strong only — no lift). */
+.wf-flow-node { transition: border-color var(--dur-hover); }
+.wf-flow-node:hover { border-color: var(--border-strong); }
+
+/* Before / after: delta-metric row, then the two sample panels. */
+.wfpp-beforeafter .metrics { margin-bottom: 20px; }
+.wfpp-delta-arrow { color: var(--text-3); font-size: 15px; }
+
+.wfpp-sample-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  align-items: start;
+}
+/* Grid items default to min-width:auto — keep the wide sample tables
+   inside their track so the page never grows horizontal overflow. */
+.wfpp-sample { min-width: 0; }
+/* The flush table-scroll (.borderless) sits directly under .panel-head;
+   round only the panel's own corners and clip the table's last row. */
+.wfpp-sample { overflow: hidden; }
+
+/* --------------------------------------------------------------------------
+   Responsive (blueprint §10)
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .wfpp-sample-grid { grid-template-columns: 1fr; }
+}

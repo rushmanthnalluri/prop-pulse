@@ -1,17 +1,22 @@
 /**
- * Market Intelligence page (SPEC §5.3): keyboard-accessible Leaflet map of
- * the 25 neighborhood centroids + micro-market rail (click → select + flyTo)
- * + selected-market profile, a sortable neighborhood directory (same
- * /market/clusters payload — no second fetch), and the trends chart (own
- * fetch, fully independent states — a failed trends call never blanks the
- * map, and vice versa).
+ * Market Intelligence page — rebuilt on the PlacementPredict design language
+ * (docs/frontend/PLACEMENTPREDICT_UI_BLUEPRINT.md §2/§4/§5/§6): page-head
+ * (kicker / title / desc / mono page-meta with real coverage facts), then
+ * hairline-separated sections — map + micro-market rail + selected-market
+ * profile, the sortable neighborhood directory (same /market/clusters
+ * payload — no second fetch), and the trends chart (own fetch, fully
+ * independent states — a failed trends call never blanks the map, and vice
+ * versa).
  *
- * Hardening: every map point is coordinate-checked before render — malformed
- * points are skipped AND disclosed in the UI ("N of 25 neighborhood points
- * could not be placed"), fixing the old silent console.warn (AUDIT §2.3).
- * Page-head counts come from the payload, never hardcoded (AUDIT §2.3).
- * `?cluster=<id>` is a supported deep link (SPEC §7.7); unknown values are
- * dropped silently.
+ * Hardening kept from the audit pass: every map point is coordinate-checked
+ * before render — malformed points are skipped AND disclosed in the UI ("N of
+ * 25 neighborhood points could not be placed"). Page-meta counts come from
+ * the payload, never hardcoded. `?cluster=<id>` is a supported deep link;
+ * unknown values are dropped silently.
+ *
+ * The two clusters-driven sections share ONE fetch lifecycle: a failure
+ * renders a single error box (in the map section) instead of stacked
+ * duplicates — the same one-async-unit rule the Model Insights page uses.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
@@ -20,9 +25,9 @@ import { useApi } from '../api/useApi'
 import { humanizeNote } from '../format'
 import ClusterRail from '../components/market/ClusterRail'
 import MarketProfile from '../components/market/MarketProfile'
+import TrendsPanel from '../components/market/TrendsPanel'
 import NeighborhoodMap from '../components/NeighborhoodMap'
 import NeighborhoodTable from '../components/NeighborhoodTable'
-import TrendsChart from '../components/shared/TrendsChart'
 import { EmptyState, ErrorState, PanelSkeleton } from '../components/StateView'
 import { SkeletonLine } from '../components/shared/Skeleton'
 import '../styles/market.css'
@@ -47,7 +52,7 @@ export default function MarketPage() {
   )
 
   // Guard every point: only finite lat/long with a code reaches the map;
-  // the rest are named and disclosed under the map (AUDIT §2.3 fix).
+  // the rest are named and disclosed under the map.
   const { points, skippedNames } = useMemo(() => {
     const valid = []
     const bad = []
@@ -86,8 +91,8 @@ export default function MarketPage() {
     [clusterById, setSearchParams],
   )
 
-  // ?cluster=<id> deep link (SPEC §7.7): validated against the payload,
-  // invalid values dropped silently. Applies selection + fly once per param.
+  // ?cluster=<id> deep link: validated against the payload, invalid values
+  // dropped silently. Applies selection + fly once per param.
   const clusterParam = searchParams.get('cluster')
   useEffect(() => {
     if (clusterParam === null) {
@@ -125,8 +130,8 @@ export default function MarketPage() {
     return codes.map((code) => memberInfoByCode[code] ?? { code, name: code, fallback: false })
   }, [activeCluster, memberInfoByCode])
 
-  // Simulated-velocity caveat (identical across clusters, CONTRACT §1.8);
-  // rendered with raw schema identifiers humanized (WP-7c).
+  // Simulated-velocity caveat (identical across clusters); rendered with raw
+  // schema identifiers humanized.
   const velocityNote = clusters.find((c) => typeof c?.note === 'string' && c.note)?.note ?? null
 
   const hasData = !loading && !error && neighborhoods.length > 0
@@ -137,22 +142,24 @@ export default function MarketPage() {
   return (
     <>
       <header className="page-head">
-        <p className="kicker">MARKET INTELLIGENCE</p>
-        <h1 className="page-title">Four micro-markets, twenty-five neighborhoods</h1>
+        <p className="kicker">Market Intelligence</p>
+        <h1 className="page-title">Micro-markets across Ames</h1>
         <p className="page-desc">
           Neighborhoods are grouped into micro-markets clustered from location, price level, and
           sale velocity. Select a market card to fly the map; select a map point or a table row to
           start a valuation there.
         </p>
         <p className="page-meta">
-          {metaCounts}sales 2006–2008 · approximate centroids (ADR-2)
+          {metaCounts}sales 2006–2008 · approximate centroids
         </p>
       </header>
 
+      <hr className="divider" aria-hidden="true" />
+
       {/* Map + cluster rail + selected-market profile */}
-      <section className="section market-map-section" style={{ paddingTop: 0 }} aria-label="Neighborhood map">
+      <section className="section" aria-label="Neighborhood map">
         <div className="section-head">
-          <h2 className="section-title">THE MAP — APPROXIMATE NEIGHBORHOOD CENTROIDS</h2>
+          <h2 className="section-title">The map — approximate neighborhood centroids</h2>
           <span className="section-note">tab to a point · Enter for details · cards fly the map</span>
         </div>
         {loading && (
@@ -205,56 +212,63 @@ export default function MarketPage() {
         )}
       </section>
 
-      {/* Neighborhood directory — same payload, client-side join, sortable */}
-      <section className="section market-directory" aria-label="Neighborhood directory">
-        <div className="section-head">
-          <h2 className="section-title">DIRECTORY — SORT ANY COLUMN</h2>
-          <span className="section-note">cluster-level medians · rows link to valuation</span>
-        </div>
-        {loading && (
-          <div className="panel market-table-skeleton" aria-hidden="true">
-            {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-              <SkeletonLine key={i} width={`${92 - (i % 4) * 7}%`} />
-            ))}
-          </div>
-        )}
-        {!loading && error && (
-          <ErrorState title="Couldn't load the directory" error={error} onRetry={reload} />
-        )}
-        {!loading && !error && neighborhoods.length === 0 && (
-          <EmptyState
-            kicker="No neighborhoods"
-            title="Nothing to list"
-            detail="The API returned an empty neighborhood list."
-          />
-        )}
-        {hasData && <NeighborhoodTable neighborhoods={neighborhoods} clusterById={clusterById} />}
-      </section>
+      {/* Neighborhood directory — the same clusters payload, so it renders
+          exactly when the map section has data (one shared lifecycle). */}
+      {hasData && (
+        <>
+          <hr className="divider" aria-hidden="true" />
+          <section className="section market-directory" aria-label="Neighborhood directory">
+            <div className="section-head">
+              <h2 className="section-title">Directory — sort any column</h2>
+              <span className="section-note">cluster-level medians · rows link to valuation</span>
+            </div>
+            <NeighborhoodTable neighborhoods={neighborhoods} clusterById={clusterById} />
+          </section>
+        </>
+      )}
+      {loading && (
+        <>
+          <hr className="divider" aria-hidden="true" />
+          <section className="section market-directory" aria-label="Neighborhood directory">
+            <div className="section-head">
+              <h2 className="section-title">Directory — sort any column</h2>
+              <span className="section-note">cluster-level medians · rows link to valuation</span>
+            </div>
+            <div className="panel market-table-skeleton" aria-hidden="true">
+              {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                <SkeletonLine key={i} width={`${92 - (i % 4) * 7}%`} />
+              ))}
+            </div>
+          </section>
+        </>
+      )}
 
-      {/* Trends — independent fetch, own states (SPEC §5.3) */}
+      <hr className="divider" aria-hidden="true" />
+
+      {/* Trends — independent fetch, own states */}
       <section className="section market-trends" aria-label="Market trends">
         <div className="section-head">
-          <h2 className="section-title">TRENDS — MEDIAN SALE PRICE BY HALF-YEAR</h2>
-          <span className="section-note">
-            train window 2006H1–2008H2 · gaps = no sales that half-year
-          </span>
+          <h2 className="section-title">Trends — median sale price by half-year</h2>
+          <span className="section-note">Training sales 2006–2008 · gaps = no sales that half-year</span>
         </div>
-        <TrendsChart wide />
+        <TrendsPanel />
       </section>
 
-      {/* Honesty notes (SPEC §5.3 row 5) */}
+      <hr className="divider" aria-hidden="true" />
+
+      {/* Honesty notes */}
       <section className="section market-notes" aria-label="Data notes">
         <div className="section-head">
-          <h2 className="section-title">DATA NOTES</h2>
+          <h2 className="section-title">Data notes</h2>
         </div>
         <div className="market-notes-body">
           <p className="note">
-            Map points are approximate geocoded neighborhood centroids (ADR-2), not parcel
+            Map points are approximate geocoded neighborhood centroids, not parcel
             locations; dashed rings mark the micro-market centroids.
           </p>
           {velocityNote && <p className="note">{humanizeNote(velocityNote)}</p>}
           <p className="note">
-            Every figure on this page comes from the 945 training sales, 2006–2008, Ames, Iowa, in
+            Every figure on this page comes from the training sales, 2006–2008, Ames, Iowa, in
             nominal dollars — none of it describes today&apos;s market.
           </p>
         </div>

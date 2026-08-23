@@ -117,7 +117,7 @@ test('AUD-24b: factor names are not truncated at 390x844 (no ellipsis overflow)'
 
   // Evidence capture for docs/audit/fix-frontend.md (pin sticky elements for the stitch).
   await page.addStyleTag({
-    content: '.sidebar, .topbar, .sticky-rail { position: static !important; }',
+    content: '.pipeline-sidebar, .predict-result { position: static !important; }',
   })
   await page.screenshot({ path: `${EVIDENCE}fix-frontend-mobile-390.png`, fullPage: true })
 })
@@ -228,7 +228,9 @@ test('WP-7a: unmounting mid-fetch never aborts the shared static GET (signal-fre
   await expect(page.locator('.leaflet-container')).toHaveCount(0)
 
   // Navigate away while the shared request is in flight…
-  await page.getByRole('link', { name: 'Valuation' }).click()
+  // (exact match — "Valuation" substring-collides with the sidebar's
+  // "Model Evaluation" pipeline link)
+  await page.getByRole('link', { name: 'Valuation', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Value a property' })).toBeVisible()
   release() // …the fetch must survive the unmount (pre-fix it was aborted).
   await page.waitForTimeout(500)
@@ -269,8 +271,10 @@ test('server 422 maps to the offending form field (mocked API validation error)'
     .getByRole('alert')
     .filter({ hasText: 'The API rejected some fields' })
   await expect(railAlert).toBeVisible()
-  // …the form summary names the field's label…
-  const summary = page.getByRole('alert').filter({ hasText: 'Fix the highlighted fields' })
+  // …the form summary names the field's label (scoped to the form — the
+  // rail's own error alert also quotes the "Check the highlighted inputs"
+  // copy, an accessible-name collision)…
+  const summary = page.locator('form.valuation-form').getByRole('alert')
   await expect(summary).toBeVisible()
   await expect(summary).toContainText('Living area')
   // …and the API's verbatim message lands on the field itself.

@@ -1,18 +1,20 @@
 /**
- * Market trends chart (GET /market/trends): one median-price line per
- * micro-market over the half-year periods 2006H1–2008H2. Self-contained fetch
- * (AbortController via useApi) with its own skeleton / error+retry / empty
- * states, so a failed trends call never breaks the surrounding page.
+ * Market trends panel (Market Intelligence page): one median-price line per
+ * micro-market over the half-year periods 2006H1–2008H2, from GET
+ * /market/trends. Self-contained fetch (useApi) with its own skeleton /
+ * error+retry / empty states, so a failed trends call never blanks the map
+ * section, and vice versa.
  *
- * Null / non-finite medians are real gaps in the data — they stay gaps
- * (connectNulls=false), never interpolated. Series colors come from
- * clusterColor() in constants.js, the single source of truth shared with the
- * map markers and cluster cards.
+ * Chart skin: recharts + the shared chartTheme spread props (blueprint §6) —
+ * Plex Mono 10px ticks, y-only hairline grid, raised tooltip with a hairline
+ * border, 450ms ease-out animation that drops to 0ms under
+ * prefers-reduced-motion. Null / non-finite medians are real gaps in the data
+ * — they stay gaps (connectNulls=false), never interpolated. Series colors
+ * come from clusterColor() in constants.js, the single source of truth shared
+ * with the map markers and cluster cards.
  *
- * Accessibility (SPEC §7.8/§2.4): the chart keeps role="img" + aria-label and
- * adds a visually-hidden ChartA11yTable of the exact plotted values; line
- * animation honors prefers-reduced-motion via useReducedMotion. Both changes
- * are internal — the props ({ wide }) are unchanged.
+ * Accessibility: role="img" + aria-label on the chart frame and a
+ * visually-hidden ChartA11yTable of the exact plotted values.
  */
 import { useCallback, useMemo } from 'react'
 import {
@@ -30,13 +32,21 @@ import { useApi } from '../../api/useApi'
 import { clusterColor } from '../../constants'
 import { formatUsd } from '../../format'
 import { EmptyState, ErrorState, PanelSkeleton } from '../StateView'
-import ChartA11yTable from './ChartA11yTable'
-import useReducedMotion from './useReducedMotion'
+import ChartA11yTable from '../shared/ChartA11yTable'
+import useReducedMotion from '../shared/useReducedMotion'
+import {
+  cartesianGridProps,
+  getAnimationProps,
+  legendProps,
+  tooltipProps,
+  xAxisProps,
+  yAxisProps,
+} from '../shared/chartTheme'
 
 /** Compact "$180k" y-axis tick. */
 const kTick = (value) => `$${Math.round(Number(value) / 1000)}k`
 
-export default function TrendsChart({ wide = false }) {
+export default function TrendsPanel() {
   const fetcher = useCallback((signal) => api.getTrends(signal), [])
   const { data, loading, error, reload } = useApi(fetcher)
   const reduced = useReducedMotion()
@@ -69,7 +79,16 @@ export default function TrendsChart({ wide = false }) {
     lines.length === 0 ||
     lines.every((line) => line.values.every((v) => typeof v !== 'number' || !Number.isFinite(v)))
 
-  // Screen-reader twin of the plotted values (SPEC §7.8).
+  // The chart's aria-label and the visible tag name the loaded period range
+  // (never a hardcoded window); both fall back when periods are missing.
+  const rangeStart = rows[0]?.period
+  const rangeEnd = rows[rows.length - 1]?.period
+  const chartLabel =
+    rangeStart && rangeEnd
+      ? `Line chart of median sale price per micro-market, half-year periods ${rangeStart} to ${rangeEnd}`
+      : 'Line chart of median sale price per micro-market by half-year'
+
+  // Screen-reader twin of the plotted values.
   const a11yColumns = useMemo(
     () => [
       { key: 'period', label: 'Period' },
@@ -79,13 +98,19 @@ export default function TrendsChart({ wide = false }) {
   )
 
   return (
-    <div className={`chart-card${wide ? ' chart-card-wide' : ''}`}>
-      <div className="chart-head">
-        <span className="chart-title">Price trends by micro-market</span>
-        <span className="chart-tag">Median sale price · 2006H1–2008H2</span>
+    <div className="chart-card chart-card-wide">
+      <div className="chart-card-head">
+        <h3>Median sale price by half-year</h3>
+        <span className="chart-tag">
+          {rangeStart && rangeEnd
+            ? `train window ${rangeStart}–${rangeEnd} · gaps = no sales`
+            : 'train window 2006H1–2008H2 · gaps = no sales'}
+        </span>
       </div>
       {loading && <PanelSkeleton height={320} />}
-      {!loading && error && <ErrorState error={error} onRetry={reload} />}
+      {!loading && error && (
+        <ErrorState title="Couldn't load market trends" error={error} onRetry={reload} />
+      )}
       {!loading && !error && empty && (
         <EmptyState
           kicker="No trend data"
@@ -96,28 +121,28 @@ export default function TrendsChart({ wide = false }) {
       {!loading && !error && !empty && (
         <>
           <div
-            className="chart-wrap chart-wrap--tall"
+            className="chart-wrap chart-wrap-tall"
             role="img"
-            aria-label="Line chart of median sale price per micro-market, half-year periods 2006H1 to 2008H2"
+            aria-label={chartLabel}
           >
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={rows} margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dfe4e6" />
-                <XAxis dataKey="period" tick={{ fontSize: 12, fill: '#6e7c8b' }} />
+                <CartesianGrid {...cartesianGridProps} />
+                <XAxis dataKey="period" {...xAxisProps} />
                 <YAxis
+                  {...yAxisProps}
                   tickFormatter={kTick}
-                  width={64}
-                  tick={{ fontSize: 12, fill: '#6e7c8b' }}
                   domain={['auto', 'auto']}
+                  width={56}
                 />
                 <Tooltip
+                  {...tooltipProps}
                   formatter={(value, name) => [formatUsd(value), name]}
-                  contentStyle={{ borderRadius: 8, border: '1px solid #dfe4e6', fontSize: 13 }}
                 />
                 <Legend
-                  wrapperStyle={{ fontSize: 13 }}
+                  {...legendProps}
                   formatter={(value) => (
-                    <span style={{ textTransform: 'capitalize' }}>{value}</span>
+                    <span className="capitalize">{value}</span>
                   )}
                 />
                 {lines.map((line) => (
@@ -126,11 +151,10 @@ export default function TrendsChart({ wide = false }) {
                     type="monotone"
                     dataKey={line.key}
                     stroke={line.color}
-                    strokeWidth={2}
+                    strokeWidth={1.8}
                     dot={{ r: 2.5 }}
                     connectNulls={false}
-                    isAnimationActive={!reduced}
-                    animationDuration={450}
+                    {...getAnimationProps(reduced)}
                   />
                 ))}
               </LineChart>
@@ -142,7 +166,7 @@ export default function TrendsChart({ wide = false }) {
             rows={rows}
           />
           {note && (
-            <p className="note" style={{ marginTop: 10 }}>
+            <p className="note mt-10">
               {note}
             </p>
           )}

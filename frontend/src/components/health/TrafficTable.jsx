@@ -56,25 +56,25 @@ export default function TrafficTable({ metrics }) {
     <>
       <div className="metrics metrics--3">
         <div className="metric">
-          <div className="metric-label">Requests</div>
           <div className="metric-value">{formatNumber(data?.requests_total, 0)}</div>
+          <div className="metric-label">Requests</div>
           <div className="metric-hint">since process start</div>
         </div>
         <div className="metric">
-          <div className="metric-label">Errors (5xx)</div>
           <div
             className={`metric-value${Number.isFinite(errors) && errors > 0 ? ' metric-value--bad' : ''}`}
           >
             {formatNumber(data?.errors_total, 0)}
           </div>
+          <div className="metric-label">Errors (5xx)</div>
           <div className="metric-hint">counts HTTP 5xx only</div>
         </div>
         <div className="metric">
-          <div className="metric-label">Avg latency</div>
           <div className="metric-value">
             {formatNumber(data?.avg_latency_ms, 0)}
             <span className="health-unit"> ms</span>
           </div>
+          <div className="metric-label">Avg latency</div>
           <div className="metric-hint">mean since process start, not a percentile</div>
         </div>
       </div>

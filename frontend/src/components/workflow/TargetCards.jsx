@@ -26,7 +26,7 @@ const OBJECTIVES = [
   {
     key: 'clustering',
     kicker: 'Clustering',
-    title: 'Neighbourhood segmentation',
+    title: 'Neighborhood segmentation',
   },
 ]
 
@@ -34,30 +34,30 @@ function TargetCard({ kicker, title, target }) {
   const available = Boolean(target?.available)
   const simulated = target?.derived === 'simulated'
   return (
-    <div className={`wfe-target${available ? '' : ' wfe-target--off'}`}>
-      <div className="wfe-target-top">
-        <span className="wfe-target-kicker">{kicker}</span>
+    <div className={`wff-target${available ? '' : ' wff-target--off'}`}>
+      <div className="wff-target-top">
+        <span className="wff-target-kicker">{kicker}</span>
         <span className={`badge ${available ? 'badge-accent' : 'badge-muted'}`}>
           {available ? 'Available' : 'Not available'}
         </span>
       </div>
-      <h3 className="wfe-target-title">{title}</h3>
+      <h3 className="wff-target-title">{title}</h3>
       {available ? (
         <>
-          <div className="wfe-target-chips">
-            {target.column && <span className="wfe-chip mono">{target.column}</span>}
-            {target.method && <span className="wfe-chip mono">{target.method}</span>}
+          <div className="wff-target-chips">
+            {target.column && <span className="wff-chip mono">{target.column}</span>}
+            {target.method && <span className="wff-chip mono">{target.method}</span>}
             {simulated && <SimulatedBadge />}
           </div>
           {simulated && typeof target.positive_rate === 'number' && (
-            <p className="wfe-target-meta mono">
+            <p className="wff-target-meta mono">
               positive rate {formatPct(target.positive_rate)} of train-split rows — simulated
             </p>
           )}
-          <p className="wfe-target-note">{target.note}</p>
+          <p className="wff-target-note">{target.note}</p>
         </>
       ) : (
-        <p className="wfe-target-note dim">
+        <p className="wff-target-note dim">
           This objective is unavailable on the active dataset — its column is missing from the
           schema.
         </p>
@@ -69,7 +69,7 @@ function TargetCard({ kicker, title, target }) {
 export default function TargetCards({ targets }) {
   if (!targets || typeof targets !== 'object') return null
   return (
-    <div className="wfe-targets">
+    <div className="wff-targets">
       {OBJECTIVES.map((objective) => (
         <TargetCard
           key={objective.key}

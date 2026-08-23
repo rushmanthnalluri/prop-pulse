@@ -1,0 +1,56 @@
+/* ==========================================================================
+   Cluster workspace cards — single canonical home for the .wf-cluster-*
+   family that was duplicated between styles/workflow-train.css and
+   styles/workflow-evaluate.css. Only components/workflow/EvaluationWorkspace.jsx
+   renders these classes, on the stage 08 route (the clustering payload is
+   clusters/assignments — DBSCAN has no curves, §3.10); imported by
+   pages/workflow/EvaluateStage.jsx. This is the evaluate copy (with the
+   hover); the train copy and its 640/420 column overrides were never
+   reachable — no cluster markup on the 06–07 routes — and the auto-fill
+   minmax track already handles narrowing.
+   ========================================================================== */
+
+.wf-cluster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+.wf-cluster-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  transition: border-color var(--dur-hover);
+}
+.wf-cluster-card:hover { border-color: var(--border-strong); }
+.wf-cluster-swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  margin-right: 8px;
+  vertical-align: baseline;
+}
+.wf-cluster-label { font-size: 13px; font-weight: 600; text-transform: capitalize; }
+.wf-cluster-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 12px;
+  margin: 10px 0 0;
+}
+.wf-cluster-stats dt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.wf-cluster-stats dd { margin: 0; font-size: 12.5px; color: var(--text); }
+.wf-cluster-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+}

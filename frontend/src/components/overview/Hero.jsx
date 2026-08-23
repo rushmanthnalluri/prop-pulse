@@ -1,31 +1,30 @@
 /**
- * Overview hero (SPEC §5.1-1): kicker / H1 / methodology-narrating
- * description / primary + secondary CTAs, plus a mono meta line carrying real
- * provenance (champion versions + dataset). `meta` is a ready-rendered string
- * composed by the page from GET /model/info when available, with the
- * contract-verified static line as fallback.
+ * Overview hero, left column of `.home-head` (blueprint §8.1-1): kicker /
+ * H1 / 14.5px description / page actions. Static copy — the live record
+ * counts sit in the metrics strip directly below, so the hero never
+ * re-flows when the payloads land. CTAs mirror the reference's placement
+ * logic: primary into the pipeline, secondary into the data.
  */
 import { Link } from 'react-router'
 
-export default function Hero({ meta }) {
+export default function Hero() {
   return (
     <div>
-      <p className="kicker">Overview</p>
-      <h1 className="page-title">Know what an Ames home is worth — and why.</h1>
+      <p className="page-kicker">Overview</p>
+      <h1 className="page-title">PropPulse</h1>
       <p className="page-desc">
-        PropPulse estimates market value, explains the estimate factor by factor, and
-        benchmarks it against comparable sales — every figure traceable to a published
-        model version.
+        Machine-learning property intelligence over the Ames housing record —
+        valuations, sale probability, and micro-market structure — from raw
+        upload to a trained property call. Every stage is live on the data now.
       </p>
-      <div className="ov-hero-actions">
-        <Link className="btn btn-primary" to="/valuation">
-          Value a home
+      <div className="page-actions">
+        <Link className="btn btn-primary" to="/workflow/01-upload">
+          Start the pipeline
         </Link>
-        <Link className="btn btn-secondary" to="/market">
-          Explore the market
+        <Link className="btn btn-secondary" to="/workflow/05-viz">
+          Explore the data
         </Link>
       </div>
-      {meta && <p className="ov-hero-meta">{meta}</p>}
     </div>
   )
 }

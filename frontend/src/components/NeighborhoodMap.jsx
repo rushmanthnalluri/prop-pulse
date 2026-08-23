@@ -6,10 +6,15 @@
  *
  * Accessibility (AUDIT §5.4 fix — popups were mouse-only): real markers with
  * Leaflet's `keyboard: true` — Tab focuses a point, Enter opens its popup,
- * Esc closes it, and the popup's "Value a home here →" router link is a real
+ * Esc closes it, and the popup's "Estimate value →" router link is a real
  * <a> reachable by Tab. A labeled "Highlight a neighborhood" select offers
  * the same focus+popup without pointing, and the sortable directory table
  * below is the full non-map equivalent (the map's aria-label says so).
+ *
+ * Dark treatment: CARTO's dark_all basemap (OSM data, no API key, no new
+ * dependency) replaces the light OSM Standard tiles so the map sits inside
+ * the design system; popup/tooltip chrome is themed to the dark language in
+ * styles.css / styles/market.css.
  *
  * Hardening contract: `points` arrives pre-validated by the parent (finite
  * lat/long only; skipped points are disclosed in the UI there, AUDIT §2.3).
@@ -124,7 +129,7 @@ export default function NeighborhoodMap({
         </label>
         <select
           id="market-focus-select"
-          className="map-toolbar-select"
+          className="chart-select"
           value=""
           onChange={(event) => {
             const code = event.target.value
@@ -145,8 +150,9 @@ export default function NeighborhoodMap({
       >
         <MapContainer center={AMES_CENTER} zoom={12} className="map-canvas" scrollWheelZoom>
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
+            subdomains="abcd"
           />
           <FlyToTarget target={flyTo} reduced={reduced} />
           <FocusPoint focus={focus} points={points} markerRefs={markerRefs} />
@@ -192,7 +198,7 @@ export default function NeighborhoodMap({
                   keypress: (event) => {
                     if (event.originalEvent?.key !== 'Enter') return
                     // Leaflet opens the popup on Enter; move focus into it so
-                    // Tab reaches the "Value a home here →" link and Esc (map
+                    // Tab reaches the "Estimate value →" link and Esc (map
                     // keyboard handler) closes the popup (AUDIT §5.4 fix).
                     keyboardPopup.current = point.neighborhood
                     window.setTimeout(() => {
@@ -228,7 +234,7 @@ export default function NeighborhoodMap({
                       <dl className="kv" style={{ marginTop: 8 }}>
                         <div>
                           <dt>Micro-market</dt>
-                          <dd style={{ textTransform: 'capitalize' }}>{cluster.label}</dd>
+                          <dd className="capitalize">{cluster.label}</dd>
                         </div>
                         <div>
                           <dt>Median price</dt>
@@ -263,7 +269,7 @@ export default function NeighborhoodMap({
                     )}
                     <p style={{ marginTop: 8 }}>
                       <Link to={`/valuation?neighborhood=${encodeURIComponent(point.neighborhood)}`}>
-                        Value a home here →
+                        Estimate value →
                       </Link>
                     </p>
                   </div>
@@ -281,7 +287,7 @@ export default function NeighborhoodMap({
               style={{ backgroundColor: clusterColor(cluster.cluster_id) }}
               aria-hidden="true"
             />
-            <span style={{ textTransform: 'capitalize' }}>{cluster.label}</span>
+            <span className="capitalize">{cluster.label}</span>
           </span>
         ))}
         <span className="legend-item">

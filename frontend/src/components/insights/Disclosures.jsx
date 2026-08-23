@@ -33,7 +33,7 @@ export default function Disclosures() {
       <div className="alert alert-warn">
         <span className="alert-title">Simulated classification target</span>
         The sale-within-30-days target comes from a transparent, seeded
-        days-on-market simulation (ADR-3). Every classification figure on this
+        days-on-market simulation. Every classification figure on this
         page — AUCs, F1, the confusion matrices — measures consistency with
         that simulation, not real-world sale speed.
       </div>

@@ -4,9 +4,12 @@
  * traffic, so there are no PSI values to show — and none are invented.
  * Everything on screen is real: the served status, the snapshot's own
  * window/threshold config (rendered only when present), the verbatim
- * recommendation/detail text, the snapshot timestamp, and a teaching
- * preview of what the panel will report once traffic is scored.
+ * recommendation/detail text, the snapshot timestamp, a teaching
+ * preview of what the panel will report once traffic is scored, and the
+ * unblock CTA (score a property on /valuation — champion POST /predict
+ * lines are what fill the log the drift check reads).
  */
+import { Link } from 'react-router'
 import { formatDateTime, formatMetric, formatNumber } from '../../format'
 import { EmptyState } from '../StateView'
 
@@ -26,6 +29,18 @@ function snapshotFacts(drift) {
     facts.push(['retrain sample', `≥ ${formatNumber(drift.min_sample_for_retraining, 0)}`])
   }
   return facts
+}
+
+/** The served recommendation/detail text can embed an absolute server path to
+    the prediction log. Rewrite any `…/logs/…` token to its repo-relative
+    `logs/…` tail (both separators) so the UI never leaks the server layout.
+    Frontend display only — the backend payload is left untouched. */
+function repoRelative(text) {
+  if (typeof text !== 'string') return text
+  return text.replace(/\S*?[\\/]?logs[\\/]\S*/g, (token) => {
+    const tail = token.slice(token.search(/logs[\\/]/) + 5).replace(/\\/g, '/')
+    return `logs/${tail}`
+  })
 }
 
 export default function DriftEmpty({ drift, detail, whatItems }) {
@@ -54,8 +69,8 @@ export default function DriftEmpty({ drift, detail, whatItems }) {
         </div>
       )}
       <p className="health-empty-cli">
-        The drift report refreshes when an operator runs{' '}
-        <code>python -m ml.monitoring.drift_check</code>.
+        Champion predictions written to the prediction log fill the window; the report itself
+        refreshes when an operator runs <code>python -m ml.monitoring.drift_check</code>.
       </p>
       <div className="health-empty-what">
         <div className="health-empty-what-title">What this panel will show</div>
@@ -65,7 +80,12 @@ export default function DriftEmpty({ drift, detail, whatItems }) {
           ))}
         </ul>
       </div>
-      {report && <p className="note health-empty-report">Latest report: {report}</p>}
+      <div className="health-empty-cta">
+        <Link className="btn btn-primary btn-sm" to="/valuation">
+          Estimate value →
+        </Link>
+      </div>
+      {report && <p className="note health-empty-report">Latest report: {repoRelative(report)}</p>}
       {drift.timestamp && (
         <p className="note health-section-note">Snapshot {formatDateTime(drift.timestamp)}</p>
       )}

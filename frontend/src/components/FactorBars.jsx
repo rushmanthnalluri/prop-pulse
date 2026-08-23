@@ -1,11 +1,13 @@
 /**
  * WHY THIS VALUE (SPEC §5.2.2-5): the top price factors as signed share
- * bars. Fill width is the `magnitude` share itself (0–1 of total factor
- * influence — relative, never dollars); upward pressure uses the accent
- * fill, downward the danger fill, and the copy says "pushes the estimate
- * up/down", never good/bad (SPEC §2.1). Non-finite magnitudes are filtered
- * out; `top_price_factors: []` (CONTRACT §5.7) gets a designed empty state
- * that points at the global drivers — the valuation itself is unaffected.
+ * bars. Fill width is normalized to the top factor (matching DriverBars) so
+ * the ranking reads at a glance; the exact `magnitude` share (0–1 of total
+ * factor influence — relative, never dollars) stays in the value column and
+ * the tooltip. Upward pressure uses the accent fill, downward the danger
+ * fill, and the copy says "pushes the estimate up/down", never good/bad
+ * (SPEC §2.1). Non-finite magnitudes are filtered out; `top_price_factors:
+ * []` (CONTRACT §5.7) gets a designed empty state that points at the global
+ * drivers — the valuation itself is unaffected.
  */
 import { Link } from 'react-router'
 import { formatPct, prettyFeature } from '../format'
@@ -18,6 +20,8 @@ export default function FactorBars({ factors }) {
       Number.isFinite(Number(factor.magnitude)) &&
       (factor.impact === 'positive' || factor.impact === 'negative'),
   )
+
+  const maxMagnitude = valid.reduce((m, f) => Math.max(m, Math.abs(Number(f.magnitude))), 0)
 
   return (
     <div className="panel">
@@ -39,6 +43,10 @@ export default function FactorBars({ factors }) {
                 const magnitude = Math.abs(Number(factor.magnitude))
                 const positive = factor.impact === 'positive'
                 const label = prettyFeature(factor.feature)
+                // Fill normalized to the top factor; the exact share stays in
+                // the value column + tooltip (2.5% floor keeps a sliver visible).
+                const widthPct =
+                  maxMagnitude > 0 ? Math.max(2.5, (magnitude / maxMagnitude) * 100) : 2.5
                 return (
                   <li
                     key={factor.feature}
@@ -51,17 +59,17 @@ export default function FactorBars({ factors }) {
                     <span className="factor-track" aria-hidden="true">
                       <span
                         className={`factor-fill${positive ? '' : ' factor-fill--neg'}`}
-                        style={{ width: `${Math.max(2.5, magnitude * 100)}%` }}
+                        style={{ width: `${widthPct}%` }}
                       />
                     </span>
                     <span className="factor-value">
-                      {positive ? '↑' : '↓'} {formatPct(magnitude, 1)}
+                      {positive ? '+' : '−'} {formatPct(magnitude, 1)}
                     </span>
                   </li>
                 )
               })}
             </ul>
-            <p className="note" style={{ marginTop: 12 }}>
+            <p className="note mt-12">
               Share of total factor influence for this estimate — relative, not dollars.
             </p>
           </>

@@ -182,7 +182,7 @@ export default function CompsTable({ payload, estimate }) {
         )}
         {!state.loading && !state.error && comps.length > 0 && (
           <>
-            <p className="note" style={{ marginBottom: 10 }}>
+            <p className="note mb-10">
               {comps.length} similar sales in{' '}
               {scope === 'cluster'
                 ? 'this micro-market'
@@ -190,7 +190,7 @@ export default function CompsTable({ payload, estimate }) {
               , ranked by similarity — the Price and Sold columns re-sort.
             </p>
             {scope === 'cluster' && (
-              <p className="note" style={{ marginBottom: 10 }}>
+              <p className="note mb-10">
                 Matched within cluster — neighborhood had fewer than 5 training sales.
               </p>
             )}
@@ -209,7 +209,7 @@ export default function CompsTable({ payload, estimate }) {
                       onToggle={toggleSort}
                     />
                     <th className="num">$/sqft</th>
-                    <th className="num">Sqft</th>
+                    <th className="num">Sq ft</th>
                     <th className="num">Qual</th>
                     <th className="num">Built</th>
                     <th>Beds/Baths</th>
@@ -237,7 +237,7 @@ export default function CompsTable({ payload, estimate }) {
                                 setOpen((prev) => ({ ...prev, [comp._key]: !prev[comp._key] }))
                               }
                             >
-                              {expanded ? '▾' : '▸'}
+                              <span className="comp-chevron" aria-hidden="true">›</span>
                             </button>
                           </td>
                           <td className="num strong">{formatUsd(comp.sale_price)}</td>
@@ -268,18 +268,18 @@ export default function CompsTable({ payload, estimate }) {
               </table>
             </div>
             {Number.isFinite(percentile) && (
-              <p className="note" style={{ marginTop: 10 }}>
+              <p className="note mt-10">
                 Priced above {formatNumber(percentile)}% of comparable training sales.
               </p>
             )}
             {state.data?.calendar_clamped === true && (
-              <p className="note" style={{ marginTop: 6 }}>
+              <p className="note mt-6">
                 Sale date beyond the 2006–2008 training window — matched at the window
                 boundary.
               </p>
             )}
             {state.data?.note && (
-              <p className="note" style={{ marginTop: 6 }}>
+              <p className="note mt-6">
                 {state.data.note}
               </p>
             )}

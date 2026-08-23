@@ -12,7 +12,9 @@ post-journey snapshots must be **identical**:
   logged, §3.11; this module deliberately makes NO champion ``/predict`` call
   so the assertion is exact — champion parity is covered in the ames journey);
 - ``GET /health`` and ``GET /model/info`` response bytes (C15 tail);
-- no ``data/uploads/`` or ``models/workflow/`` is created in the repo.
+- no new entry under ``data/uploads/`` or ``models/workflow/`` (delta vs the
+  pre-journey listing — a pre-existing empty root from a live E2E workbench
+  session is tolerated, any *new* entry is not).
 """
 from __future__ import annotations
 
@@ -75,6 +77,11 @@ def pre_journey(workflow_client: TestClient) -> SimpleNamespace:
         prediction_log=_prediction_log_bytes(),
         health=workflow_client.get("/health").content,
         model_info=workflow_client.get("/model/info").content,
+        # The live sandbox workbench (E2E runs) legitimately creates and cleans
+        # these roots against the same DATA_DIR/MODELS_DIR; an empty residue is
+        # not journey residue. Snapshot the listing and assert no *change*.
+        uploads=_tree_listing(DATA_DIR / "uploads"),
+        workflow_models=_tree_listing(MODELS_DIR / "workflow"),
     )
 
 
@@ -177,9 +184,16 @@ class TestIsolation:
         pre_journey: SimpleNamespace,
         journey: SimpleNamespace,
     ) -> None:
-        """Every new file lived under the tmp roots; the repo gained nothing."""
-        assert not (DATA_DIR / "uploads").exists()
-        assert not (MODELS_DIR / "workflow").exists()
+        """Every new file lived under the tmp roots; the repo gained nothing.
+
+        Delta comparison against the pre-journey snapshot: a pre-existing empty
+        ``data/uploads`` (or ``models/workflow``) from a live E2E workbench
+        session is not journey residue, so the assertion is no *change* to the
+        listing rather than absolute absence. A journey bug that writes into the
+        real roots still adds an entry and fails the comparison.
+        """
+        assert _tree_listing(DATA_DIR / "uploads") == pre_journey.uploads
+        assert _tree_listing(MODELS_DIR / "workflow") == pre_journey.workflow_models
         # The journey really did write (and then clean up) inside the tmp roots.
         remaining = [p for p in workflow_roots.tmp.rglob("*") if p.is_file()]
         assert all(

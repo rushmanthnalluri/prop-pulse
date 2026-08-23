@@ -10,8 +10,9 @@
 import BusyButton from '../shared/BusyButton'
 import { OBJECTIVE_CANDIDATES } from '../../api/workflow'
 
-const CANDIDATE_INFO = {
-  linear: 'Ordinary least squares on log1p(SalePrice) — the baseline.',
+// eslint-disable-next-line react-refresh/only-export-components -- description map shared with the stage-07 inspection panel (PreprocessConfig fractionsValid pattern)
+export const CANDIDATE_INFO = {
+  linear: 'Ordinary least squares on the log-transformed sale price — the baseline.',
   ridge: 'L2-regularized linear model; alpha tuned by cross-validation on the train split.',
   lasso: 'L1-regularized linear model; sparse — weak features drop to zero.',
   random_forest: 'Bagged decision trees with a randomized hyperparameter search.',
@@ -47,6 +48,7 @@ export default function TrainPanel({
             <label className="wf-check">
               <input
                 type="checkbox"
+                className="check-input bench-check"
                 checked={selected.includes(name)}
                 disabled={disabled || starting}
                 onChange={() => onToggle(name)}

@@ -7,7 +7,8 @@ all P2 defects fixed and regression-tested; documentation reconciled to reality.
 
 ## Repository Snapshot
 
-- VCS: none (`git status` → not a repository). Baseline = filesystem state, 2026-08-07.
+- VCS: git, branch `main` (this report's original "VCS: none" was stale — a repo was
+  initialized during the mission-5 verification pass). Baseline = HEAD 302f664 + working tree.
 - Environment: Windows 11 + Git Bash, Python 3.14.5 (.venv), Node 24, Docker Server 29.4.0.
 - Prior claims under review: "162 tests green", champions ridge + calibrated RF, test R² 0.9305 /
   ROC-AUC 0.7666, threshold 0.203292 val-tuned, 4 micro-markets, warm /predict ≈197 ms, Docker
@@ -30,12 +31,15 @@ all P2 defects fixed and regression-tested; documentation reconciled to reality.
 
 ## Tests Executed
 
-- pytest: **210 passed, 0 failed** (final orchestrator runs: 52.3 s and re-run after doc edits).
-  Pre-audit claim was 162; growth = audit regression tests. Verified by independent execution,
-  not reported counts. Statement coverage measured at 69% total (backend 84–100%; serving-side
-  ml 82–100%; training CLIs uncovered by unit tests but executed + hash-verified by the
-  reproducibility audit).
-- Playwright E2E: **24/24 passed** (5 original + 11 black-box + 8 frontend-fix specs).
+- pytest: **454 passed, 0 failed in 351 s** (2026-08-11 full-suite re-run, `testpaths =
+  tests backend/tests`, 28 files). Earlier figures of 162 (`backend/tests` only) and 210
+  (pre-workflow-engine) were partial; the missions 3-5 workflow engine added ~292 tests.
+  Statement coverage measured at 69% total (backend 84–100%; serving-side ml 82–100%;
+  training CLIs uncovered by unit tests but executed + hash-verified by the reproducibility
+  audit).
+- Playwright E2E: **49/49 passed** (2026-08-11, 6.3 min) — 11 audit-blackbox + 12 dashboard
+  + 10 frontend-fixes + 16 workflow WF-F5 journey. Earlier "24/24" predated the workflow
+  journey and the hardened adversarial specs.
 - Integration marker: 8 real end-to-end tests (pipeline↔API parity, drift, logging).
 
 ## Runtime Verification (lead + runtime auditors, live servers/containers)
@@ -89,6 +93,21 @@ state, mobile wrap, degraded pill, low-sample note. Devops: compose override ren
 `docker-compose.alt-ports.yml`, CI validates both configs. Tests: champion guards tightened
 (R²≥0.90 etc.). Docs: 48 edits — every verified-stale claim corrected.
 
+## Post-Audit Hardening (2026-08-10/11, mission-5 verification pass)
+
+The verification pass (live stack + full suites) surfaced and fixed four real defects —
+all regression-tested, all re-verified by execution:
+
+| # | Sev | Fix | Verified by |
+|---|---|---|---|
+| H1 | P2 | **Dataset-delete race (Windows):** subprocess wrote the "done" marker before the OS released the dataset dir handles, so `shutil.rmtree(ignore_errors=True)` silently left residue. Added `_rmtree_wait_locked()` (30×0.1 s retry on `PermissionError`) in `ml/workflow/datasets.py`. | isolation module; live DELETE → 204 |
+| H2 | P2 | **E2E suite not self-healing:** only `workflow.spec.js` had `ensureBackend()`; a backend down at suite start cascaded 8×90 s `/predict` timeouts, and the audit-blackbox kill-test skipped its own respawn when the backend was already down. Added `e2e/helpers/backend.js` + `beforeAll(ensureBackend)` to audit-blackbox & dashboard specs; hardened the kill-test to respawn even when the backend was already down. | full 49-test E2E re-pass (6.3 min) |
+| H3 | P2 | **`test_no_repo_residue` asserted absolute absence** of `data/uploads` — a pre-existing empty root from a live workbench session failed the suite though the journey wrote nothing. Converted to a delta listing comparison (pre/post snapshot) matching its siblings. | full pytest re-pass |
+| H4 | P3 | **Stale-split test flake** failed once while pytest + E2E ran concurrently; re-run in isolation passes — confirmed concurrency-caused, not a code defect. Sequence suites (never concurrent). | isolated re-run |
+
+Final state: **454 pytest + 49 E2E = 503 checks, all green**, on a live restarted stack
+(backend :8200 healthy, frontend :5300), against the git-tracked repo.
+
 ## Remaining Limitations (documented, accepted)
 
 Simulated DOM target; centroid-grain geo; champion margin not statistically significant;
@@ -102,5 +121,9 @@ screenshots). Master defect list: `FINDINGS.md`.
 
 ## Final Recommendation
 
-**RELEASE stands (v1.0.0, post-audit).** The system is internally consistent from raw data to
-rendered prediction; every number in the documentation was reproduced or corrected.
+**RELEASE stands (v1.0.0, post-audit, post-hardening).** The system is internally consistent
+from raw data to rendered prediction; every number in the documentation was reproduced or
+corrected. The verification pass closed on **503 checks green**: 454 pytest + 49 Playwright
+E2E (incl. the full 12-stage guided workflow with a real training job, server-truth gating,
+sandbox prediction, and backend-recovery cycle) on a live restarted stack, against the
+git-tracked repo. The four post-audit defects (H1-H4) are fixed and re-verified.

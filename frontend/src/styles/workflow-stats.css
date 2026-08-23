@@ -1,0 +1,25 @@
+/* ==========================================================================
+   ML Workbench — stage 03 Descriptive Statistics (blueprint §8.4)
+   Page-scoped styles for StatsStage.jsx. Imported AFTER styles.css by the
+   page so equal-specificity rules win. Tokens come from styles.css only —
+   never redefined here. The stats table itself is entirely shared vocabulary
+   (.table-scroll.scroll-68 + .table.table-sticky + .sticky-col + num/dim/
+   accent cell modifiers); this file carries only what the shared system
+   does not.
+   ========================================================================== */
+
+/* ProvenanceBanner directly under the page head — tighten the rhythm. */
+.wfs-banner-slot { margin-top: -14px; }
+.wfs-banner-slot + .section { padding-top: 22px; }
+
+/* Footnote stack under the stats table: the target's own note (verbatim
+   from the payload) + the missing-values cross-link (blueprint §8.4). */
+.wfs-notes {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  max-width: 720px;
+}
+
+/* CTA inside the no-numeric-fields empty state. */
+.wfs-empty-cta { margin-top: 16px; }

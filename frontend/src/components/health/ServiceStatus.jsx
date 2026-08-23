@@ -33,7 +33,6 @@ export default function ServiceStatus({ health, metrics }) {
     <>
       <div className="metrics metrics--auto">
         <div className="metric">
-          <div className="metric-label">API status</div>
           <div className="metric-value">
             {healthData ? (
               <span className={`badge ${healthData.status === 'ok' ? 'badge-accent' : 'badge-danger'}`}>
@@ -43,24 +42,25 @@ export default function ServiceStatus({ health, metrics }) {
               '—'
             )}
           </div>
+          <div className="metric-label">API status</div>
         </div>
         <div className="metric">
-          <div className="metric-label">Regression model</div>
           <div className="metric-value">
             <ModelBadge loaded={loaded.regression} />
           </div>
+          <div className="metric-label">Regression model</div>
         </div>
         <div className="metric">
-          <div className="metric-label">Classification model</div>
           <div className="metric-value">
             <ModelBadge loaded={loaded.classification} />
           </div>
+          <div className="metric-label">Classification model</div>
         </div>
         <div className="metric">
-          <div className="metric-label">Uptime</div>
           <div className="metric-value">{formatUptime(metricsData?.uptime_seconds)}</div>
+          <div className="metric-label">Uptime</div>
           <div className="metric-hint">
-            {uptimeUnavailable ? 'unavailable — GET /metrics failed' : 'per-process'}
+            {uptimeUnavailable ? 'unavailable — metrics request failed' : 'per-process'}
           </div>
         </div>
       </div>

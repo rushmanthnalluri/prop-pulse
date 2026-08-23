@@ -1,32 +1,39 @@
 /**
- * EvaluationWorkspace (WORKFLOW §6.3-08 / §3.10) — the stage-08 deep view of
- * one trained candidate, rendered exclusively from
- * GET /workflow/jobs/{job}/evaluation/{candidate}:
+ * EvaluationWorkspace (WORKFLOW §6.3-08 / §3.10, blueprint §8.9) — the
+ * stage-08 deep view of one trained candidate, rendered exclusively from
+ * GET /workflow/jobs/{job}/evaluation/{candidate} and presented on the
+ * reference's evaluation rhythm:
  *
  * - regression: metric cards (MAE/RMSE/R²/RMSLE + the ~80% residual interval,
- *   labelled "validation residual quantiles" per §7.5), actual-vs-predicted
- *   scatter with a 45° reference line, residual histogram, native importance
- *   bars — an EmptyState (never a fabricated chart) when importance is null.
- * - classification: F1-optimal threshold card (the champion's
- *   pick_f1_threshold rule — never a hardcoded 0.5) with the at-0.5
- *   comparison table as the honesty note, ROC + PR + calibration curves
- *   (diagonal / positive-rate / perfect references dashed), the confusion
- *   matrix at the F1 threshold (shared ConfusionMatrix), importance, and the
- *   SimulatedBadge — every number is against the ADR-3 simulated target.
- * - clustering: eps/min_samples + the verbatim k-distance-knee rationale,
- *   cluster cards (label, members, n_sales, median price), and the
- *   25-neighborhood assignments table with fallback flags. No silhouette
- *   score — the machinery never computes one (§7 omission).
+ *   labelled "validation residual quantiles" per §7.5), then wide tall cards —
+ *   actual-vs-predicted scatter with a dashed 45° reference and the residual
+ *   histogram — and the native-importance bar card (an EmptyState, never a
+ *   fabricated chart, when importance is null).
+ * - classification: the F1-optimal operating point (the champion's
+ *   pick_f1_threshold rule — never a hardcoded 0.5) with the at-0.5 comparison
+ *   table as the honesty note, the wide tall ROC + reliability cards (dashed
+ *   chance / perfectly-calibrated diagonals, legend "name · AUC" /
+ *   "name · Brier"), the PR card, and the .eval-duo — confusion matrix at the
+ *   F1 threshold (shared ConfusionMatrix, .cm-grid language) beside the h-340
+ *   importance card. Every number carries the SimulatedBadge context (ADR-3).
+ * - clustering: eps/min_samples + the verbatim k-distance-knee rationale, the
+ *   cluster-sizes bar card (amber clusters, danger noise group), cluster
+ *   cards, and the 25-neighborhood assignments table with fallback flags. No
+ *   silhouette score — the machinery never computes one (§7 omission).
  *
- * Every chart: role="img" + aria-label + ChartA11yTable of the exact plotted
- * values (UX §7.8), animation disabled under prefers-reduced-motion, and a
- * caption naming the split and n ("val, 338 rows").
+ * Charts are recharts on the shared chartTheme (Plex Mono 10px ticks, y-only
+ * hairline grid, dashed neutral references). Every chart: role="img" +
+ * aria-label + ChartA11yTable of the exact plotted values (UX §7.8),
+ * animation disabled under prefers-reduced-motion, and a caption naming the
+ * split and n ("val, 338 rows").
  */
 import { useCallback, useMemo } from 'react'
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  Cell,
+  Legend,
   Line,
   LineChart,
   ReferenceLine,
@@ -41,21 +48,34 @@ import { getEvaluation } from '../../api/workflow'
 import { useApi } from '../../api/useApi'
 import ChartA11yTable from '../shared/ChartA11yTable'
 import useReducedMotion from '../shared/useReducedMotion'
+import {
+  CHART_PALETTE,
+  MONO_FONT,
+  axisTick,
+  cartesianGridProps,
+  getAnimationProps,
+  legendProps,
+  tooltipProps,
+  xAxisProps,
+  yAxisProps,
+} from '../shared/chartTheme'
 import ConfusionMatrix from '../ConfusionMatrix'
 import { EmptyState, ErrorState, PanelSkeleton } from '../StateView'
 import SimulatedBadge from './SimulatedBadge'
 import { clusterColor } from '../../constants'
 import { formatMetric, formatNumber, formatPct, formatUsd, prettyFeature } from '../../format'
 
-const INK_3 = '#5d6d7d'
-const GRID = '#dfe4e6'
-const ACCENT = '#0e7a6d'
-const SLATE = '#4c6e91'
-const WARN = '#a8690f'
-const AXIS_TICK = { fontSize: 12, fill: INK_3 }
-const TOOLTIP_STYLE = { borderRadius: 8, border: `1px solid ${GRID}`, fontSize: 13 }
-
 const kTick = (value) => `$${Math.round(Number(value) / 1000)}k`
+
+/** Mono axis titles (blueprint §8.9) — recharts Label prop objects. */
+const monoAxisLabel = (value, position, extra = {}) => ({
+  value,
+  position,
+  fill: CHART_PALETTE.tick,
+  fontSize: 10,
+  fontFamily: MONO_FONT,
+  ...extra,
+})
 
 /** Chart caption naming split + n — the val-only honesty label (§7.4). */
 function SplitCaption({ split, n }) {
@@ -66,8 +86,24 @@ function SplitCaption({ split, n }) {
   )
 }
 
-/** Shared importance bar chart (native model importance — never SHAP, §7). */
-function ImportanceChart({ importance, reduced, split, n }) {
+/** The sealed-set honesty note closing every per-candidate workspace (§8.9). */
+function ClosingNote({ objective }) {
+  return (
+    <p className="note wf-eval-closing">
+      Validation predictions are persisted once, at train time — this page reads them and
+      nothing else, and the sandbox test split stays sealed. Scores here are the
+      candidate&rsquo;s honest in-sandbox estimate; no tuning was done against them, and the
+      PropPulse champion is never touched by sandbox training.
+      {objective === 'classification' &&
+        ' The classification curves describe the simulated target, not an observed market outcome.'}
+    </p>
+  )
+}
+
+/** Shared importance bar chart (native model importance — never SHAP, §7).
+    `tallFrame` fixes the reference's h-340 frame inside the .eval-duo; the
+    default frame grows with the row count for full-width placement. */
+function ImportanceChart({ importance, reduced, split, n, tallFrame = false }) {
   const rows = useMemo(() => {
     if (!Array.isArray(importance)) return []
     return importance
@@ -100,21 +136,33 @@ function ImportanceChart({ importance, reduced, split, n }) {
         <span className="chart-tag">native importance, aggregated to base features — not SHAP</span>
       </div>
       <div
-        className="chart-wrap"
-        style={{ height: Math.max(200, rows.length * 26) }}
+        className={tallFrame ? 'chart-wrap h-340' : 'chart-wrap'}
+        style={tallFrame ? undefined : { height: Math.max(200, rows.length * 26) }}
         role="img"
         aria-label={`Bar chart of the top ${rows.length} native feature importances`}
       >
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={rows} layout="vertical" margin={{ top: 4, right: 24, bottom: 4, left: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke={GRID} />
-            <XAxis type="number" tick={AXIS_TICK} tickFormatter={(v) => formatMetric(v, 2)} />
-            <YAxis type="category" dataKey="feature" width={170} tick={{ fontSize: 12, fill: INK_3 }} />
-            <Tooltip
-              formatter={(value) => [formatMetric(value, 4), 'importance']}
-              contentStyle={TOOLTIP_STYLE}
+            <CartesianGrid stroke={CHART_PALETTE.grid} horizontal={false} />
+            <XAxis type="number" tickFormatter={(v) => formatMetric(v, 2)} {...xAxisProps} />
+            <YAxis
+              type="category"
+              dataKey="feature"
+              width={170}
+              tick={axisTick}
+              axisLine={false}
+              tickLine={false}
+              tickMargin={6}
             />
-            <Bar dataKey="weight" fill={ACCENT} isAnimationActive={!reduced} animationDuration={450} />
+            <Tooltip {...tooltipProps} formatter={(value) => [formatMetric(value, 4), 'importance']} />
+            <Bar
+              dataKey="weight"
+              fill={CHART_PALETTE.accentFill}
+              stroke={CHART_PALETTE.accent}
+              radius={2}
+              maxBarSize={18}
+              {...getAnimationProps(reduced)}
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -191,111 +239,128 @@ function RegressionWorkspace({ data, reduced }) {
           <div className="metric-hint">log-space error — the selection metric</div>
         </div>
       </div>
-      <p className="note" style={{ marginTop: 10 }}>
+      <p className="note mt-10">
         ~80% range — validation residual quantiles (log space): q_low{' '}
         <span className="mono">{formatMetric(interval.q_low, 3)}</span>, q_high{' '}
         <span className="mono">{formatMetric(interval.q_high, 3)}</span>. Sandbox predictions add
         these to the log estimate before exponentiating.
       </p>
 
-      <div className="grid-2 wf-eval-grid">
-        <div className="chart-card">
-          <div className="chart-head">
-            <span className="chart-title">Actual vs predicted</span>
-            <span className="chart-tag">{formatNumber(scatter.length, 0)} of {formatNumber(data.n, 0)} val rows · seeded thin</span>
-          </div>
-          <div
-            className="chart-wrap chart-wrap--tall"
-            role="img"
-            aria-label="Scatter chart of actual vs predicted sale prices on the validation split with a 45-degree reference line"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
-                <XAxis
-                  type="number"
-                  dataKey="actual"
-                  name="actual"
-                  tickFormatter={kTick}
-                  tick={AXIS_TICK}
-                  domain={['auto', 'auto']}
-                />
-                <YAxis
-                  type="number"
-                  dataKey="predicted"
-                  name="predicted"
-                  tickFormatter={kTick}
-                  tick={AXIS_TICK}
-                  width={56}
-                  domain={['auto', 'auto']}
-                />
-                <Tooltip
-                  formatter={(value, name) => [formatUsd(value), name === 'actual' ? 'Actual' : 'Predicted']}
-                  contentStyle={TOOLTIP_STYLE}
-                />
-                {diagonal && (
-                  <ReferenceLine
-                    segment={[
-                      { x: diagonal.min, y: diagonal.min },
-                      { x: diagonal.max, y: diagonal.max },
-                    ]}
-                    stroke={WARN}
-                    strokeDasharray="6 4"
-                  />
-                )}
-                <Scatter data={scatter} fill={ACCENT} isAnimationActive={!reduced} />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </div>
-          <ChartA11yTable
-            caption="Actual vs predicted sale price per plotted validation row (USD)"
-            columns={[
-              { key: 'actual', label: 'Actual', format: formatUsd },
-              { key: 'predicted', label: 'Predicted', format: formatUsd },
-            ]}
-            rows={scatter}
-          />
-          <SplitCaption split={data.split} n={data.n} />
+      <div className="chart-card chart-card-wide mt-28">
+        <div className="chart-head">
+          <span className="chart-title">Actual vs predicted</span>
+          <span className="chart-tag">
+            {formatNumber(scatter.length, 0)} of {formatNumber(data.n, 0)} val rows · seeded thin
+          </span>
         </div>
+        <div
+          className="chart-wrap chart-wrap-tall"
+          role="img"
+          aria-label="Scatter chart of actual vs predicted sale prices on the validation split with a 45-degree reference line"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <ScatterChart margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
+              <CartesianGrid {...cartesianGridProps} />
+              <XAxis
+                type="number"
+                dataKey="actual"
+                name="actual"
+                tickFormatter={kTick}
+                domain={['auto', 'auto']}
+                {...xAxisProps}
+                label={monoAxisLabel('actual sale price', 'insideBottom', { offset: 4 })}
+              />
+              <YAxis
+                type="number"
+                dataKey="predicted"
+                name="predicted"
+                tickFormatter={kTick}
+                domain={['auto', 'auto']}
+                {...yAxisProps}
+                width={60}
+                label={monoAxisLabel('predicted sale price', 'insideLeft', { angle: -90, offset: 8 })}
+              />
+              <Tooltip
+                {...tooltipProps}
+                formatter={(value, name) => [
+                  formatUsd(value),
+                  name === 'actual' ? 'Actual' : 'Predicted',
+                ]}
+              />
+              {diagonal && (
+                <ReferenceLine
+                  segment={[
+                    { x: diagonal.min, y: diagonal.min },
+                    { x: diagonal.max, y: diagonal.max },
+                  ]}
+                  stroke={CHART_PALETTE.neutral}
+                  strokeDasharray="5 5"
+                  strokeWidth={1}
+                />
+              )}
+              <Scatter
+                data={scatter}
+                fill={CHART_PALETTE.accent}
+                fillOpacity={0.65}
+                {...getAnimationProps(reduced)}
+              />
+            </ScatterChart>
+          </ResponsiveContainer>
+        </div>
+        <ChartA11yTable
+          caption="Actual vs predicted sale price per plotted validation row (USD)"
+          columns={[
+            { key: 'actual', label: 'Actual', format: formatUsd },
+            { key: 'predicted', label: 'Predicted', format: formatUsd },
+          ]}
+          rows={scatter}
+        />
+        <SplitCaption split={data.split} n={data.n} />
+      </div>
 
-        <div className="chart-card">
-          <div className="chart-head">
-            <span className="chart-title">Residuals</span>
-            <span className="chart-tag">actual − predicted, USD</span>
-          </div>
-          <div
-            className="chart-wrap chart-wrap--tall"
-            role="img"
-            aria-label="Histogram of validation residuals in dollars"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={hist} margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={GRID} />
-                <XAxis dataKey="mid" tickFormatter={kTick} tick={AXIS_TICK} />
-                <YAxis tick={AXIS_TICK} width={44} allowDecimals={false} />
-                <Tooltip
-                  formatter={(value) => [formatNumber(value, 0), 'rows']}
-                  labelFormatter={(_, payload) => payload?.[0]?.payload?.range ?? ''}
-                  contentStyle={TOOLTIP_STYLE}
-                />
-                <Bar dataKey="count" fill={SLATE} isAnimationActive={!reduced} animationDuration={450} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-          <ChartA11yTable
-            caption="Validation residual histogram — bin range (USD) and row count"
-            columns={[
-              { key: 'range', label: 'Residual range' },
-              { key: 'count', label: 'Rows', format: (v) => formatNumber(v, 0) },
-            ]}
-            rows={hist}
-          />
-          <SplitCaption split={data.split} n={data.n} />
+      <div className="chart-card chart-card-wide mt-28">
+        <div className="chart-head">
+          <span className="chart-title">Residuals</span>
+          <span className="chart-tag">actual − predicted, USD</span>
         </div>
+        <div
+          className="chart-wrap chart-wrap-tall"
+          role="img"
+          aria-label="Histogram of validation residuals in dollars"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={hist} margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
+              <CartesianGrid {...cartesianGridProps} />
+              <XAxis dataKey="mid" tickFormatter={kTick} {...xAxisProps} />
+              <YAxis {...yAxisProps} width={44} allowDecimals={false} />
+              <Tooltip
+                {...tooltipProps}
+                formatter={(value) => [formatNumber(value, 0), 'rows']}
+                labelFormatter={(_, payload) => payload?.[0]?.payload?.range ?? ''}
+              />
+              <Bar
+                dataKey="count"
+                fill={CHART_PALETTE.accentFill}
+                stroke={CHART_PALETTE.accent}
+                radius={1.5}
+                {...getAnimationProps(reduced)}
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <ChartA11yTable
+          caption="Validation residual histogram — bin range (USD) and row count"
+          columns={[
+            { key: 'range', label: 'Residual range' },
+            { key: 'count', label: 'Rows', format: (v) => formatNumber(v, 0) },
+          ]}
+          rows={hist}
+        />
+        <SplitCaption split={data.split} n={data.n} />
+      </div>
 
-        <div className="chart-card-wide">
-          <ImportanceChart importance={data.importance} reduced={reduced} split={data.split} n={data.n} />
-        </div>
+      <div className="mt-28">
+        <ImportanceChart importance={data.importance} reduced={reduced} split={data.split} n={data.n} />
       </div>
     </>
   )
@@ -305,24 +370,7 @@ function RegressionWorkspace({ data, reduced }) {
 /* Classification                                                              */
 /* -------------------------------------------------------------------------- */
 
-function CurveCard({ title, tag, ariaLabel, captionLine, columns, rows, children }) {
-  return (
-    <div className="chart-card">
-      <div className="chart-head">
-        <span className="chart-title">{title}</span>
-        <span className="chart-tag">{tag}</span>
-      </div>
-      <div className="chart-wrap" role="img" aria-label={ariaLabel}>
-        <ResponsiveContainer width="100%" height="100%">
-          {children}
-        </ResponsiveContainer>
-      </div>
-      <ChartA11yTable caption={captionLine} columns={columns} rows={rows} />
-    </div>
-  )
-}
-
-function ClassificationWorkspace({ data, reduced }) {
+function ClassificationWorkspace({ data, reduced, candidate }) {
   const atF1 = data.metrics_at_f1 ?? {}
   const atHalf = data.metrics_at_0_5 ?? {}
   const roc = Array.isArray(data.roc) ? data.roc : []
@@ -347,8 +395,8 @@ function ClassificationWorkspace({ data, reduced }) {
   return (
     <>
       <p className="note wf-sim-note">
-        <SimulatedBadge /> These curves measure fit to the simulated sale-speed target
-        (ADR-3) — a seeded days-on-market simulation, not an observed market outcome.
+        <SimulatedBadge /> These curves measure fit to the simulated sale-speed
+        target — a seeded days-on-market simulation, not an observed market outcome.
       </p>
 
       <div className="metrics">
@@ -377,7 +425,7 @@ function ClassificationWorkspace({ data, reduced }) {
         </div>
       </div>
 
-      <div className="table-scroll wf-clip" style={{ marginTop: 16 }}>
+      <div className="table-scroll wf-clip mt-16">
         <table className="table">
           <caption className="visually-hidden">
             Precision, recall, and F1 at the F1-optimal threshold versus the default 0.5
@@ -402,89 +450,229 @@ function ClassificationWorkspace({ data, reduced }) {
           </tbody>
         </table>
       </div>
-      <p className="note" style={{ marginTop: 10 }}>
+      <p className="note mt-10">
         The operating threshold is picked by F1 on the validation calibrated probabilities —
         the champion&rsquo;s rule — never defaulted to 0.5. Both operating points are shown so
         the trade-off is visible.
       </p>
 
-      <div className="grid-2 wf-eval-grid" style={{ marginTop: 20 }}>
-        <CurveCard
-          title="ROC curve"
-          tag={`${roc.length} points`}
-          ariaLabel="ROC curve — true positive rate against false positive rate on the validation split, with the chance diagonal dashed"
-          captionLine="ROC curve points (false positive rate, true positive rate), validation split"
+      <div className="chart-card chart-card-wide mt-28">
+        <div className="chart-head">
+          <span className="chart-title">True-positive rate vs false-positive rate</span>
+          <span className="chart-tag">dashed = chance</span>
+        </div>
+        <div
+          className="chart-wrap chart-wrap-tall"
+          role="img"
+          aria-label="ROC curve — true positive rate against false positive rate on the validation split, with the chance diagonal dashed"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={roc} margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
+              <CartesianGrid {...cartesianGridProps} />
+              <XAxis
+                type="number"
+                dataKey="fpr"
+                domain={[0, 1]}
+                {...xAxisProps}
+                label={monoAxisLabel('false-positive rate', 'insideBottom', { offset: 4 })}
+              />
+              <YAxis
+                type="number"
+                dataKey="tpr"
+                domain={[0, 1]}
+                {...yAxisProps}
+                width={56}
+                label={monoAxisLabel('true-positive rate', 'insideLeft', { angle: -90, offset: 8 })}
+              />
+              <Tooltip
+                {...tooltipProps}
+                formatter={(value, name) => [formatMetric(value, 3), name]}
+              />
+              <Legend verticalAlign="top" {...legendProps} iconType="line" iconSize={18} />
+              <Line
+                data={[
+                  { fpr: 0, tpr: 0 },
+                  { fpr: 1, tpr: 1 },
+                ]}
+                type="monotone"
+                dataKey="tpr"
+                name="chance"
+                stroke={CHART_PALETTE.neutral}
+                strokeWidth={1}
+                strokeDasharray="5 5"
+                dot={false}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="tpr"
+                name={`${candidate} · AUC ${formatMetric(atF1.roc_auc, 4)}`}
+                stroke={CHART_PALETTE.accent}
+                strokeWidth={1.8}
+                dot={false}
+                {...getAnimationProps(reduced)}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <ChartA11yTable
+          caption="ROC curve points (false positive rate, true positive rate), validation split"
           columns={[
             { key: 'fpr', label: 'False positive rate', format: (v) => formatMetric(v, 3) },
             { key: 'tpr', label: 'True positive rate', format: (v) => formatMetric(v, 3) },
           ]}
           rows={roc}
-        >
-          <LineChart data={roc} margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
-            <XAxis type="number" dataKey="fpr" tick={AXIS_TICK} domain={[0, 1]} />
-            <YAxis type="number" dataKey="tpr" tick={AXIS_TICK} width={48} domain={[0, 1]} />
-            <Tooltip
-              formatter={(value, name) => [formatMetric(value, 3), name === 'tpr' ? 'TPR' : 'FPR']}
-              contentStyle={TOOLTIP_STYLE}
-            />
-            <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 1, y: 1 }]} stroke={WARN} strokeDasharray="6 4" />
-            <Line type="monotone" dataKey="tpr" stroke={ACCENT} strokeWidth={2} dot={false} isAnimationActive={!reduced} animationDuration={450} />
-          </LineChart>
-        </CurveCard>
+        />
+        <SplitCaption split={data.split} n={data.n} />
+      </div>
 
-        <CurveCard
-          title="Precision–recall curve"
-          tag={`${pr.length} points · baseline ${formatPct(data.positive_rate)} positive`}
-          ariaLabel="Precision-recall curve on the validation split, with the positive-rate baseline dashed"
-          captionLine="Precision-recall curve points (recall, precision), validation split"
-          columns={[
-            { key: 'recall', label: 'Recall', format: (v) => formatMetric(v, 3) },
-            { key: 'precision', label: 'Precision', format: (v) => formatMetric(v, 3) },
-          ]}
-          rows={pr}
+      <div className="chart-card chart-card-wide mt-28">
+        <div className="chart-head">
+          <span className="chart-title">Reliability — do the probabilities mean what they say?</span>
+          <span className="chart-tag">dashed = perfectly calibrated</span>
+        </div>
+        <div
+          className="chart-wrap chart-wrap-tall"
+          role="img"
+          aria-label="Reliability curve — observed fast-sale fraction against mean predicted probability on the validation split, with the perfect-calibration line dashed"
         >
-          <LineChart data={pr} margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
-            <XAxis type="number" dataKey="recall" tick={AXIS_TICK} domain={[0, 1]} />
-            <YAxis type="number" dataKey="precision" tick={AXIS_TICK} width={48} domain={[0, 1]} />
-            <Tooltip
-              formatter={(value, name) => [formatMetric(value, 3), name]}
-              contentStyle={TOOLTIP_STYLE}
-            />
-            <ReferenceLine y={data.positive_rate} stroke={WARN} strokeDasharray="6 4" />
-            <Line type="monotone" dataKey="precision" stroke={ACCENT} strokeWidth={2} dot={false} isAnimationActive={!reduced} animationDuration={450} />
-          </LineChart>
-        </CurveCard>
-
-        <CurveCard
-          title="Calibration"
-          tag={`${calibration.length} bins · quantile-binned`}
-          ariaLabel="Calibration curve — observed positive fraction against mean predicted probability, with the perfect-calibration line dashed"
-          captionLine="Calibration points (mean predicted probability, observed positive fraction), validation split"
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={calibration} margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
+              <CartesianGrid {...cartesianGridProps} />
+              <XAxis
+                type="number"
+                dataKey="mean_pred"
+                domain={[0, 1]}
+                {...xAxisProps}
+                label={monoAxisLabel('mean predicted probability', 'insideBottom', { offset: 4 })}
+              />
+              <YAxis
+                type="number"
+                dataKey="frac_pos"
+                domain={[0, 1]}
+                {...yAxisProps}
+                width={56}
+                label={monoAxisLabel('observed fraction', 'insideLeft', { angle: -90, offset: 8 })}
+              />
+              <Tooltip
+                {...tooltipProps}
+                formatter={(value, name) => [formatMetric(value, 3), name]}
+              />
+              <Legend verticalAlign="top" {...legendProps} iconType="line" iconSize={18} />
+              <Line
+                data={[
+                  { mean_pred: 0, frac_pos: 0 },
+                  { mean_pred: 1, frac_pos: 1 },
+                ]}
+                type="monotone"
+                dataKey="frac_pos"
+                name="perfectly calibrated"
+                stroke={CHART_PALETTE.neutral}
+                strokeWidth={1}
+                strokeDasharray="5 5"
+                dot={false}
+                isAnimationActive={false}
+              />
+              <Line
+                type="monotone"
+                dataKey="frac_pos"
+                name={`${candidate} · Brier ${formatMetric(atF1.brier, 4)}`}
+                stroke={CHART_PALETTE.accent}
+                strokeWidth={1.8}
+                dot={{ r: 3, fill: CHART_PALETTE.accent, strokeWidth: 0 }}
+                {...getAnimationProps(reduced)}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <ChartA11yTable
+          caption="Reliability points (mean predicted probability, observed fast-sale fraction), validation split"
           columns={[
             { key: 'mean_pred', label: 'Mean predicted', format: (v) => formatMetric(v, 3) },
             { key: 'frac_pos', label: 'Observed fraction', format: (v) => formatMetric(v, 3) },
           ]}
           rows={calibration}
-        >
-          <LineChart data={calibration} margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
-            <XAxis type="number" dataKey="mean_pred" tick={AXIS_TICK} domain={[0, 1]} />
-            <YAxis type="number" dataKey="frac_pos" tick={AXIS_TICK} width={48} domain={[0, 1]} />
-            <Tooltip
-              formatter={(value, name) => [formatMetric(value, 3), name === 'frac_pos' ? 'observed' : 'predicted']}
-              contentStyle={TOOLTIP_STYLE}
-            />
-            <ReferenceLine segment={[{ x: 0, y: 0 }, { x: 1, y: 1 }]} stroke={WARN} strokeDasharray="6 4" />
-            <Line type="monotone" dataKey="frac_pos" stroke={ACCENT} strokeWidth={2} dot={{ r: 3 }} isAnimationActive={!reduced} animationDuration={450} />
-          </LineChart>
-        </CurveCard>
+        />
+        <p className="note mt-10">
+          Each point pools the validation rows whose predicted probability falls into one bin,
+          then plots the observed fast-sale rate against it. Points on the diagonal mean a
+          predicted 70% really sells within 30 days about 70% of the time — read against the
+          simulated target.
+        </p>
+        <SplitCaption split={data.split} n={data.n} />
+      </div>
 
-        <div className="chart-card">
-          <div className="chart-head">
-            <span className="chart-title">Confusion matrix</span>
-            <span className="chart-tag">at t = {formatMetric(atF1.threshold, 3)}</span>
+      <div className="chart-card chart-card-wide mt-28">
+        <div className="chart-head">
+          <span className="chart-title">Precision–recall — the fast-sale operating envelope</span>
+          <span className="chart-tag">
+            {pr.length} points · baseline {formatPct(data.positive_rate)} positive
+          </span>
+        </div>
+        <div
+          className="chart-wrap"
+          role="img"
+          aria-label="Precision-recall curve on the validation split, with the positive-rate baseline dashed"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={pr} margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
+              <CartesianGrid {...cartesianGridProps} />
+              <XAxis
+                type="number"
+                dataKey="recall"
+                domain={[0, 1]}
+                {...xAxisProps}
+                label={monoAxisLabel('recall', 'insideBottom', { offset: 4 })}
+              />
+              <YAxis
+                type="number"
+                dataKey="precision"
+                domain={[0, 1]}
+                {...yAxisProps}
+                width={56}
+                label={monoAxisLabel('precision', 'insideLeft', { angle: -90, offset: 8 })}
+              />
+              <Tooltip
+                {...tooltipProps}
+                formatter={(value, name) => [formatMetric(value, 3), name]}
+              />
+              {Number.isFinite(Number(data.positive_rate)) && (
+                <ReferenceLine
+                  y={Number(data.positive_rate)}
+                  stroke={CHART_PALETTE.neutral}
+                  strokeDasharray="5 5"
+                  strokeWidth={1}
+                />
+              )}
+              <Line
+                type="monotone"
+                dataKey="precision"
+                name="precision"
+                stroke={CHART_PALETTE.accent}
+                strokeWidth={1.8}
+                dot={false}
+                {...getAnimationProps(reduced)}
+              />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+        <ChartA11yTable
+          caption="Precision-recall curve points (recall, precision), validation split"
+          columns={[
+            { key: 'recall', label: 'Recall', format: (v) => formatMetric(v, 3) },
+            { key: 'precision', label: 'Precision', format: (v) => formatMetric(v, 3) },
+          ]}
+          rows={pr}
+        />
+        <SplitCaption split={data.split} n={data.n} />
+      </div>
+
+      <div className="eval-duo">
+        <div>
+          <div className="section-head mt-0">
+            <span className="section-title">
+              Confusion matrix — <span className="mono">{candidate}</span>
+            </span>
           </div>
           <ConfusionMatrix
             matrix={atF1.confusion_matrix}
@@ -492,9 +680,19 @@ function ClassificationWorkspace({ data, reduced }) {
           />
           <SplitCaption split={data.split} n={data.n} />
         </div>
-
-        <div className="chart-card-wide">
-          <ImportanceChart importance={data.importance} reduced={reduced} split={data.split} n={data.n} />
+        <div>
+          <div className="section-head mt-0">
+            <span className="section-title">
+              Feature importance — <span className="mono">{candidate}</span>
+            </span>
+          </div>
+          <ImportanceChart
+            importance={data.importance}
+            reduced={reduced}
+            split={data.split}
+            n={data.n}
+            tallFrame
+          />
         </div>
       </div>
     </>
@@ -505,9 +703,30 @@ function ClassificationWorkspace({ data, reduced }) {
 /* Clustering — no silhouette score exists in the machinery (§7 omission)      */
 /* -------------------------------------------------------------------------- */
 
-function ClusteringWorkspace({ data }) {
-  const clusters = Array.isArray(data.clusters) ? data.clusters : []
+function ClusteringWorkspace({ data, reduced }) {
+  const clusters = useMemo(
+    () => (Array.isArray(data.clusters) ? data.clusters : []),
+    [data],
+  )
   const assignments = Array.isArray(data.assignments) ? data.assignments : []
+
+  // Cluster-sizes bars: one amber bar per cluster (neighborhoods served) plus
+  // the noise group in danger — the honest count of what fell outside.
+  const sizeRows = useMemo(() => {
+    const rows = clusters.map((cluster) => ({
+      name: cluster.label ?? `Cluster ${cluster.cluster_id}`,
+      neighborhoods: Array.isArray(cluster.neighborhoods) ? cluster.neighborhoods.length : 0,
+      sales: cluster.n_sales ?? null,
+      price: cluster.median_price ?? null,
+      noise: false,
+    }))
+    const noise = Number(data.n_noise)
+    if (Number.isFinite(noise) && noise > 0) {
+      rows.push({ name: 'Noise', neighborhoods: noise, sales: null, price: null, noise: true })
+    }
+    return rows
+  }, [clusters, data])
+
   return (
     <>
       <div className="metrics">
@@ -534,15 +753,65 @@ function ClusteringWorkspace({ data }) {
       </div>
 
       {data.rationale && (
-        <div className="panel" style={{ marginTop: 16 }}>
+        <div className="panel mt-16">
           <div className="panel-head">
             <span className="panel-title">Parameter rationale</span>
           </div>
           <div className="panel-body">
-            <p className="note" style={{ margin: 0 }}>{data.rationale}</p>
+            <p className="note" style={{ margin: 0 }}>
+              {data.rationale}
+            </p>
           </div>
         </div>
       )}
+
+      <div className="chart-card chart-card-wide mt-28">
+        <div className="chart-head">
+          <span className="chart-title">Cluster sizes — neighborhoods per micro-market</span>
+          <span className="chart-tag">
+            {formatNumber(data.n_clusters, 0)} clusters · {formatNumber(data.n_noise, 0)} noise
+          </span>
+        </div>
+        <div
+          className="chart-wrap"
+          role="img"
+          aria-label="Bar chart of neighborhoods per cluster, with the noise group in red"
+        >
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={sizeRows} margin={{ top: 8, right: 24, bottom: 4, left: 8 }}>
+              <CartesianGrid {...cartesianGridProps} />
+              <XAxis dataKey="name" interval={0} {...xAxisProps} />
+              <YAxis {...yAxisProps} width={44} allowDecimals={false} />
+              <Tooltip
+                {...tooltipProps}
+                formatter={(value) => [formatNumber(value, 0), 'neighborhoods']}
+              />
+              <Bar dataKey="neighborhoods" radius={3} maxBarSize={48} {...getAnimationProps(reduced)}>
+                {sizeRows.map((row) => (
+                  <Cell
+                    key={row.name}
+                    fill={row.noise ? CHART_PALETTE.dangerFill : CHART_PALETTE.accentFill}
+                    stroke={row.noise ? CHART_PALETTE.danger : CHART_PALETTE.accent}
+                  />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <ChartA11yTable
+          caption="Neighborhoods per cluster (plus the noise group), with train sales and median price"
+          columns={[
+            { key: 'name', label: 'Cluster' },
+            { key: 'neighborhoods', label: 'Neighborhoods', format: (v) => formatNumber(v, 0) },
+            { key: 'sales', label: 'Train sales', format: (v) => formatNumber(v, 0) },
+            { key: 'price', label: 'Median price', format: formatUsd },
+          ]}
+          rows={sizeRows}
+        />
+        <p className="wf-chart-caption mono">
+          {data.algorithm ?? 'DBSCAN'} over the 25-neighborhood matrix — fit once at train time
+        </p>
+      </div>
 
       <div className="wf-cluster-grid">
         {clusters.map((cluster) => (
@@ -575,7 +844,7 @@ function ClusteringWorkspace({ data }) {
         ))}
       </div>
 
-      <div className="table-scroll wf-clip wf-assignments" style={{ marginTop: 16 }}>
+      <div className="table-scroll wf-clip wf-assignments mt-16">
         <table className="table">
           <caption className="visually-hidden">
             Neighborhood cluster assignments with fallback flags
@@ -613,7 +882,7 @@ function ClusteringWorkspace({ data }) {
           </tbody>
         </table>
       </div>
-      <p className="note" style={{ marginTop: 10 }}>
+      <p className="note mt-10">
         {data.algorithm ?? 'DBSCAN'} over the 25-neighborhood matrix · noise neighborhoods are
         assigned to their nearest cluster centroid at serving time. No cluster-quality score is
         shown — the pipeline does not compute one.
@@ -646,22 +915,36 @@ export default function EvaluationWorkspace({ jobId, candidate }) {
     return (
       <EmptyState
         kicker="No evaluation"
-        title="No evaluation payload for this candidate"
+        title="No evaluation response for this candidate"
         detail="Evaluations exist for candidates that finished training — pick a completed one above."
       />
     )
   }
 
-  if (data.objective === 'regression') return <RegressionWorkspace data={data} reduced={reduced} />
-  if (data.objective === 'classification') {
-    return <ClassificationWorkspace data={data} reduced={reduced} />
+  if (data.objective === 'regression') {
+    return (
+      <>
+        <RegressionWorkspace data={data} reduced={reduced} />
+        <ClosingNote objective="regression" />
+      </>
+    )
   }
-  if (data.objective === 'clustering') return <ClusteringWorkspace data={data} />
+  if (data.objective === 'classification') {
+    return (
+      <>
+        <ClassificationWorkspace data={data} reduced={reduced} candidate={candidate} />
+        <ClosingNote objective="classification" />
+      </>
+    )
+  }
+  if (data.objective === 'clustering') {
+    return <ClusteringWorkspace data={data} reduced={reduced} />
+  }
   return (
     <EmptyState
       kicker="Unknown objective"
       title={`No evaluation renderer for "${data.objective}"`}
-      detail="The payload's objective is not one of regression, classification, clustering."
+      detail="The response's objective is not one of regression, classification, clustering."
     />
   )
 }

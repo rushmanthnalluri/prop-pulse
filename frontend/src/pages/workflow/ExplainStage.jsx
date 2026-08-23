@@ -56,6 +56,8 @@ export default function ExplainStage() {
         </p>
       </header>
 
+      <hr className="divider" />
+
       <section className="section" aria-labelledby="wf-sb-importance-title">
         <div className="section-head">
           <h2 className="section-title" id="wf-sb-importance-title">
@@ -118,6 +120,8 @@ export default function ExplainStage() {
           </EmptyState>
         )}
       </section>
+
+      <hr className="divider" aria-hidden="true" />
 
       <section className="section" aria-labelledby="wf-model-bridge-title">
         <div className="wf-bridge">

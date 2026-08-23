@@ -10,8 +10,12 @@ estate in Ames, Iowa. Given the attributes of a property, it estimates:
    neighborhoods into 4 micro-markets),
 
 and explains each estimate with per-prediction SHAP factors. The models are
-served by a FastAPI backend, consumed by a React dashboard, tracked with
-MLflow, monitored for data drift with PSI, and packaged with Docker.
+served by a FastAPI backend and consumed by a React dashboard that also
+carries a **guided 9-stage ML workbench** — upload a CSV (or use the bundled
+Ames record), profile it, train sandboxed models, evaluate them, and make
+sandbox predictions. Experiments are tracked with MLflow, live traffic is
+monitored for data drift with PSI, and the whole stack is packaged with
+Docker.
 
 The project is a portfolio-grade reference implementation: the emphasis is on
 leakage-safe methodology, honest evaluation (time-based split, sealed test
@@ -25,10 +29,10 @@ report with pasted command output:
 
 | Area | Status | Evidence |
 |---|---|---|
-| Automated tests | **232 passed, 0 failed, 0 xfail/xpass** (`pytest tests backend/tests -q`, ~51 s, wave-10 final) | `pytest.ini` suite, run below |
+| Automated tests | **454 passed, 0 failed** (`pytest tests backend/tests -q`, re-run 2026-08-19) | `pytest.ini` suite, run below |
 | Forensic audit | **Completed** — full-codebase audit (waves A–C); all P2/P3 findings fixed and regression-tested (210 green at audit close) | `docs/audit/FINAL_AUDIT.md` |
 | Docker build + smoke | **Verified** (2026-08-07, v1.0.0 build — not re-run in wave 10) — both images build (backend 1.77 GB, frontend 93.9 MB) and pass an in-compose smoke test (`/predict`, `/market/clusters`, CORS preflight, in-container drift check); default ports 8000/8080, alt ports 18000/18080 via the opt-in `docker-compose.alt-ports.yml` | `reports/DOCKER_SMOKE.md` |
-| Browser E2E | **27/27 tests pass** — Playwright (Chromium, headless) against the live API; 3 spec files, no mocks in the live specs; wave-10 coverage includes comps, market position, scenario explorer, confidence flags, prefill | `reports/E2E.md` |
+| Browser E2E | **49/49 tests pass** (last full run 2026-08-18; `e2e/test-results/.last-run.json`) — Playwright (Chromium, headless) against the live API (backend :8200, Vite dev :5300); 4 spec files, no mocks in the live specs; coverage includes comps, market position, scenario explorer, confidence flags, prefill, and the 9-stage guided-workbench journey | `reports/E2E.md` |
 | Performance | Warm `/predict` **p50 ≈ 197 ms** (c=1, quiet machine, measured 2026-08-07 on the v1.0.0 build; ~800 ms before the wave-9b fix — contended runs measure 2–3× higher); first call on a fresh process ≈ 0.5 s; 0 errors in 2,000+ measured requests | `reports/PERFORMANCE.md` |
 | Reproducibility | **Audit PASS** — processed data + feature artifacts byte-identical on re-run; full retrain matches (ridge Δ = 0.0; calibrated RF Δ ≤ 2.22e-16, one float64 ulp) | `reports/REPRODUCIBILITY.md` |
 | Security | Audit applied — security-headers + request-body-limit hardening; 1 accepted CVE (`PYSEC-2026-3552`, `cryptography<50` pinned by mlflow 3.15.1, vulnerable code path unreachable here), now gated in CI (`pip-audit --strict` + `npm audit --audit-level=high`) | `reports/SECURITY.md` |
@@ -89,11 +93,17 @@ A guided five-minute walkthrough of these screens: **`docs/DEMO.md`**.
   valuation form.
 - **Explainability**: global SHAP importance plus per-prediction top factors,
   aggregated from one-hot dummies back to human-readable base features.
+- **Guided ML workbench** (`/workflow/*` API + 9-stage UI): upload a CSV (or
+  use the bundled Ames record), profile it, configure leakage-safe
+  preprocessing, train sandboxed regression/classification candidates in a
+  subprocess, compare them on the held-out split, and make sandbox
+  predictions. Sandbox artifacts live under `models/workflow/` and never
+  touch the champions or the prediction log.
 - **Monitoring**: every prediction is logged as JSONL; a PSI drift check
   compares live traffic against the train reference and recommends (never
   triggers) retraining.
 - **Full MLOps loop**: MLflow experiment tracking, a file-based champion
-  registry (`models/registry/` + `models/champion.json`), 232 automated
+  registry (`models/registry/` + `models/champion.json`), 454 automated
   tests, Playwright browser E2E, CI, and verified Docker packaging.
 
 ## Architecture
@@ -110,9 +120,9 @@ flowchart TD
     F --> H
     H --> I[models/registry + champion.json<br/>MLflow file store mlruns/]
     H --> J[ml/explainability<br/>SHAP artifacts + per-prediction service]
-    I --> K[backend FastAPI<br/>/predict /market/clusters /model/info /metrics /health]
+    I --> K[backend FastAPI<br/>/predict /market/clusters /model/info /metrics /health /workflow/*]
     J --> K
-    K --> L["frontend React dashboard<br/>Valuation | Market Map | Model Insights"]
+    K --> L["frontend React dashboard<br/>Overview | Valuation | Market | Insights | Health<br/>+ 9-stage guided ML workbench"]
     K --> M[ml/monitoring<br/>prediction log → PSI drift check → retrain recommendation]
     M --> K
 ```
@@ -285,17 +295,41 @@ FastAPI service (`backend/`), routes at root level — no `/api/v1` prefix:
 | POST | `/predict/price` | price only |
 | POST | `/predict/sale-probability` | probability only |
 
+The guided workbench API (`/workflow/*`) backs the 9-stage UI: dataset
+upload/validation, profile, feature inventory, descriptive stats,
+missing-value policies, pre-aggregated viz payloads, leakage-safe
+preprocessing preview, training jobs (subprocess, one at a time server-wide),
+model comparison tables, per-candidate evaluation payloads, and sandbox
+predictions. Route-by-route reference: **`backend/README.md`**.
+
 Full request/response schemas, curl examples, and error formats:
 **`docs/API.md`**. Interactive Swagger UI at `/docs` when the server runs.
 
 ## Frontend
 
-Vite + React dashboard (`frontend/`) with three views: **Valuation** (form →
-price, range, probability, micro-market card, top factors), **Market Map**
-(Leaflet/OpenStreetMap markers colored by cluster with stats popups), and
-**Model Insights** (champion metrics, SHAP importance chart, drift summary).
+Vite + React dashboard (`frontend/`) — five product views plus the guided
+workbench:
+
+- **Overview** — live headline metrics, micro-market sales split, field
+  distributions, price trends, SHAP price drivers, the field registry, and
+  entry points into the 9-stage pipeline.
+- **Valuation** — form → price, range, probability, micro-market card, top
+  factors, comparable sales, market position, what-if scenario explorer, and
+  pinned-estimate comparison.
+- **Market Intelligence** — Leaflet/OpenStreetMap micro-market map with
+  per-neighborhood stats and map→form prefill.
+- **Model Insights** — champion cards, headline metrics, SHAP importance
+  chart, price trends, methodology and disclosures.
+- **Model Health** — service status, request traffic counters, and the PSI
+  drift panels fed by `/metrics`.
+- **Guided ML workbench** (`/workflow/01-upload` … `/workflow/09-predict`) —
+  the 9-stage pipeline over the bundled Ames record or an uploaded CSV:
+  profile → features → statistics → missing values → visualization →
+  preprocessing → training → evaluation → sandbox prediction.
+
 No prediction data is hardcoded — every number comes from the live API. See
-`frontend/README.md`.
+`frontend/README.md`; design tokens and UI rationale in
+`design-system/MASTER.md` and `docs/frontend/`.
 
 ## Local setup
 
@@ -337,6 +371,27 @@ process is ≈ 0.5 s and warm `/predict` is p50 ≈ 197 ms (c=1, measured on an
 otherwise idle machine; contended runs measure 2–3× higher —
 `reports/PERFORMANCE.md` "After fix").
 
+### Sharing the dev server (LAN / quick tunnel)
+
+`frontend/vite.config.js` proxies the backend route prefixes (`/predict`,
+`/market`, `/model`, `/health`, `/metrics`, `/workflow`) to
+`http://127.0.0.1:8000`, so the UI and API can be served from one origin —
+handy for showing the app to someone else without deploying:
+
+```bash
+# frontend/.env.local (gitignored) — route API calls same-origin through the proxy
+VITE_API_URL=/
+
+npm run dev -- --host                          # LAN: http://<your-LAN-IP>:5173
+cloudflared tunnel --url http://localhost:5173 # public https://*.trycloudflare.com link
+```
+
+Browser page loads still reach React Router (the proxy bypasses requests with
+`Accept: text/html`), and `.trycloudflare.com` is pre-allowed via
+`server.allowedHosts`. No CORS changes are needed — the visitor's browser
+only ever talks to the Vite origin. Quick tunnels are account-less,
+temporary, and get a fresh random URL each run.
+
 ## Docker
 
 ```bash
@@ -374,24 +429,27 @@ hardening notes: **`docs/DEPLOYMENT.md`**.
 ## Testing
 
 ```bash
-.venv/Scripts/python.exe -m pytest tests backend/tests -q   # 232 tests
+.venv/Scripts/python.exe -m pytest tests backend/tests -q   # 454 tests
 .venv/Scripts/python.exe -m pytest tests -m integration -q  # end-to-end only
 ```
 
 `pytest.ini` sets `pythonpath=.` and the `integration` marker (end-to-end
 tests that exercise the committed processed data and champion artifacts).
-Current status: **232 passed** (~51 s, wave-10 final; 162 at the wave-9
-release, 210 post-audit). API tests run through FastAPI's
+Current status: **454 passed** (re-run 2026-08-19; 232 at the wave-10
+release, 162 at wave-9, 210 post-audit). API tests run through FastAPI's
 TestClient against the real champion artifacts.
 
 Browser E2E (separate npm project in `e2e/`, Playwright + Chromium,
-headless): **27/27 tests pass** across 3 spec files — `dashboard.spec.js`
-(7: valuation flow, valuation-result extras covering confidence / market
-position / comps / scenario explorer, map→form prefill, 422 validation
-error surfaced in the UI, market map, model insights, API-down degradation)
-and `audit-blackbox.spec.js` (11) run against the live API with no mocks;
-`frontend-fixes.spec.js` (9) covers mocked-failure and UI regressions. How
-to re-run: `reports/E2E.md`.
+headless; backend on :8200, Vite dev server on :5300): **49 tests pass across
+4 spec files** (last full run 2026-08-18). `dashboard.spec.js` (12: overview,
+valuation flow, valuation-result extras covering confidence / market position
+/ comps / scenario explorer, pinned-estimate compare, map→form prefill,
+client validation, market page, model insights, model health, 404 page,
+API-down degradation), `audit-blackbox.spec.js` (11), and `workflow.spec.js`
+(16: the 9-stage guided-ML workbench journey — upload → train → evaluate →
+sandbox predict — plus stage gating and 390 px responsive) run against the
+live API with no mocks; `frontend-fixes.spec.js` (10) covers mocked-failure
+and UI regressions. How to re-run: `reports/E2E.md`.
 
 ## Monitoring and drift
 
@@ -431,22 +489,26 @@ no pushes, no secrets; image builds are verified locally —
 ```
 ├── backend/            # FastAPI service (app/{api,schemas,services,monitoring}, tests/)
 ├── data/               # raw/ames (Kaggle), external geo lookup, processed splits
+├── design-system/      # MASTER.md — design tokens + UI guidelines
 ├── docker/             # backend/frontend Dockerfiles, nginx.conf, README
 ├── docs/               # PROJECT_SPEC, DECISIONS (ADRs), ARCHITECTURE, API, DEMO,
-│                       # METHODOLOGY, DEPLOYMENT, GEOGRAPHY, screenshots/, agent-log/
+│                       # METHODOLOGY, DEPLOYMENT, GEOGRAPHY, screenshots/,
+│                       # frontend/ (design audits), agent-log/
 ├── e2e/                # Playwright browser E2E (own npm project; reports/E2E.md)
 ├── figures/            # EDA + SHAP + cluster figures (PNG)
-├── frontend/           # Vite + React dashboard (src/{pages,components,api})
+├── frontend/           # Vite + React dashboard (src/{pages,components,api},
+│                       # pages/workflow/ = 9-stage guided workbench)
 ├── logs/               # predictions.jsonl (runtime prediction log)
 ├── ml/                 # importable package: data, features, training, evaluation,
-│                       # clustering, explainability, monitoring, paths, tracking
+│                       # clustering, explainability, monitoring, workflow, paths
 ├── mlruns/             # MLflow file store (gitignored)
 ├── models/             # artifacts: regression/, classification/, clustering/,
 │                       # explainability/, monitoring/, registry/ (champions),
-│                       # champion.json, feature_list.json, ...
+│                       # workflow/ (per-dataset sandbox artifacts), champion.json
 ├── notebooks/          # 01_eda.ipynb (+ reproducible builder script)
 ├── reports/            # EDA_REPORT, MODEL_EVALUATION, wave-9 audits (PERFORMANCE,
 │                       # SECURITY, REPRODUCIBILITY, E2E, DOCKER_SMOKE), drift/
+├── review/             # review decks and sources (review1/)
 ├── scripts/            # load_test.py, audit_reproducibility.py
 ├── tests/              # data, features, ml unit tests + integration (marked)
 ├── .env.example        # all configuration keys (no secrets)

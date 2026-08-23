@@ -1,52 +1,21 @@
 /* ==========================================================================
-   ML Workbench — WF-F4 bridge stages 09–12 (Predict / Market / Explain /
-   Health) + the sandbox prediction panel (WORKFLOW §6.3-09…12, owner WF-F4).
-   Design tokens from styles.css only: nothing below 11px, hairlines over
-   boxes, no shadows at all here (--shadow-pop stays reserved for floating
-   layers). Imported by each WF-F4 stage page; Vite dedupes the chunk.
+   ML Workbench — bridge stages 09–12 (Predict / Market / Explain / Health)
+   + the sandbox prediction panel. Design tokens from styles.css only;
+   hairlines over boxes; no shadows at all here (--shadow-pop stays reserved
+   for floating layers). Imported by each bridge stage page; Vite dedupes the
+   chunk. Dead hooks (wf-duo, wf-picker-row, wf-result--empty/-verdict/-note,
+   wf-sandbox-simnote) were removed once nothing imported them.
    ========================================================================== */
-
-/* --------------------------------------------------------------------------
-   Stage 09 — sandbox half + champion bridge aside, hairline-separated
-   (§6.3-09: "two panels, visually separated by a hairline")
-   -------------------------------------------------------------------------- */
-
-.wf-duo {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.7fr);
-  gap: 28px;
-  align-items: start;
-}
-
-.wf-duo-main { min-width: 0; }
-
-.wf-duo-aside {
-  min-width: 0;
-  border-left: 1px solid var(--border);
-  padding-left: 28px;
-  position: sticky;
-  top: 20px; /* mirrors the product's sticky-rail behavior on wide layouts */
-}
 
 /* --------------------------------------------------------------------------
    Sandbox prediction panel (stage 09 main)
    -------------------------------------------------------------------------- */
 
-.wf-picker-row {
-  display: flex;
-  gap: 12px 16px;
-  flex-wrap: wrap;
-  margin-bottom: 12px;
-}
-.wf-picker-row .field { flex: 1 1 230px; }
-
 .wf-sandbox-lead { margin: 0 0 16px; max-width: 640px; }
 
-.wf-sandbox-simnote { margin: 0 0 12px; }
-
 /* Result card — accent hairline (the "measured thing" edge); deliberately
-   NOT the champion's 30px verdict size: the sandbox price renders at fs-stat
-   so the two faces are visually distinct (§7 honesty). */
+   NOT the champion's 30px verdict size: the sandbox figure renders smaller
+   so the two faces are visually distinct (honesty by hierarchy). */
 .wf-result {
   display: grid;
   gap: 8px;
@@ -54,14 +23,9 @@
   margin-bottom: 18px;
   padding: 16px 18px;
   background: var(--surface);
-  border: 1px solid var(--accent-border);
+  border: 1px solid rgba(217, 166, 63, 0.4);
   border-radius: var(--radius-lg);
   transition: opacity var(--dur-hover);
-}
-.wf-result--empty {
-  border-color: var(--border-strong);
-  border-style: dashed;
-  background: none;
 }
 .wf-result-price {
   margin: 0;
@@ -69,7 +33,7 @@
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.02em;
-  color: var(--navy);
+  color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 .wf-result-range {
@@ -78,20 +42,22 @@
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
-.wf-result-verdict {
+.wf-result-meta {
   margin: 0;
-  font-size: 12.5px;
-  color: var(--text-2);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
+  color: var(--text-3);
 }
-.wf-result-note { margin: 0; font-size: 11.5px; color: var(--text-3); }
-.wf-result-meta { margin: 0; font-size: 11px; color: var(--text-3); }
 
-/* Previous result kept dimmed while a re-predict is in flight (UX §7.1 —
-   busy feedback on the control, never a skeleton swap). */
+/* Previous result kept dimmed while a re-predict is in flight — busy
+   feedback on the control, never a skeleton swap. */
 .wf-dim { opacity: 0.55; pointer-events: none; }
 
 /* --------------------------------------------------------------------------
-   Bridge cards (stages 09–12) + "what you'll find" grids
+   Bridge panels (stages 09–12) + "what you'll find" grids — quiet panels in
+   the reference's panel language: badge tag + title head, short copy,
+   hairline-separated note, primary onward CTA bottom-left.
    -------------------------------------------------------------------------- */
 
 .wf-bridge {
@@ -104,24 +70,36 @@
   border-radius: var(--radius-lg);
 }
 .wf-bridge-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.wf-bridge-title { margin: 0; font-size: 15px; font-weight: 600; color: var(--text); }
-.wf-bridge-copy { margin: 0; font-size: 13px; color: var(--text-2); max-width: 720px; }
+.wf-bridge-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+.wf-bridge-copy { margin: 0; font-size: 13.5px; color: var(--text-2); max-width: 640px; }
 .wf-bridge-list {
   margin: 0;
-  padding-left: 18px;
+  padding: 0;
   display: grid;
   gap: 6px;
   font-size: 12.5px;
   color: var(--text-2);
+  list-style: none;
 }
-.wf-bridge-meta { margin: 0; font-size: 11px; color: var(--text-3); }
+/* › accent bullets — the reference's insight-list marker (blueprint §5). */
+.wf-bridge-list li {
+  display: flex;
+  gap: 10px;
+}
+.wf-bridge-list li::before {
+  content: '›';
+  color: var(--accent);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+}
+.wf-bridge-meta { margin: 0; font-size: 10.5px; color: var(--text-3); }
 .wf-bridge-note {
   margin: 0;
   padding-top: 10px;
   border-top: 1px solid var(--border);
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--text-3);
-  max-width: 720px;
+  max-width: 640px;
 }
 .wf-bridge-cta { justify-self: start; }
 
@@ -135,7 +113,6 @@
   gap: 5px;
   align-content: start;
   padding: 12px 14px;
-  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
@@ -143,7 +120,8 @@
 .wf-find-body { margin: 0; font-size: 12px; color: var(--text-2); }
 
 /* --------------------------------------------------------------------------
-   Sandbox teaser cards (stages 10–12)
+   Sandbox teaser cards (stages 10–12) — the .panel skin with a badge + title
+   head and a metrics strip inside.
    -------------------------------------------------------------------------- */
 
 .wf-teaser {
@@ -156,28 +134,18 @@
   border-radius: var(--radius-lg);
 }
 .wf-teaser-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.wf-teaser-title { margin: 0; font-size: 13.5px; font-weight: 600; color: var(--text); }
-.wf-teaser-note { margin: 0; font-size: 12px; color: var(--text-2); max-width: 720px; }
+.wf-teaser-title { margin: 0; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
+.wf-teaser-note { margin: 0; font-size: 12.5px; color: var(--text-2); max-width: 640px; }
 
 /* --------------------------------------------------------------------------
-   Responsive (UX §8): the duo stacks at ≤1024px — the aside's hairline moves
-   from its left edge to its top, and the stickiness ends with the columns.
+   Responsive (blueprint §10): cards tighten at ≤820px / ≤520px.
    -------------------------------------------------------------------------- */
 
-@media (max-width: 1024px) {
-  .wf-duo { grid-template-columns: 1fr; }
-  .wf-duo-aside {
-    position: static;
-    border-left: none;
-    padding-left: 0;
-    border-top: 1px solid var(--border);
-    padding-top: 24px;
-  }
+@media (max-width: 820px) {
+  .wf-find-grid { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 640px) {
-  .wf-duo { gap: 22px; }
+@media (max-width: 520px) {
   .wf-bridge,
   .wf-teaser { padding: 14px 16px; }
-  .wf-find-grid { grid-template-columns: 1fr; }
 }

@@ -48,7 +48,8 @@
   transition: opacity var(--dur-hover);
 }
 
-.wf-sim-note { margin: 0 0 12px; }
+/* ComparisonTable chrome (.wf-sim-note, .wf-clip, chips, .wf-bootstrap,
+   .wf-chart-caption) → styles/wf-comparison.css (single canonical copy). */
 
 /* --------------------------------------------------------------------------
    Stage 06 — pipeline flow + step accordion + before/after
@@ -254,7 +255,7 @@
   border-radius: 50%;
   background: currentColor;
   margin-right: 5px;
-  animation: wf-step-pulse 1.2s ease-in-out infinite; /* defined in workflow.css (WF-F1) */
+  animation: wf-step-pulse 1.2s ease-in-out infinite; /* defined in styles.css */
 }
 
 .wf-jobrows {
@@ -291,29 +292,15 @@
    positioned ancestor its containing block is the root, escaping the
    .table-scroll clip and leaking 1px of horizontal overflow on phones. */
 .wf-actions-col { position: relative; }
-/* Same escape for visually-hidden <caption>s inside a .table-scroll: making
-   the scroll container their containing block keeps them clipped. */
-.wf-clip { position: relative; }
-
-.wf-best-row { background: var(--accent-wash); }
-.wf-best-row:hover { background: var(--accent-wash) !important; }
-.wf-best-chip { margin-left: 8px; }
-.wf-stale-chip { margin-left: 8px; }
-.wf-stale-note { margin-top: 10px; }
-.wf-stale-note .badge { margin-right: 4px; }
-.wf-threshold-hint { margin-left: 8px; font-size: 11px; color: var(--text-3); }
+/* .wf-clip / .wf-best-chip / .wf-stale-chip / .wf-stale-note /
+   .wf-threshold-hint / .wf-bootstrap → styles/wf-comparison.css. */
 .wf-params { max-width: 300px; overflow: hidden; text-overflow: ellipsis; }
-.wf-bootstrap { margin-top: 14px; }
 
 /* --------------------------------------------------------------------------
    Stage 08 — evaluation workspace
    -------------------------------------------------------------------------- */
 
-.wf-chart-caption {
-  font-size: 11px;
-  color: var(--text-3);
-  margin: 10px 0 0;
-}
+/* .wf-chart-caption → styles/wf-comparison.css. */
 
 .wf-eval-grid { margin-top: 20px; }
 /* Grid items default to min-width:auto — without this a recharts svg forces
@@ -324,70 +311,9 @@
 .wf-eval-grid .chart-head > * { min-width: 0; }
 .wf-eval-grid .chart-tag { white-space: normal; text-align: right; }
 
-.wf-cluster-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 12px;
-  margin-top: 16px;
-}
-.wf-cluster-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 12px 14px;
-}
-.wf-cluster-swatch {
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 2px;
-  margin-right: 8px;
-  vertical-align: baseline;
-}
-.wf-cluster-label { font-size: 13px; font-weight: 600; text-transform: capitalize; }
-.wf-cluster-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px 12px;
-  margin: 10px 0 0;
-}
-.wf-cluster-stats dt {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-3);
-}
-.wf-cluster-stats dd { margin: 0; font-size: 12.5px; color: var(--text); }
-.wf-cluster-dot {
-  display: inline-block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  margin-right: 6px;
-}
+/* Cluster card family (.wf-cluster-*) → styles/wf-cluster.css (shared home). */
 
-/* --------------------------------------------------------------------------
-   ConfusionMatrix totals modifiers — replicated from styles/insights.css
-   (lines 104–145 + the 640px block) so the shared ConfusionMatrix component
-   renders correctly on the workflow route without importing another page's
-   stylesheet. The base .cm-grid/.cm-cell live in styles.css (global).
-   -------------------------------------------------------------------------- */
-
-.insights-cm { margin: 0; }
-.insights-cm-title {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--text-3);
-  margin-bottom: 8px;
-}
-.cm-grid.cm-grid--totals { grid-template-columns: 104px repeat(3, 1fr); }
-.cm-axis--total { background: var(--raised); }
-.cm-total { background: var(--raised); justify-content: center; }
-.cm-total strong { font-size: 15px; font-weight: 500; color: var(--text-2); }
-.cm-total--grand strong { color: var(--text); }
+/* ConfusionMatrix totals modifiers → styles/confusion-matrix.css (shared sheet); the ≤640px densify below stays page-local. */
 
 /* --------------------------------------------------------------------------
    Responsive (UX §8): multi-col grids collapse at 1024; densify at 640;
@@ -404,7 +330,6 @@
   .field-row--3 { grid-template-columns: 1fr; }
   .wf-flow { flex-direction: column; }
   .wf-flow-node + .wf-flow-node::before { content: none; }
-  .wf-cluster-grid { grid-template-columns: 1fr 1fr; }
   .cm-grid.cm-grid--totals { grid-template-columns: 78px repeat(3, 1fr); }
   .cm-grid.cm-grid--totals .cm-cell { padding: 10px; }
   .cm-grid.cm-grid--totals .cm-cell strong { font-size: 18px; }
@@ -412,7 +337,6 @@
 }
 
 @media (max-width: 420px) {
-  .wf-cluster-grid { grid-template-columns: 1fr; }
   .wf-config-actions .btn { width: 100%; }
   .wf-jobrow-name { min-width: 0; }
 }
@@ -424,6 +348,8 @@
    faded content. */
 @media (max-width: 480px) {
   .wf-tabs {
+    /* Sanctioned gradient exception: this is a scroll-edge mask (an alpha
+       channel), not a data-surface fill — the one-gradient rule doesn't apply. */
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
     mask-image: linear-gradient(to right, #000 calc(100% - 32px), transparent);
   }

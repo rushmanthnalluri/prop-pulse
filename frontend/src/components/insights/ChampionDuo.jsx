@@ -16,8 +16,8 @@ function modelTag(section) {
 function HeadlineStat({ label, value, hint }) {
   return (
     <div className="metric">
-      <div className="metric-label">{label}</div>
       <div className="metric-value insights-stat">{value}</div>
+      <div className="metric-label">{label}</div>
       {hint && <div className="metric-hint">{hint}</div>}
     </div>
   )
@@ -58,8 +58,9 @@ export default function ChampionDuo({ info }) {
             />
           </div>
           <p className="note insights-panel-note">
-            A regularized linear model predicting log1p(SalePrice) — dollar
-            figures are converted back with expm1. It won on validation RMSLE;
+            A regularized linear model predicting the log-transformed sale
+            price — dollar figures are converted back from the log scale.
+            It won on validation RMSLE;
             the runner-up was close enough that the bootstrap note below does
             the honest math.
           </p>
@@ -96,7 +97,7 @@ export default function ChampionDuo({ info }) {
             />
           </div>
           <p className="note insights-panel-note">
-            Scores P(sale within 30 days). That target is simulated (ADR-3), so
+            Scores P(sale within 30 days). That target is simulated, so
             these numbers measure consistency with a seeded sale-speed
             simulation — not a real-world listing forecast.
           </p>

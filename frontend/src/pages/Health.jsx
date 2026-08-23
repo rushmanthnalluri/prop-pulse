@@ -119,7 +119,7 @@ export default function HealthPage() {
         <h1 className="page-title">Live service &amp; drift</h1>
         <p className="page-desc">
           Is the scoring API up, how busy is it, and is the incoming traffic drifting away from
-          the data the champions were trained on.
+          the data the champions were trained on?
         </p>
         <p className="page-meta">
           {metaParts.length > 0 ? metaParts.join(' · ') : 'Connecting to the API…'}
@@ -156,7 +156,7 @@ export default function HealthPage() {
       <section className="section">
         <div className="section-head">
           <h2 className="section-title">Service status</h2>
-          <span className="section-note">GET /health · live liveness</span>
+          <span className="section-note">Live API check</span>
         </div>
         <ServiceStatus health={health} metrics={metrics} />
       </section>
@@ -166,7 +166,7 @@ export default function HealthPage() {
       <section className="section">
         <div className="section-head">
           <h2 className="section-title">Live traffic</h2>
-          <span className="section-note">GET /metrics · per-process</span>
+          <span className="section-note">Per-process request counters</span>
         </div>
         <TrafficTable metrics={metrics} />
       </section>
@@ -176,7 +176,7 @@ export default function HealthPage() {
       <section className="section">
         <div className="section-head">
           <h2 className="section-title">Feature drift</h2>
-          <span className="section-note">GET /metrics → drift · file snapshot</span>
+          <span className="section-note">Latest drift-check snapshot</span>
         </div>
         <DriftPanel metrics={metrics} />
       </section>
@@ -186,7 +186,7 @@ export default function HealthPage() {
       <section className="section">
         <div className="section-head">
           <h2 className="section-title">Prediction drift</h2>
-          <span className="section-note">GET /metrics → drift · file snapshot</span>
+          <span className="section-note">Latest drift-check snapshot</span>
         </div>
         <PredictionDrift metrics={metrics} />
       </section>

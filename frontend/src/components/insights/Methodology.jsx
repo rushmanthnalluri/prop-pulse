@@ -1,18 +1,16 @@
 /**
  * Methodology (SPEC §5.4-7, §1.3): how the champions were trained and judged,
- * told as a numbered narrative. Every count here is vouched by the API
- * contract (CONTRACT §4): 945 train sales 2006H1–2008H2, val 338 (2009),
- * sealed test 175 (2010), 25 neighborhoods, 94 model features. Live values
- * from GET /model/info are preferred when loaded; the contract constants are
- * the standing fallback, so this section still teaches when the API is down.
- * The champion-selection rationale renders verbatim from the API when present.
+ * told as a numbered narrative. The split sizes (945 train, 338 val, 175
+ * sealed test) and the model-metadata values below are stable data-contract
+ * facts (CONTRACT §4) held in constants.js — contract constants, not live API
+ * values. When GET /model/info is loaded, its live metadata is preferred and
+ * the val/test sizes are derived from its confusion matrices; the contract
+ * constants fill in only while the API is down, so this section still teaches
+ * then. The champion-selection rationale renders verbatim from the API when
+ * present.
  */
-const FALLBACKS = {
-  nFeatures: 94,
-  dataset: 'ames-1.0',
-  featureVersion: '9b0f8ba4201c',
-  nClusters: 4,
-}
+import { MODEL_INFO_FALLBACKS, SPLIT_CONTRACT } from '../../constants'
+import { confusionTotal } from '../../utils/splits'
 
 function Row({ index, title, children }) {
   return (
@@ -27,23 +25,31 @@ function Row({ index, title, children }) {
 }
 
 export default function Methodology({ info }) {
-  const nFeatures = info?.n_features ?? FALLBACKS.nFeatures
-  const dataset = info?.dataset_version || FALLBACKS.dataset
-  const featureVersion = info?.feature_version || FALLBACKS.featureVersion
-  const nClusters = info?.clustering?.n_clusters ?? FALLBACKS.nClusters
+  // Live payload preferred; the constants.js values are contract fallbacks
+  // shown only while GET /model/info is down.
+  const nFeatures = info?.n_features ?? MODEL_INFO_FALLBACKS.nFeatures
+  const dataset = info?.dataset_version || MODEL_INFO_FALLBACKS.dataset
+  const featureVersion = info?.feature_version || MODEL_INFO_FALLBACKS.featureVersion
+  const nClusters = info?.clustering?.n_clusters ?? MODEL_INFO_FALLBACKS.nClusters
+  // The payload has no split sizes — derive val/test from the confusion
+  // matrices (real split counts), else the contract constants.
+  const valCount =
+    confusionTotal(info?.classification?.val_metrics?.confusion_matrix) ?? SPLIT_CONTRACT.val
+  const testCount =
+    confusionTotal(info?.classification?.test_metrics?.confusion_matrix) ?? SPLIT_CONTRACT.test
 
   return (
     <div className="insights-prose">
       <div className="row-list">
         <Row index="01" title="The data">
-          945 training sales from Ames, Iowa, sold 2006H1–2008H2 across 25
+          {SPLIT_CONTRACT.train} training sales from Ames, Iowa, sold 2006H1–2008H2 across 25
           neighborhoods, grouped into {nClusters} micro-markets and expanded to{' '}
           {nFeatures} model features (79 raw columns + 15 engineered). Dataset{' '}
           {dataset} · feature_version {featureVersion}.
         </Row>
         <Row index="02" title="A time-based split, never shuffled">
-          Train = sales through 2008 (945 rows), validation = 2009 (338),
-          sealed test = 2010 (175). Every metric on this page is an
+          Train = sales through 2008 ({SPLIT_CONTRACT.train} rows), validation = 2009 ({valCount}),
+          sealed test = 2010 ({testCount}). Every metric on this page is an
           out-of-time estimate — the honest kind for a model asked to predict
           the future. Champions were chosen on validation only.
         </Row>
@@ -55,10 +61,10 @@ export default function Methodology({ info }) {
           0.5 default.
         </Row>
         <Row index="04" title="What the numbers mean">
-          The regression champion predicts log1p(SalePrice); its ~80% price
-          range is built from validation residual quantiles — a nominal
-          interval, not a 95% confidence interval. The classification target
-          is simulated (ADR-3), so those metrics grade consistency with a
+          The regression champion predicts log-transformed sale price; its
+          ~80% price range is built from validation residual quantiles — a
+          nominal interval, not a 95% confidence interval. The classification
+          target is simulated, so those metrics grade consistency with a
           seeded simulation, not the real market.
         </Row>
       </div>

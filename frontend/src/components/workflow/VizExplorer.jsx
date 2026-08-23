@@ -1,30 +1,37 @@
 /**
- * VizExplorer (WORKFLOW §6.3-05) — the stage-05 chart explorer. Controls
- * (chart type, dtype-filtered column pickers, per-chart options) → debounced
- * fetch of the §3.7 pre-aggregated payloads → render. NO client-side
- * aggregation: the browser receives plot-ready bins, points, box stats,
- * correlation matrices, and category aggregates.
+ * VizExplorer (WORKFLOW §6.3-05, rebuilt to blueprint §8.6) — stage 05's
+ * sectioned visualization page, modelled on the reference visualize page:
+ * a sticky .viz-nav anchor strip, then four sections separated by hairline
+ * dividers.
  *
- * Renderers:
- *   histogram   → recharts BarChart (pre-binned counts)
- *   scatter     → recharts ScatterChart (seeded-downsampled points; a
- *                 "Sampled" badge + caption when the server thinned the rows)
- *   box         → hand-built horizontal box-and-whisker (composed bars) on a
- *                 shared scale, groups sorted by median desc (≤ 25)
- *   correlation → pure-CSS labelled heat grid, cells colored from the matrix
- *   category    → recharts horizontal BarChart of the aggregate per group
+ *   #distributions  2-col grid of histogram cards — compact .chart-select
+ *                   field switcher in each card head, "μ x · σ y" chart-tag,
+ *                   200px amber histograms plus a smoothed trend line
+ *                   derived from the server's bin counts.
+ *   #correlations   server correlation matrix rendered as the reference's
+ *                   CSS-grid heat map (raised→amber lerp, t = v**0.7, rotated
+ *                   column labels, 0 ▬ +1 legend), then a wide
+ *                   "Influence on {target}" horizontal-bar card.
+ *   #categories     per-category median-{target} bar cards — vertical up to
+ *                   12 groups, wide horizontal bars beyond that.
+ *   #relationships  wide scatter card with x/y .chart-select controls.
  *
- * Every chart: role="img" + one-sentence aria-label + ChartA11yTable of the
- * exact plotted values (UX §7.8); recharts animation honors
- * prefers-reduced-motion (useReducedMotion); captions are mono and name n and
- * sampling. Invalid combinations surface the endpoint's 422 message as the
- * designed error state; empty payloads get a designed empty state.
+ * Every number comes from the §3.7 pre-aggregated endpoints (api/workflow.js
+ * `viz`) — there is no client-side aggregation; the one derived series is
+ * the histogram trend line, Gaussian-smoothed from the returned bin counts.
+ * Column lists come from GET …/features; the σ in the chart-tags from
+ * GET …/stats. Server-side column validation (422) surfaces as inline
+ * alerts with retry; empty payloads get designed empty states; every chart
+ * keeps role="img" + aria-label + ChartA11yTable (UX §7.8) and honors
+ * prefers-reduced-motion (useReducedMotion + getAnimationProps).
  */
 import { Fragment, useCallback, useEffect, useMemo, useState } from 'react'
 import {
   Bar,
   BarChart,
   CartesianGrid,
+  ComposedChart,
+  Line,
   ResponsiveContainer,
   Scatter,
   ScatterChart,
@@ -32,48 +39,43 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
-import { getFeatures, viz } from '../../api/workflow'
+import { getFeatures, getStats, viz } from '../../api/workflow'
 import { useApi } from '../../api/useApi'
 import { formatNumber, formatUsd } from '../../format'
 import { EmptyState, ErrorState, PanelSkeleton } from '../StateView'
 import ChartA11yTable from '../shared/ChartA11yTable'
 import useReducedMotion from '../shared/useReducedMotion'
+import {
+  CHART_PALETTE,
+  axisTick,
+  cartesianGridProps,
+  getAnimationProps,
+  tooltipProps,
+  xAxisProps,
+  yAxisProps,
+} from '../shared/chartTheme'
 
-const TOOLTIP_STYLE = { borderRadius: 8, border: '1px solid #dfe4e6', fontSize: 13 }
-const TICK_STYLE = { fontSize: 11, fill: '#5d6d7d' }
+const HISTOGRAM_SLOTS = 6
+const HISTOGRAM_BINS = 30
+const CATEGORY_SLOTS = 4
+const CORRELATION_TOP = 20
+const SCATTER_MAX_POINTS = 1500
+const WIDE_CATEGORY_GROUPS = 12
 
-const KINDS = [
-  { id: 'histogram', label: 'Distribution' },
-  { id: 'scatter', label: 'Scatter' },
-  { id: 'box', label: 'Box by group' },
-  { id: 'correlation', label: 'Correlation' },
-  { id: 'category', label: 'Category comparison' },
-]
+/** Ames-shaped defaults, always filtered against the live column lists — an
+    uploaded dataset without them simply falls through to its own columns. */
+const PREFERRED_HISTOGRAMS = ['SalePrice', 'GrLivArea', 'LotArea', 'YearBuilt', 'GarageArea', 'TotalBsmtSF']
+const PREFERRED_CATEGORIES = ['Neighborhood', 'BldgType', 'HouseStyle', 'SaleCondition']
+const PREFERRED_SCATTER_X = 'GrLivArea'
 
-/** Entry defaults (§6.3-05): SalePrice histogram; GrLivArea×SalePrice scatter; correlation top-20. */
-const DEFAULT_PARAMS = {
-  histogram: { column: 'SalePrice', bins: 30 },
-  scatter: { x: 'GrLivArea', y: 'SalePrice', maxPoints: 1500 },
-  box: { column: 'SalePrice', by: 'Neighborhood' },
-  correlation: { target: 'SalePrice', top: 20 },
-  category: { column: 'Neighborhood', agg: 'median' },
-}
-
-/** Payload shape guards — a stale payload of another kind never renders under the new one. */
-const PAYLOAD_MATCH = {
-  histogram: (p) => Array.isArray(p?.bins),
-  scatter: (p) => Array.isArray(p?.points),
-  box: (p) => Array.isArray(p?.groups) && typeof p?.by === 'string',
-  correlation: (p) => Array.isArray(p?.features) && Array.isArray(p?.matrix),
-  category: (p) => Array.isArray(p?.groups) && typeof p?.agg === 'string',
-}
-
-const isEmptyPayload = {
-  histogram: (p) => p.bins.length === 0,
-  scatter: (p) => p.points.length === 0,
-  box: (p) => p.groups.length === 0,
-  correlation: (p) => p.features.length === 0,
-  category: (p) => p.groups.length === 0,
+/** Preferred columns first (when present), then dataset order, capped at `count`. */
+function pickColumns(preferred, available, count) {
+  const picks = preferred.filter((name) => available.includes(name))
+  for (const name of available) {
+    if (picks.length >= count) break
+    if (!picks.includes(name)) picks.push(name)
+  }
+  return picks.slice(0, count)
 }
 
 /* ------------------------------------------------------------------------- */
@@ -100,47 +102,171 @@ const fmtFull = (name) => (value) => {
   return Number.isInteger(n) ? formatNumber(n, 0) : formatNumber(n, 2)
 }
 
+/** Compact stat for the "μ x · σ y" chart-tags ("181k" / "1,971" / "7.7"). */
+function fmtShort(value) {
+  const n = Number(value)
+  if (!Number.isFinite(n)) return '—'
+  const abs = Math.abs(n)
+  if (abs >= 10000) return `${formatNumber(Math.round(n / 1000), 0)}k`
+  if (abs >= 1000) return formatNumber(Math.round(n), 0)
+  if (abs >= 10) return formatNumber(n, 0)
+  return formatNumber(n, 1)
+}
+
 /* ------------------------------------------------------------------------- */
-/* Chart renderers                                                            */
+/* Derived series — the only client-side math, straight from the payload     */
+/* ------------------------------------------------------------------------- */
+
+/** Gaussian-smoothed bin counts — the reference's KDE overlay, computable
+    from the histogram payload alone (bandwidth in bin units). */
+function smoothCounts(counts, bandwidth = 1.6) {
+  const radius = Math.max(1, Math.round(bandwidth * 3))
+  const kernel = []
+  for (let k = -radius; k <= radius; k += 1) kernel.push(Math.exp(-0.5 * (k / bandwidth) ** 2))
+  return counts.map((_, i) => {
+    let acc = 0
+    let weight = 0
+    for (let k = -radius; k <= radius; k += 1) {
+      const j = i + k
+      if (j < 0 || j >= counts.length) continue
+      acc += counts[j] * kernel[k + radius]
+      weight += kernel[k + radius]
+    }
+    return weight > 0 ? acc / weight : 0
+  })
+}
+
+/** Reference heat cell (eda.py `_heat_color`): raised → amber lerp,
+    t = clamp(v, 0, 1) ** 0.7; negative values stay at the base tone.
+    The ramp splits at HEAT_FLIP into two segments collinear with that
+    line: the smooth lerp crosses a fill-luminance band (~0.15–0.20)
+    that neither ink token carries at WCAG 4.5:1, so the step sits at
+    the ink flip and reads as the strong-correlation threshold band.
+    Measured vs fill: ≥4.57:1 below the flip, ≥4.56:1 at/above it. */
+const HEAT_BASE = [27, 31, 28]
+const HEAT_TOP = [217, 166, 63]
+/* Segment endpoints on the lerp line — the brightest fill --text still
+   carries at ≥4.5:1, and the darkest fill --accent-ink still carries. */
+const HEAT_MID_LOW = [130, 105, 47]
+const HEAT_MID_HIGH = [154, 121, 51]
+const HEAT_FLIP = 0.6 // on t (v ≈ +0.48) — fill segment and ink flip together
+
+function heatColor(value) {
+  const v = Number(value)
+  if (!Number.isFinite(v)) return CHART_PALETTE.tooltipBg
+  const t = Math.max(0, Math.min(1, v)) ** 0.7
+  const [from, to, u] =
+    t < HEAT_FLIP
+      ? [HEAT_BASE, HEAT_MID_LOW, t / HEAT_FLIP]
+      : [HEAT_MID_HIGH, HEAT_TOP, (t - HEAT_FLIP) / (1 - HEAT_FLIP)]
+  const [r, g, b] = from.map((base, i) => Math.round(base + (to[i] - base) * u))
+  return `rgb(${r}, ${g}, ${b})`
+}
+
+/** Ink text once the amber fill is bright enough to carry it — the same
+    HEAT_FLIP threshold as the ramp split above. */
+function heatStrong(value) {
+  const v = Number(value)
+  return Number.isFinite(v) && Math.max(0, Math.min(1, v)) ** 0.7 >= HEAT_FLIP
+}
+
+/* ------------------------------------------------------------------------- */
+/* Shared section chrome                                                      */
+/* ------------------------------------------------------------------------- */
+
+function VizSection({ id, title, note, sub, className = '', children }) {
+  return (
+    <section className={`viz-section${className ? ` ${className}` : ''}`} id={id}>
+      <div className="section-head">
+        <h2 className="section-title">{title}</h2>
+        {note && <span className="section-note">{note}</span>}
+      </div>
+      {sub && <p className="section-sub">{sub}</p>}
+      {children}
+    </section>
+  )
+}
+
+/** Compact in-card alert for server column-validation (422) failures. */
+function CardError({ error, onRetry }) {
+  return (
+    <div className="alert alert-error wfv-card-alert" role="alert">
+      <span className="alert-title">This combination can&rsquo;t be plotted</span>
+      {error?.message ?? 'Could not load the chart.'}
+      <span className="alert-actions">
+        <button type="button" className="btn btn-secondary btn-sm" onClick={onRetry}>
+          Try again
+        </button>
+      </span>
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------------- */
+/* #distributions — histogram cards                                           */
 /* ------------------------------------------------------------------------- */
 
 function HistogramChart({ payload, reduced }) {
   const { column, bins, stats } = payload
-  const rows = bins.map((bin, index) => ({ i: index, count: bin.count }))
   const total = bins.reduce((sum, bin) => sum + (bin.count ?? 0), 0)
+  const smoothed = smoothCounts(bins.map((bin) => bin.count ?? 0))
+  const rows = bins.map((bin, index) => ({
+    i: index,
+    count: bin.count ?? 0,
+    smooth: smoothed[index],
+  }))
   const axis = fmtAxis(column)
   const full = fmtFull(column)
   return (
     <>
       <div
-        className="wfe-viz-chart"
+        className="chart-wrap"
         role="img"
-        aria-label={`Histogram of ${column} — ${bins.length} bins over ${formatNumber(total, 0)} rows`}
+        aria-label={`Histogram of ${column} — ${bins.length} bins over ${formatNumber(total, 0)} rows, mean ${full(stats?.mean)}, median ${full(stats?.median)}`}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={rows} margin={{ top: 8, right: 16, bottom: 4, left: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#dfe4e6" />
+          <ComposedChart
+            data={rows}
+            margin={{ top: 8, right: 8, bottom: 0, left: 0 }}
+            barCategoryGap="8%"
+          >
+            <CartesianGrid {...cartesianGridProps} />
             <XAxis
               dataKey="i"
-              tickFormatter={(i) => (bins[i] ? axis(bins[i].x0) : '')}
-              tick={TICK_STYLE}
+              {...xAxisProps}
               interval="preserveStartEnd"
               minTickGap={42}
+              tickFormatter={(i) => (bins[i] ? axis(bins[i].x0) : '')}
             />
-            <YAxis allowDecimals={false} width={48} tick={TICK_STYLE} />
+            <YAxis {...yAxisProps} allowDecimals={false} />
             <Tooltip
+              {...tooltipProps}
               labelFormatter={(i) => (bins[i] ? `${full(bins[i].x0)} – ${full(bins[i].x1)}` : '')}
-              formatter={(value) => [`${formatNumber(value, 0)} rows`, column]}
-              contentStyle={TOOLTIP_STYLE}
+              formatter={(value, name) =>
+                name === 'smooth'
+                  ? [formatNumber(value, 1), 'smoothed']
+                  : [`${formatNumber(value, 0)} rows`, column]
+              }
             />
             <Bar
               dataKey="count"
-              fill="#0e7a6d"
-              radius={[2, 2, 0, 0]}
-              isAnimationActive={!reduced}
-              animationDuration={450}
+              name="count"
+              fill={CHART_PALETTE.accentFill}
+              stroke={CHART_PALETTE.accent}
+              strokeWidth={1}
+              radius={[1.5, 1.5, 0, 0]}
+              {...getAnimationProps(reduced)}
             />
-          </BarChart>
+            <Line
+              dataKey="smooth"
+              name="smooth"
+              type="monotone"
+              stroke={CHART_PALETTE.text}
+              strokeWidth={1.5}
+              dot={false}
+              {...getAnimationProps(reduced)}
+            />
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
       <ChartA11yTable
@@ -154,210 +280,186 @@ function HistogramChart({ payload, reduced }) {
           count: bin.count,
         }))}
       />
-      <p className="wfe-viz-caption mono">
-        {formatNumber(total, 0)} rows · {formatNumber(bins.length, 0)} bins · mean{' '}
-        {full(stats?.mean)} · median {full(stats?.median)}
-      </p>
     </>
   )
 }
 
-function ScatterPlot({ payload, reduced }) {
-  const { x, y, points, n_total: nTotal, sampled } = payload
-  const rows = points.map(([px, py]) => ({ x: px, y: py }))
-  const fullX = fmtFull(x)
-  const fullY = fmtFull(y)
+function HistogramCard({ datasetId, initialColumn, columns, stdOf, reduced }) {
+  const [column, setColumn] = useState(initialColumn)
+  useEffect(() => setColumn(initialColumn), [initialColumn])
+
+  const fetcher = useCallback(
+    (signal) => viz.histogram(datasetId, { column, bins: HISTOGRAM_BINS }, signal),
+    [datasetId, column],
+  )
+  const { data, loading, error, reload } = useApi(fetcher)
+  const payload = data && Array.isArray(data.bins) ? data : null
+  const empty = payload !== null && payload.bins.length === 0
+  const std = payload ? stdOf(payload.column) : null
+
   return (
-    <>
+    <div className="chart-card">
+      <div className="chart-card-head wfv-card-head">
+        <select
+          className="chart-select"
+          value={column}
+          onChange={(event) => setColumn(event.target.value)}
+          aria-label="Histogram field"
+        >
+          {columns.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+        {payload && (
+          <span className="chart-tag">
+            μ {fmtShort(payload.stats?.mean)}
+            {std !== null && std !== undefined && ` · σ ${fmtShort(std)}`}
+          </span>
+        )}
+      </div>
+      {loading && !payload && <PanelSkeleton height={168} />}
+      {!loading && error && !payload && <CardError error={error} onRetry={reload} />}
+      {payload && !empty && (
+        <div className={loading ? 'wfv-dim' : undefined}>
+          <HistogramChart payload={payload} reduced={reduced} />
+        </div>
+      )}
+      {payload && empty && (
+        <EmptyState
+          kicker="Nothing to plot"
+          title="No rows for this field"
+          detail="The server aggregated zero rows — pick a different field above."
+        />
+      )}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------------- */
+/* #correlations — CSS-grid heat map + influence bars                         */
+/* ------------------------------------------------------------------------- */
+
+function InfluenceChart({ payload, reduced }) {
+  const targetIndex = payload.features.indexOf(payload.target)
+  const rows = payload.features
+    .map((feature, i) => {
+      const raw = payload.matrix?.[i]?.[targetIndex]
+      return { feature, r: raw === null || raw === undefined ? NaN : Number(raw) }
+    })
+    .filter((row) => row.feature !== payload.target && Number.isFinite(row.r))
+  if (targetIndex < 0 || rows.length === 0) return null
+  const minR = rows.reduce((min, row) => Math.min(min, row.r), 0)
+  return (
+    <div className="chart-card chart-card-wide mt-36">
+      <div className="chart-card-head">
+        <h3>Influence on {payload.target}</h3>
+        <span className="chart-tag">correlation coefficient</span>
+      </div>
       <div
-        className="wfe-viz-chart"
+        className="chart-wrap-tall"
         role="img"
-        aria-label={`Scatter plot of ${y} against ${x} — ${formatNumber(rows.length, 0)} points`}
+        aria-label={`Horizontal bar chart of each field's correlation with ${payload.target}`}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 8, right: 16, bottom: 4, left: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#dfe4e6" />
+          <BarChart
+            layout="vertical"
+            data={rows}
+            margin={{ top: 4, right: 24, bottom: 4, left: 8 }}
+            barCategoryGap="24%"
+          >
+            <CartesianGrid {...cartesianGridProps} vertical horizontal={false} />
             <XAxis
               type="number"
-              dataKey="x"
-              name={x}
-              domain={['auto', 'auto']}
-              tickFormatter={fmtAxis(x)}
-              tick={TICK_STYLE}
-              label={{ value: x, position: 'insideBottomRight', offset: -2, ...TICK_STYLE }}
+              domain={[minR < 0 ? -1 : 0, 1]}
+              {...xAxisProps}
+              tickFormatter={(v) => Number(v).toFixed(1)}
             />
-            <YAxis
-              type="number"
-              dataKey="y"
-              name={y}
-              domain={['auto', 'auto']}
-              tickFormatter={fmtAxis(y)}
-              width={56}
-              tick={TICK_STYLE}
-            />
+            <YAxis type="category" dataKey="feature" {...yAxisProps} width={140} />
             <Tooltip
-              cursor={{ strokeDasharray: '3 3' }}
-              formatter={(value, name) => [name === x ? fullX(value) : fullY(value), name]}
-              contentStyle={TOOLTIP_STYLE}
+              {...tooltipProps}
+              formatter={(value) => [Number(value).toFixed(3), `r with ${payload.target}`]}
             />
-            <Scatter
-              data={rows}
-              fill="#0e7a6d"
-              fillOpacity={0.5}
-              isAnimationActive={!reduced}
-              animationDuration={450}
+            <Bar
+              dataKey="r"
+              name={payload.target}
+              fill={CHART_PALETTE.accentFill}
+              stroke={CHART_PALETTE.accent}
+              strokeWidth={1}
+              radius={[0, 2, 2, 0]}
+              maxBarSize={18}
+              {...getAnimationProps(reduced)}
             />
-          </ScatterChart>
+          </BarChart>
         </ResponsiveContainer>
       </div>
       <ChartA11yTable
-        caption={`Scatter points: ${x} versus ${y}`}
+        caption={`Correlation of each numeric field with ${payload.target}`}
         columns={[
-          { key: 'x', label: x, format: fullX },
-          { key: 'y', label: y, format: fullY },
+          { key: 'feature', label: 'Field' },
+          { key: 'r', label: `r with ${payload.target}`, format: (v) => Number(v).toFixed(4) },
         ]}
         rows={rows}
       />
-      <p className="wfe-viz-caption mono">
-        {sampled && <span className="badge badge-warn wfe-sampled">Sampled</span>}
-        {sampled
-          ? `${formatNumber(rows.length, 0)} of ${formatNumber(nTotal, 0)} rows — deterministic seeded sample`
-          : `${formatNumber(nTotal, 0)} rows — every row plotted`}
+      <p className="wfv-caption">
+        {formatNumber(rows.length, 0)} fields · ranked by |r| · bars left of zero are negative
+        correlations
       </p>
-    </>
+    </div>
   )
 }
 
-/** Horizontal box-and-whisker on a shared scale (composed bars, not recharts). */
-function BoxPlot({ payload }) {
-  const { column, by, groups } = payload
-  const lo = Math.min(...groups.map((g) => g.min))
-  const hi = Math.max(...groups.map((g) => g.max))
-  const span = hi - lo || 1
-  const pct = (v) => ((v - lo) / span) * 100
-  const full = fmtFull(column)
-  return (
-    <>
-      <div
-        className="wfe-box"
-        role="img"
-        aria-label={`Box plot of ${column} by ${by} — ${groups.length} groups sorted by median`}
-      >
-        {groups.map((g) => (
-          <div
-            className="wfe-box-row"
-            key={g.value}
-            title={`${g.value} — n ${formatNumber(g.n, 0)} · min ${full(g.min)} · Q1 ${full(g.q1)} · median ${full(g.median)} · Q3 ${full(g.q3)} · max ${full(g.max)}`}
-          >
-            <span className="wfe-box-label">
-              <span className="wfe-box-value">{g.value}</span>
-              <span className="wfe-box-n mono">n={formatNumber(g.n, 0)}</span>
-            </span>
-            <span className="wfe-box-track">
-              <span
-                className="wfe-box-whisker"
-                style={{ left: `${pct(g.min)}%`, width: `${pct(g.max) - pct(g.min)}%` }}
-              />
-              <span className="wfe-box-cap" style={{ left: `${pct(g.min)}%` }} />
-              <span className="wfe-box-cap" style={{ left: `${pct(g.max)}%` }} />
-              <span
-                className="wfe-box-iqr"
-                style={{
-                  left: `${pct(g.q1)}%`,
-                  width: `${Math.max(0.6, pct(g.q3) - pct(g.q1))}%`,
-                }}
-              />
-              <span className="wfe-box-median" style={{ left: `${pct(g.median)}%` }} />
-            </span>
-            <span className="wfe-box-med mono">{full(g.median)}</span>
-          </div>
-        ))}
-        <div className="wfe-box-row wfe-box-scalerow" aria-hidden="true">
-          <span className="wfe-box-label" />
-          <span className="wfe-box-scale mono">
-            <span>{full(lo)}</span>
-            <span>{full(hi)}</span>
-          </span>
-          <span className="wfe-box-med" />
-        </div>
-      </div>
-      <ChartA11yTable
-        caption={`${column} distribution by ${by}: five-number summary per group`}
-        columns={[
-          { key: 'value', label: by },
-          { key: 'n', label: 'Rows', format: (v) => formatNumber(v, 0) },
-          { key: 'min', label: 'Min', format: full },
-          { key: 'q1', label: 'Q1', format: full },
-          { key: 'median', label: 'Median', format: full },
-          { key: 'q3', label: 'Q3', format: full },
-          { key: 'max', label: 'Max', format: full },
-        ]}
-        rows={groups}
-      />
-      <p className="wfe-viz-caption mono">
-        {formatNumber(groups.length, 0)} groups · sorted by median · box = Q1–Q3, whiskers min–max
-      </p>
-    </>
-  )
-}
-
-/** Pure-CSS labelled heat grid; cells colored from the matrix (teal +, red −). */
-function CorrelationGrid({ payload }) {
+function CorrelationMatrix({ payload }) {
   const { target, features, matrix } = payload
   const n = features.length
   return (
     <>
       <div
-        className="wfe-heat"
+        className="heat-scroll"
         role="img"
-        aria-label={`Correlation matrix of the top ${Math.max(0, n - 1)} numeric features by absolute correlation with ${target}`}
+        aria-label={`Correlation matrix of the top ${Math.max(0, n - 1)} numeric fields by absolute correlation with ${target}`}
       >
-        <div
-          className="wfe-heat-grid"
-          style={{ gridTemplateColumns: `minmax(96px, max-content) repeat(${n}, minmax(46px, 1fr))` }}
-        >
-          <div className="wfe-heat-corner" aria-hidden="true" />
-          {features.map((feature) => (
-            <div key={`h-${feature}`} className="wfe-heat-colhead" title={feature}>
-              <span>{feature}</span>
+        <div className="heat-grid" style={{ '--n': n }}>
+          <div aria-hidden="true" />
+          {features.map((col) => (
+            <div key={`h-${col}`} className="heat-col-label">
+              <span>{col}</span>
             </div>
           ))}
           {features.map((row, i) => (
             <Fragment key={row}>
-              <div className="wfe-heat-rowhead" title={row}>
+              <div className="heat-row-label" title={row}>
                 {row}
               </div>
               {features.map((col, j) => {
-                const value = Number(matrix?.[i]?.[j])
-                const valid = Number.isFinite(value)
-                const alpha = valid ? 0.06 + 0.84 * Math.abs(value) : 0
-                const background = !valid
-                  ? 'var(--raised)'
-                  : value >= 0
-                    ? `rgba(14,122,109,${alpha.toFixed(3)})`
-                    : `rgba(182,70,60,${alpha.toFixed(3)})`
+                const raw = matrix?.[i]?.[j]
+                const value = Number(raw)
+                const valid = raw !== null && raw !== undefined && Number.isFinite(value)
                 return (
                   <div
                     key={`${row}__${col}`}
-                    className="wfe-heat-cell"
-                    style={{
-                      background,
-                      color: valid && Math.abs(value) > 0.55 ? '#ffffff' : 'var(--text)',
-                    }}
-                    title={`${row} × ${col}: ${valid ? value.toFixed(3) : 'n/a'}`}
+                    className={`heat-cell${valid && heatStrong(value) ? ' heat-strong' : ''}`}
+                    style={{ background: valid ? heatColor(value) : CHART_PALETTE.tooltipBg }}
+                    title={valid ? `${row} × ${col}: ${value.toFixed(2)}` : undefined}
                   >
-                    {valid ? value.toFixed(2) : '—'}
+                    {valid ? value.toFixed(2) : ''}
                   </div>
                 )
               })}
             </Fragment>
           ))}
         </div>
+        <div className="heat-legend">
+          <span>0</span>
+          <span className="heat-legend-bar" aria-hidden="true" />
+          <span>+1</span>
+        </div>
       </div>
       <ChartA11yTable
-        caption={`Pearson correlation matrix — top ${Math.max(0, n - 1)} numeric features plus ${target}`}
+        caption={`Pearson correlation matrix — top ${Math.max(0, n - 1)} numeric fields plus ${target}`}
         columns={[
-          { key: 'feature', label: 'Feature' },
+          { key: 'feature', label: 'Field' },
           ...features.map((feature) => ({
             key: feature,
             label: feature,
@@ -372,54 +474,119 @@ function CorrelationGrid({ payload }) {
           return record
         })}
       />
-      <p className="wfe-viz-caption mono">
-        top {formatNumber(Math.max(0, n - 1), 0)} numeric features by |correlation with {target}|
-        · Pearson r · teal positive / red negative
-      </p>
     </>
   )
 }
 
+function CorrelationSection({ datasetId, target, reduced }) {
+  const fetcher = useCallback(
+    (signal) => viz.correlation(datasetId, { target, top: CORRELATION_TOP }, signal),
+    [datasetId, target],
+  )
+  const { data, loading, error, reload } = useApi(fetcher)
+  const payload = data && Array.isArray(data.features) && Array.isArray(data.matrix) ? data : null
+  const empty = payload !== null && payload.features.length === 0
+
+  return (
+    <VizSection
+      id="correlations"
+      title="Correlation matrix — numeric fields"
+      note={payload ? `top ${Math.max(0, payload.features.length - 1)} by |r| with ${payload.target} · pearson` : undefined}
+      sub="Computed server-side from the raw active dataset, pairwise-complete. Cells colour from 0 (base) toward +1 (amber); negative correlations stay at the base tone — hover any cell for the signed value."
+    >
+      {loading && !payload && <PanelSkeleton height={320} />}
+      {!loading && error && !payload && (
+        <ErrorState error={error} onRetry={reload} title="Couldn't load the correlation matrix" />
+      )}
+      {payload && !empty && (
+        <div className={loading ? 'wfv-dim' : undefined}>
+          <CorrelationMatrix payload={payload} />
+          <InfluenceChart payload={payload} reduced={reduced} />
+        </div>
+      )}
+      {payload && empty && (
+        <EmptyState
+          kicker="Nothing to plot"
+          title="No numeric fields to correlate"
+          detail="The server found no numeric columns with a defined correlation — the dataset needs at least two varying numeric fields."
+        />
+      )}
+    </VizSection>
+  )
+}
+
+/* ------------------------------------------------------------------------- */
+/* #categories — median-{target} bar cards                                    */
+/* ------------------------------------------------------------------------- */
+
 function CategoryChart({ payload, reduced }) {
-  const { column, target, agg, groups } = payload
-  const money = agg !== 'count' && isMoneyCol(target)
+  const { column, target, groups } = payload
   const rows = groups.map((g) => ({ value: g.value, n: g.n, agg: g.agg_value }))
-  const height = Math.max(220, Math.min(600, groups.length * 26 + 48))
-  const aggLabel = agg === 'count' ? 'row count' : `${agg} of ${target}`
-  const formatAgg = (v) =>
-    !Number.isFinite(Number(v)) ? '—' : money ? formatUsd(v) : formatNumber(v, 0)
+  const wide = groups.length > WIDE_CATEGORY_GROUPS
+  const full = fmtFull(target)
+  const aggLabel = `median ${target}`
+  const formatAgg = (v) => (!Number.isFinite(Number(v)) ? '—' : full(v))
+  const axis = fmtAxis(target)
   return (
     <>
       <div
-        className="wfe-viz-chart wfe-viz-chart--auto"
-        style={{ height }}
+        className={wide ? 'wfv-chart-auto' : 'chart-wrap'}
+        style={wide ? { height: Math.max(220, Math.min(600, groups.length * 26 + 48)) } : undefined}
         role="img"
-        aria-label={`Bar chart of ${aggLabel} per ${column} — ${groups.length} groups`}
+        aria-label={`Bar chart of ${aggLabel} per ${column} — ${groups.length} groups, sorted descending`}
       >
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart layout="vertical" data={rows} margin={{ top: 4, right: 24, bottom: 4, left: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#dfe4e6" />
-            <XAxis
-              type="number"
-              tickFormatter={agg === 'count' ? (v) => formatNumber(v, 0) : fmtAxis(target)}
-              tick={TICK_STYLE}
-            />
-            <YAxis type="category" dataKey="value" width={112} tick={TICK_STYLE} />
-            <Tooltip
-              formatter={(value, _name, item) => [
-                `${formatAgg(value)} · n=${formatNumber(item?.payload?.n, 0)}`,
-                aggLabel,
-              ]}
-              contentStyle={TOOLTIP_STYLE}
-            />
-            <Bar
-              dataKey="agg"
-              fill="#0e7a6d"
-              radius={[0, 2, 2, 0]}
-              isAnimationActive={!reduced}
-              animationDuration={450}
-            />
-          </BarChart>
+          {wide ? (
+            <BarChart
+              layout="vertical"
+              data={rows}
+              margin={{ top: 4, right: 24, bottom: 4, left: 8 }}
+              barCategoryGap="24%"
+            >
+              <CartesianGrid {...cartesianGridProps} vertical horizontal={false} />
+              <XAxis type="number" {...xAxisProps} tickFormatter={axis} />
+              <YAxis type="category" dataKey="value" {...yAxisProps} width={112} />
+              <Tooltip
+                {...tooltipProps}
+                formatter={(value, _name, item) => [
+                  `${formatAgg(value)} · n=${formatNumber(item?.payload?.n, 0)}`,
+                  aggLabel,
+                ]}
+              />
+              <Bar
+                dataKey="agg"
+                name={aggLabel}
+                fill={CHART_PALETTE.accentFill}
+                stroke={CHART_PALETTE.accent}
+                strokeWidth={1}
+                radius={[0, 1.5, 1.5, 0]}
+                {...getAnimationProps(reduced)}
+              />
+            </BarChart>
+          ) : (
+            <BarChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }} barCategoryGap="24%">
+              <CartesianGrid {...cartesianGridProps} />
+              <XAxis dataKey="value" {...xAxisProps} minTickGap={8} />
+              <YAxis {...yAxisProps} tickFormatter={axis} />
+              <Tooltip
+                {...tooltipProps}
+                formatter={(value, _name, item) => [
+                  `${formatAgg(value)} · n=${formatNumber(item?.payload?.n, 0)}`,
+                  aggLabel,
+                ]}
+              />
+              <Bar
+                dataKey="agg"
+                name={aggLabel}
+                fill={CHART_PALETTE.accentFill}
+                stroke={CHART_PALETTE.accent}
+                strokeWidth={1}
+                radius={[1.5, 1.5, 0, 0]}
+                maxBarSize={56}
+                {...getAnimationProps(reduced)}
+              />
+            </BarChart>
+          )}
         </ResponsiveContainer>
       </div>
       <ChartA11yTable
@@ -431,44 +598,183 @@ function CategoryChart({ payload, reduced }) {
         ]}
         rows={rows}
       />
-      <p className="wfe-viz-caption mono">
-        {formatNumber(groups.length, 0)} groups · {aggLabel} · sorted descending
+    </>
+  )
+}
+
+function CategoryCard({ datasetId, column, target, reduced }) {
+  const fetcher = useCallback(
+    (signal) => viz.category(datasetId, { column, agg: 'median', target }, signal),
+    [datasetId, column, target],
+  )
+  const { data, loading, error, reload } = useApi(fetcher)
+  const payload = data && Array.isArray(data.groups) ? data : null
+  const empty = payload !== null && payload.groups.length === 0
+  const wide = payload !== null && payload.groups.length > WIDE_CATEGORY_GROUPS
+
+  return (
+    <div className={`chart-card${wide ? ' chart-card-wide' : ''}`}>
+      <div className="chart-card-head">
+        <h3>{column}</h3>
+        <span className="chart-tag">
+          median {target}
+          {payload && !empty && ` · ${formatNumber(payload.groups.length, 0)} groups`}
+        </span>
+      </div>
+      {loading && !payload && <PanelSkeleton height={168} />}
+      {!loading && error && !payload && <CardError error={error} onRetry={reload} />}
+      {payload && !empty && (
+        <div className={loading ? 'wfv-dim' : undefined}>
+          <CategoryChart payload={payload} reduced={reduced} />
+        </div>
+      )}
+      {payload && empty && (
+        <EmptyState
+          kicker="Nothing to plot"
+          title="No groups for this field"
+          detail="The server aggregated zero rows for this column."
+        />
+      )}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------------------------- */
+/* #relationships — scatter with x/y switchers                                */
+/* ------------------------------------------------------------------------- */
+
+function ScatterPlot({ payload, reduced }) {
+  const { x, y, points, n_total: nTotal, sampled } = payload
+  const rows = points.map(([px, py]) => ({ x: px, y: py }))
+  const fullX = fmtFull(x)
+  const fullY = fmtFull(y)
+  return (
+    <>
+      <div
+        className="chart-wrap-tall"
+        role="img"
+        aria-label={`Scatter plot of ${y} against ${x} — ${formatNumber(rows.length, 0)} points`}
+      >
+        <ResponsiveContainer width="100%" height="100%">
+          <ScatterChart margin={{ top: 8, right: 16, bottom: 4, left: 8 }}>
+            <CartesianGrid {...cartesianGridProps} />
+            <XAxis
+              type="number"
+              dataKey="x"
+              name={x}
+              domain={['auto', 'auto']}
+              {...xAxisProps}
+              tickFormatter={fmtAxis(x)}
+              label={{ value: x, position: 'insideBottomRight', offset: -2, ...axisTick }}
+            />
+            <YAxis
+              type="number"
+              dataKey="y"
+              name={y}
+              domain={['auto', 'auto']}
+              {...yAxisProps}
+              width={56}
+              tickFormatter={fmtAxis(y)}
+            />
+            <Tooltip
+              {...tooltipProps}
+              cursor={{ strokeDasharray: '3 3', stroke: CHART_PALETTE.tooltipBorder }}
+              formatter={(value, name) => [name === x ? fullX(value) : fullY(value), name]}
+            />
+            <Scatter
+              data={rows}
+              fill={CHART_PALETTE.accent}
+              fillOpacity={0.55}
+              {...getAnimationProps(reduced)}
+            />
+          </ScatterChart>
+        </ResponsiveContainer>
+      </div>
+      <ChartA11yTable
+        caption={`Scatter points: ${x} versus ${y}`}
+        columns={[
+          { key: 'x', label: x, format: fullX },
+          { key: 'y', label: y, format: fullY },
+        ]}
+        rows={rows}
+      />
+      <p className="wfv-caption">
+        {sampled && <span className="badge badge-warn">Sampled</span>}
+        {sampled
+          ? `${formatNumber(rows.length, 0)} of ${formatNumber(nTotal, 0)} rows — deterministic seeded sample`
+          : `${formatNumber(nTotal, 0)} rows — every row plotted`}
       </p>
     </>
   )
 }
 
-const RENDERERS = {
-  histogram: HistogramChart,
-  scatter: ScatterPlot,
-  box: BoxPlot,
-  correlation: CorrelationGrid,
-  category: CategoryChart,
-}
+function ScatterCard({ datasetId, columns, initialX, initialY, reduced }) {
+  const [x, setX] = useState(initialX)
+  const [y, setY] = useState(initialY)
+  useEffect(() => {
+    setX(initialX)
+    setY(initialY)
+  }, [initialX, initialY])
 
-/* ------------------------------------------------------------------------- */
-/* Controls                                                                   */
-/* ------------------------------------------------------------------------- */
+  const fetcher = useCallback(
+    (signal) => viz.scatter(datasetId, { x, y, maxPoints: SCATTER_MAX_POINTS }, signal),
+    [datasetId, x, y],
+  )
+  const { data, loading, error, reload } = useApi(fetcher)
+  const payload = data && Array.isArray(data.points) ? data : null
+  const empty = payload !== null && payload.points.length === 0
 
-function SelectField({ id, label, value, onChange, options, disabled = false }) {
   return (
-    <div className="field">
-      <label className="field-label" htmlFor={id}>
-        {label}
-      </label>
-      <select
-        id={id}
-        className="select"
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-      >
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
+    <div className="chart-card chart-card-wide">
+      <div className="chart-card-head wfv-card-head">
+        <h3>{payload ? `${payload.y} × ${payload.x}` : `${y} × ${x}`}</h3>
+        <div className="wfv-head-controls">
+          <span className="wfv-axis-label" aria-hidden="true">
+            x
+          </span>
+          <select
+            className="chart-select"
+            value={x}
+            onChange={(event) => setX(event.target.value)}
+            aria-label="X axis field"
+          >
+            {columns.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <span className="wfv-axis-label" aria-hidden="true">
+            y
+          </span>
+          <select
+            className="chart-select"
+            value={y}
+            onChange={(event) => setY(event.target.value)}
+            aria-label="Y axis field"
+          >
+            {columns.map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {loading && !payload && <PanelSkeleton height={280} />}
+      {!loading && error && !payload && <CardError error={error} onRetry={reload} />}
+      {payload && !empty && (
+        <div className={loading ? 'wfv-dim' : undefined}>
+          <ScatterPlot payload={payload} reduced={reduced} />
+        </div>
+      )}
+      {payload && empty && (
+        <EmptyState
+          kicker="Nothing to plot"
+          title="No rows for this pair"
+          detail="Every row is missing one of the two fields — pick a different pair above."
+        />
+      )}
     </div>
   )
 }
@@ -477,12 +783,33 @@ function SelectField({ id, label, value, onChange, options, disabled = false }) 
 /* Explorer                                                                   */
 /* ------------------------------------------------------------------------- */
 
+function ExplorerSkeleton() {
+  return (
+    <div aria-hidden="true">
+      <div className="viz-section">
+        <div className="chart-grid">
+          <PanelSkeleton height={224} />
+          <PanelSkeleton height={224} />
+        </div>
+      </div>
+      <div className="viz-section">
+        <PanelSkeleton height={320} />
+      </div>
+    </div>
+  )
+}
+
 export default function VizExplorer({ datasetId }) {
   const reduced = useReducedMotion()
 
   // Column lists (dtype-filtered pickers) come from the features endpoint.
   const fetchFeatures = useCallback((signal) => getFeatures(datasetId, signal), [datasetId])
   const features = useApi(fetchFeatures)
+  // Full-column σ for the "μ x · σ y" tags (the histogram payload carries
+  // min/max/mean/median only); tags degrade to μ-only while it is in flight.
+  const fetchStats = useCallback((signal) => getStats(datasetId, signal), [datasetId])
+  const stats = useApi(fetchStats)
+
   const numericCols = useMemo(
     () =>
       (features.data?.raw_features ?? [])
@@ -498,223 +825,148 @@ export default function VizExplorer({ datasetId }) {
     [features.data],
   )
 
-  const [kind, setKind] = useState('histogram')
-  const [paramsByKind, setParamsByKind] = useState(DEFAULT_PARAMS)
-  const setParam = (key, value) =>
-    setParamsByKind((prev) => ({ ...prev, [kind]: { ...prev[kind], [key]: value } }))
+  // The regression target drives correlation + category aggregation; fall
+  // back to the last numeric column when the dataset has no SalePrice.
+  const target = useMemo(() => {
+    const regression = features.data?.targets?.regression
+    if (regression?.available && typeof regression.column === 'string') return regression.column
+    return numericCols.length > 0 ? numericCols[numericCols.length - 1] : null
+  }, [features.data, numericCols])
 
-  // Debounce control changes (§6.3-05: fetch on change, debounced).
-  const request = useMemo(
-    () => ({ kind, params: paramsByKind[kind] }),
-    [kind, paramsByKind],
-  )
-  const [debounced, setDebounced] = useState(request)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(request), 300)
-    return () => clearTimeout(timer)
-  }, [request])
+  const stdMap = useMemo(() => {
+    if (stats.loading || !Array.isArray(stats.data?.numeric)) return null
+    const map = new Map()
+    for (const row of stats.data.numeric) {
+      if (row?.name) map.set(row.name, row.std ?? null)
+    }
+    return map
+  }, [stats.loading, stats.data])
+  const stdOf = useCallback((name) => (stdMap ? (stdMap.get(name) ?? null) : null), [stdMap])
 
-  const fetchViz = useCallback(
-    (signal) => viz[debounced.kind](datasetId, debounced.params, signal),
-    [datasetId, debounced],
-  )
-  const { data, loading, error, reload } = useApi(fetchViz)
+  // Gate on loading (not just first paint): a dataset switch keeps the old
+  // columns in `features.data` while the new list is in flight — rendering
+  // those against the new dataset would flash spurious 422 alerts.
+  if (features.loading) return <ExplorerSkeleton />
+  if (features.error) {
+    return (
+      <section className="viz-section">
+        <ErrorState
+          error={features.error}
+          onRetry={features.reload}
+          title="Couldn't load the column lists"
+        />
+      </section>
+    )
+  }
 
-  // A payload only renders under the kind it belongs to — on a kind switch the
-  // previous chart dims behind the "Updating…" state instead of misrendering.
-  const matched = data != null && PAYLOAD_MATCH[debounced.kind]?.(data)
-  const pickersReady = numericCols.length > 0 && categoricalCols.length > 0
-  const withCurrent = (cols, current) =>
-    cols.includes(current) ? cols : [current, ...cols]
-
-  const Renderer = RENDERERS[debounced.kind]
-  const empty = matched && isEmptyPayload[debounced.kind]?.(data)
+  const histogramPicks = pickColumns(PREFERRED_HISTOGRAMS, numericCols, HISTOGRAM_SLOTS)
+  const categoryPicks = pickColumns(PREFERRED_CATEGORIES, categoricalCols, CATEGORY_SLOTS)
+  const scatterX = numericCols.includes(PREFERRED_SCATTER_X) ? PREFERRED_SCATTER_X : numericCols[0]
+  const scatterY =
+    target && target !== scatterX ? target : (numericCols.find((c) => c !== scatterX) ?? scatterX)
 
   return (
-    <div className="panel">
-      <div className="panel-body">
-        <div className="wfe-viz-controls">
-          <div className="wfe-seg" role="group" aria-label="Chart type">
-            {KINDS.map((k) => (
-              <button
-                key={k.id}
-                type="button"
-                className={`wfe-seg-btn${debounced.kind === k.id ? ' wfe-seg-btn--on' : ''}`}
-                aria-pressed={debounced.kind === k.id}
-                onClick={() => setKind(k.id)}
-              >
-                {k.label}
-              </button>
+    <>
+      <nav className="viz-nav" aria-label="Chart sections">
+        <a href="#distributions">Distributions</a>
+        <a href="#correlations">Correlations</a>
+        <a href="#categories">Categories</a>
+        <a href="#relationships">Relationships</a>
+      </nav>
+
+      <VizSection
+        id="distributions"
+        title="Distributions — key numeric fields"
+        note={`${HISTOGRAM_BINS} bins · trend smoothed from bin counts`}
+      >
+        {histogramPicks.length === 0 ? (
+          <EmptyState
+            kicker="Nothing to plot"
+            title="No numeric fields"
+            detail="This dataset reported no numeric columns, so there are no distributions to draw."
+          />
+        ) : (
+          <div className="chart-grid">
+            {histogramPicks.map((column) => (
+              <HistogramCard
+                key={column}
+                datasetId={datasetId}
+                initialColumn={column}
+                columns={numericCols}
+                stdOf={stdOf}
+                reduced={reduced}
+              />
             ))}
           </div>
-
-          {debounced.kind === 'histogram' && (
-            <>
-              <SelectField
-                id="wfe-viz-hist-col"
-                label="Numeric column"
-                value={paramsByKind.histogram.column}
-                onChange={(v) => setParam('column', v)}
-                options={withCurrent(numericCols, paramsByKind.histogram.column)}
-                disabled={!pickersReady}
-              />
-              <div className="field">
-                <label className="field-label" htmlFor="wfe-viz-hist-bins">
-                  Bins <span className="field-unit">{paramsByKind.histogram.bins}</span>
-                </label>
-                <input
-                  id="wfe-viz-hist-bins"
-                  type="range"
-                  min={10}
-                  max={60}
-                  step={5}
-                  value={paramsByKind.histogram.bins}
-                  onChange={(event) => setParam('bins', Number(event.target.value))}
-                />
-              </div>
-            </>
-          )}
-
-          {debounced.kind === 'scatter' && (
-            <>
-              <SelectField
-                id="wfe-viz-scatter-x"
-                label="X — numeric"
-                value={paramsByKind.scatter.x}
-                onChange={(v) => setParam('x', v)}
-                options={withCurrent(numericCols, paramsByKind.scatter.x)}
-                disabled={!pickersReady}
-              />
-              <SelectField
-                id="wfe-viz-scatter-y"
-                label="Y — numeric"
-                value={paramsByKind.scatter.y}
-                onChange={(v) => setParam('y', v)}
-                options={withCurrent(numericCols, paramsByKind.scatter.y)}
-                disabled={!pickersReady}
-              />
-              <SelectField
-                id="wfe-viz-scatter-max"
-                label="Max points"
-                value={String(paramsByKind.scatter.maxPoints)}
-                onChange={(v) => setParam('maxPoints', Number(v))}
-                options={['500', '1500', '3000', '10000']}
-              />
-            </>
-          )}
-
-          {debounced.kind === 'box' && (
-            <>
-              <SelectField
-                id="wfe-viz-box-col"
-                label="Numeric column"
-                value={paramsByKind.box.column}
-                onChange={(v) => setParam('column', v)}
-                options={withCurrent(numericCols, paramsByKind.box.column)}
-                disabled={!pickersReady}
-              />
-              <SelectField
-                id="wfe-viz-box-by"
-                label="Group by — categorical"
-                value={paramsByKind.box.by}
-                onChange={(v) => setParam('by', v)}
-                options={withCurrent(categoricalCols, paramsByKind.box.by)}
-                disabled={!pickersReady}
-              />
-            </>
-          )}
-
-          {debounced.kind === 'correlation' && (
-            <>
-              <SelectField
-                id="wfe-viz-corr-target"
-                label="Target — numeric"
-                value={paramsByKind.correlation.target}
-                onChange={(v) => setParam('target', v)}
-                options={withCurrent(numericCols, paramsByKind.correlation.target)}
-                disabled={!pickersReady}
-              />
-              <SelectField
-                id="wfe-viz-corr-top"
-                label="Top features"
-                value={String(paramsByKind.correlation.top)}
-                onChange={(v) => setParam('top', Number(v))}
-                options={['5', '10', '15', '20', '30']}
-              />
-            </>
-          )}
-
-          {debounced.kind === 'category' && (
-            <>
-              <SelectField
-                id="wfe-viz-cat-col"
-                label="Categorical column"
-                value={paramsByKind.category.column}
-                onChange={(v) => setParam('column', v)}
-                options={withCurrent(categoricalCols, paramsByKind.category.column)}
-                disabled={!pickersReady}
-              />
-              <SelectField
-                id="wfe-viz-cat-agg"
-                label="Aggregate"
-                value={paramsByKind.category.agg}
-                onChange={(v) => setParam('agg', v)}
-                options={['median', 'mean', 'count']}
-              />
-            </>
-          )}
-
-          {loading && matched && (
-            <span className="wfe-viz-updating" role="status">
-              <span className="spinner spinner--dark" aria-hidden="true" /> Updating…
-            </span>
-          )}
-        </div>
-
-        {features.error && (
-          <p className="note">
-            Column lists failed to load — the chart below keeps its current selection.{' '}
-            <button type="button" className="wfe-retry-link" onClick={features.reload}>
-              Retry column lists
-            </button>
-          </p>
         )}
+      </VizSection>
 
-        <div aria-busy={loading && matched ? 'true' : undefined}>
-          {loading && !matched && <PanelSkeleton height={300} />}
-          {!loading && error && !matched && (
-            <ErrorState
-              error={error}
-              onRetry={reload}
-              title="This combination can't be plotted"
-            />
-          )}
-          {matched && error && (
-            <div className="alert alert-error wfe-viz-stale" role="alert">
-              <span className="alert-title">Refresh failed</span>
-              {error?.message ?? 'Could not refresh the chart.'} The previous chart is still
-              shown.
-              <span className="alert-actions">
-                <button type="button" className="btn btn-secondary btn-sm" onClick={reload}>
-                  Try again
-                </button>
-              </span>
-            </div>
-          )}
-          {matched && !empty && (
-            <div className={loading ? 'wfe-viz-dim' : undefined}>
-              <Renderer payload={data} reduced={reduced} />
-            </div>
-          )}
-          {matched && empty && (
-            <EmptyState
-              kicker="Nothing to plot"
-              title="This combination has no rows"
-              detail="The server aggregated zero rows for these choices — pick a different column or grouping."
-            />
-          )}
-        </div>
-      </div>
-    </div>
+      <hr className="divider" aria-hidden="true" />
+
+      {target ? (
+        <CorrelationSection datasetId={datasetId} target={target} reduced={reduced} />
+      ) : (
+        <VizSection id="correlations" title="Correlation matrix — numeric fields">
+          <EmptyState
+            kicker="Nothing to plot"
+            title="No numeric fields to correlate"
+            detail="The dataset needs at least two numeric columns before a correlation matrix can be computed."
+          />
+        </VizSection>
+      )}
+
+      <hr className="divider" aria-hidden="true" />
+
+      <VizSection
+        id="categories"
+        title={target ? `Categories — median ${target} per group` : 'Categories'}
+        note="sorted descending · n per group in the tooltip"
+      >
+        {categoryPicks.length === 0 || !target ? (
+          <EmptyState
+            kicker="Nothing to plot"
+            title="No categorical fields"
+            detail="This dataset reported no categorical columns to group by."
+          />
+        ) : (
+          <div className="chart-grid">
+            {categoryPicks.map((column) => (
+              <CategoryCard
+                key={column}
+                datasetId={datasetId}
+                column={column}
+                target={target}
+                reduced={reduced}
+              />
+            ))}
+          </div>
+        )}
+      </VizSection>
+
+      <hr className="divider" aria-hidden="true" />
+
+      <VizSection
+        id="relationships"
+        title="Relationships — numeric pairs"
+        note={`seeded sample beyond ${formatNumber(SCATTER_MAX_POINTS, 0)} rows`}
+        className="pb-56"
+      >
+        {numericCols.length === 0 ? (
+          <EmptyState
+            kicker="Nothing to plot"
+            title="No numeric fields"
+            detail="This dataset reported no numeric columns, so there is no pair to scatter."
+          />
+        ) : (
+          <ScatterCard
+            datasetId={datasetId}
+            columns={numericCols}
+            initialX={scatterX}
+            initialY={scatterY}
+            reduced={reduced}
+          />
+        )}
+      </VizSection>
+    </>
   )
 }

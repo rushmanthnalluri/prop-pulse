@@ -8,15 +8,21 @@
  * covered by backend/tests/test_workflow_*.
  *
  * Journey (serial — later stages depend on earlier state):
- *   1.  stage 01: stepper ×12, bundled ames profile (1,460 × 81), upload a
- *       120-row Ames-schema slice (built from data/raw/ames/train.csv — the
- *       WF-B4 ames_slice pattern) → validation ok → auto-selected
- *   2.  stage 02: three target cards (SIMULATED on classification), 81-row
- *       sortable feature table (aria-sort flips, PoolQC tops missing-% desc)
- *   3.  stage 03: SalePrice spotlight $180,921 / $163,000 + 38/43 tables
- *   4.  stage 04: 7,829 missing cells, 19 %-bars, LotFrontage treatment
- *   5.  stage 05: histogram 30 bins (a11y table sums to 1,460), scatter 1,460
- *       unsampled, correlation 441 cells with OverallQual first
+ *   1.  stage 01: sidebar stepper ×9 (01 current), bundled ames profile
+ *       (1,460 × 81), upload a 120-row Ames-schema slice (built from
+ *       data/raw/ames/train.csv — the WF-B4 ames_slice pattern) → select →
+ *       "Upload dataset" → validation ok → auto-selected
+ *   2.  stage 02: three objective cards (SIMULATED on classification), the
+ *       field registry's payload-derived groups (Identifier 1 / Numeric 36 /
+ *       Categorical 41 / Targets 1 / Excluded 2 / Pipeline-derived 15)
+ *   3.  stage 03: 38-row numeric table, SalePrice badged target with the real
+ *       mean/median + the verbatim log1p note
+ *   4.  stage 04: 7,829 missing cells of 118,260, 19 affected columns, the
+ *       missing-cells chart + a11y table, LotFrontage's neighbourhood-median
+ *       treatment
+ *   5.  stage 05: sectioned explorer — SalePrice histogram 30 bins (a11y
+ *       table sums to 1,460), GrLivArea×SalePrice scatter 1,460 unsampled,
+ *       correlation heat map 441 cells with OverallQual first
  *   6.  stage 06: preprocess run → 945/338/175 + leakage note + SIMULATED step
  *   7.  stage 07: REAL linear regression job (≤120 s poll) → done, comparison
  *       table shows the real RMSLE + best chip
@@ -28,6 +34,17 @@
  *   11. gating: the fresh upload (no jobs) locks 08/09 with stage-07 CTAs and
  *       shows can_train=false on 07; locks survive a reload (server truth)
  *   12. responsive: every stage at 390 px has no horizontal overflow
+ *
+ * Design-system rebuild (2026-08-09) reconciliation — the in-shell
+ * `.wf-stepper`/`.wf-step` strip is GONE: stage nav is the sidebar
+ * `.pipeline-stepper` (`li.is-active > a[data-stage]` with `.step-num` /
+ * `.step-label`; only the nine pipeline stages 01–09), with the `.stage-pager`
+ * prev/next links at every stage foot. Upload is now select-then-submit
+ * (`.upload-drop` picks, "Upload dataset" POSTs; `.wfu-report--ok` /
+ * `.wfu-check`). Stage 02's sortable/expandable toolbar table is gone by
+ * design (blueprint §5 bans client-side sorting/filtering) — the registry
+ * renders as `.registry-group` families. Stages 03–05 dropped their old
+ * `.wfe-*` hooks for the reference table/chart language.
  *
  * Full-suite note: audit-blackbox's last test respawns :8200 but dashboard's
  * last test kills it again and does not respawn — this file sorts last, so
@@ -129,6 +146,10 @@ async function ensureBackend() {
 
 const ames = (slug) => `/workflow/${slug}?dataset=ames`
 
+/** The sidebar pipeline stepper (Layout) — stages 01–09 deep-link into /workflow/*. */
+const sidebarStages = (page) =>
+  page.locator('.pipeline-stepper[aria-label="ML pipeline stages"] a[data-stage]')
+
 test.describe('guided workflow — full journey (WF-F5)', () => {
   test.describe.configure({ mode: 'serial' })
 
@@ -164,12 +185,13 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     const w = watch(page)
     await page.goto('/workflow')
     await expect(page).toHaveURL(/\/workflow\/01-upload\?dataset=ames/)
+    await expect(page).toHaveTitle('Upload Dataset · PropPulse')
 
-    // Stepper: 12 stages, 01 current, none locked on a fresh session's ames.
-    await expect(page.locator('.wf-stepper .wf-step')).toHaveCount(12)
+    // Sidebar stepper: the nine pipeline stages, 01 current.
+    await expect(sidebarStages(page)).toHaveCount(9)
     await expect(
-      page.locator('.wf-step[data-stage="01-upload"][aria-current="step"]'),
-    ).toBeVisible()
+      page.locator('.pipeline-stepper li.is-active > a[data-stage="01-upload"]'),
+    ).toHaveAttribute('aria-current', 'page')
 
     // Bundled dataset is active out of the box, with its real shape.
     await expect(page.locator('.wf-ds-chip-name')).toHaveText('Ames Housing (bundled)')
@@ -179,17 +201,18 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     await expect(profileMetric('Rows').locator('.metric-value')).toHaveText('1,460')
     await expect(profileMetric('Columns').locator('.metric-value')).toHaveText('81')
 
-    // Upload the crafted 120-row Ames-schema slice through the dropzone input.
-    await page.locator('.wfe-drop').waitFor()
+    // Select the crafted 120-row Ames-schema slice in the dropzone, then submit.
+    await page.locator('.upload-drop').waitFor()
     await page
-      .locator('.wfe-drop-input')
+      .locator('.upload-drop input[type="file"]')
       .setInputFiles({ name: journey.uploadName, mimeType: 'text/csv', buffer: buildUploadCsv() })
+    await page.getByRole('button', { name: 'Upload dataset' }).click()
 
     // Validation report: ok (cardinality warnings are non-fatal) + per-check rows.
-    const report = page.locator('.wfe-report--ok')
+    const report = page.locator('.wfu-report--ok')
     await expect(report).toBeVisible()
     await expect(report.locator('.alert-title')).toContainText(/validation passed/i)
-    expect(await report.locator('.wfe-check').count()).toBeGreaterThanOrEqual(9)
+    expect(await report.locator('.wfu-check').count()).toBeGreaterThanOrEqual(9)
 
     // Success auto-selects the upload (chip + URL) and offers the stage-02 CTA.
     await expect(page.locator('.wf-ds-chip-name')).toHaveText(journey.uploadName)
@@ -197,7 +220,7 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     journey.uploadId = /dataset=(ds_[0-9a-f]{8})/.exec(page.url())?.[1] ?? null
     expect(journey.uploadId).not.toBeNull()
     await expect(
-      page.getByRole('button', { name: 'Continue to Analyse features →' }),
+      page.getByRole('button', { name: 'Continue to Analyze Features →' }),
     ).toBeVisible()
     // The profile card refetched for the upload: its real shape (120 × 81).
     await expect(profileMetric('Rows').locator('.metric-value')).toHaveText('120')
@@ -205,124 +228,158 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     expectClean(w)
   })
 
-  test('02 features: target cards, 81-row sortable table, inspect expansion', async ({ page }) => {
+  test('02 features: objective cards + payload-derived registry groups', async ({ page }) => {
     const w = watch(page)
     await page.goto(ames('02-features'))
+    await expect(page).toHaveTitle('Analyze Features · PropPulse')
+
+    // Headline counts straight from raw_features (38 numeric incl. Id + target).
+    const metric = (label) =>
+      page.locator('.metric', { has: page.locator('.metric-label', { hasText: label }) })
+    await expect(metric('Fields per record').locator('.metric-value')).toHaveText('81')
+    await expect(metric('Numeric').locator('.metric-value')).toHaveText('38')
+    await expect(metric('Categorical').locator('.metric-value')).toHaveText('43')
 
     // Three objective cards; classification carries the structural SIMULATED badge.
-    await expect(page.locator('.wfe-target')).toHaveCount(3)
-    const classification = page.locator('.wfe-target', { hasText: 'Sale speed prediction' })
+    await expect(page.locator('.wff-target')).toHaveCount(3)
+    const classification = page.locator('.wff-target', { hasText: 'Sale speed prediction' })
     await expect(classification.locator('.wf-sim-badge')).toBeVisible()
     await expect(
-      page.locator('.wfe-target', { hasText: 'Neighbourhood segmentation' }),
+      page.locator('.wff-target', { hasText: 'Neighborhood segmentation' }),
     ).toBeVisible()
 
-    // 81 raw-feature rows; sort by Missing % flips aria-sort and re-orders.
-    await expect(page.locator('.wfe-chev')).toHaveCount(81)
-    await expect(page.locator('.wfe-toolbar-count')).toHaveText('81 columns')
-    const missingHeader = page.getByRole('columnheader', { name: 'Missing %' })
-    await expect(missingHeader).toHaveAttribute('aria-sort', 'none')
-    await missingHeader.getByRole('button').click()
-    await expect(missingHeader).toHaveAttribute('aria-sort', 'ascending')
-    await missingHeader.getByRole('button').click()
-    await expect(missingHeader).toHaveAttribute('aria-sort', 'descending')
-    // Highest missing share first: PoolQC (99.5%) tops the descending order.
-    await expect(page.locator('.wfe-feat-name').first()).toHaveText('PoolQC')
+    // The registry groups derive from the payload's own role+dtype facets
+    // (live ames: 81 raw + 15 pipeline-derived). No client sorting exists.
+    await expect(page.locator('.registry-group')).toHaveCount(6)
+    const groupCount = (id) => page.locator(`#group-${id} .registry-count`)
+    await expect(groupCount('identifier')).toHaveText('1 field')
+    await expect(groupCount('numeric-inputs')).toHaveText('36 fields')
+    await expect(groupCount('categorical-inputs')).toHaveText('41 fields')
+    await expect(groupCount('targets')).toHaveText('1 field')
+    await expect(groupCount('excluded')).toHaveText('2 fields')
+    await expect(groupCount('pipeline-derived')).toHaveText('15 fields')
 
-    // Row expansion renders the per-feature inspect panel.
-    await page.locator('.wfe-chev').first().click()
-    await expect(page.locator('.wfe-feat-detail')).toBeVisible()
-
-    // Pipeline-derived features accordion (15 items on ames).
-    await expect(page.locator('.wfe-pipe-item')).toHaveCount(15)
+    // The target row carries the amber role tag; the identifier group names Id.
+    await expect(
+      page.locator('#group-targets .role-tag.role-target'),
+    ).toHaveText('target')
+    await expect(page.locator('#group-identifier tbody tr')).toHaveText(/Id/)
 
     expectClean(w)
   })
 
-  test('03 stats: SalePrice spotlight + 38 numeric / 43 categorical rows', async ({ page }) => {
+  test('03 stats: 38-row numeric table, SalePrice target row + log1p note', async ({ page }) => {
     const w = watch(page)
     await page.goto(ames('03-stats'))
+    await expect(page).toHaveTitle('Descriptive Statistics · PropPulse')
 
-    // Target spotlight — the real train.csv numbers.
-    const spot = page.locator('.wfe-spot')
-    await expect(spot).toBeVisible()
-    await expect(spot.locator('.wfe-spot-stat', { hasText: 'Mean' })).toContainText('$180,921')
-    await expect(spot.locator('.wfe-spot-stat', { hasText: 'Median' })).toContainText('$163,000')
-    await expect(spot.locator('.wfe-spot-note')).toContainText('log1p')
+    // The real payload shape lands in the mono page-meta line.
+    await expect(page.locator('.page-meta')).toContainText('38 numeric · 43 categorical')
 
-    const numericSection = page.locator('.section', {
-      has: page.locator('.section-title', { hasText: 'Numeric columns' }),
-    })
-    await expect(numericSection.locator('tbody tr')).toHaveCount(38)
-    // The SalePrice row is badged as the target.
+    // One sticky table over every numeric field of the raw file.
+    const rows = page.locator('.table-scroll.scroll-68 tbody tr')
+    await expect(rows).toHaveCount(38)
+
+    // The SalePrice row is badged as the target and carries the real numbers.
+    const salePrice = rows.filter({ hasText: 'SalePrice' })
+    await expect(salePrice.locator('.badge')).toHaveText('target')
+    await expect(salePrice).toContainText('180,921') // mean
+    await expect(salePrice).toContainText('163,000') // median (50%)
+
+    // The payload's verbatim target note + the stage-04 cross-link.
+    await expect(page.locator('.wfs-notes')).toContainText('log1p')
     await expect(
-      numericSection.locator('tbody tr', { hasText: 'SalePrice' }).locator('.badge'),
-    ).toHaveText(/target/i)
-
-    const categoricalSection = page.locator('.section', {
-      has: page.locator('.section-title', { hasText: 'Categorical columns' }),
-    })
-    await expect(categoricalSection.locator('tbody tr')).toHaveCount(43)
+      page.locator('.wfs-notes a[href*="/workflow/04-missing"]'),
+    ).toBeVisible()
 
     expectClean(w)
   })
 
-  test('04 missing: 7,829 cells, 19 treatment bars, LotFrontage policy', async ({ page }) => {
+  test('04 missing: 7,829 of 118,260 cells, 19 columns, LotFrontage policy', async ({ page }) => {
     const w = watch(page)
     await page.goto(ames('04-missing'))
+    await expect(page).toHaveTitle('Missing Values · PropPulse')
 
     const metric = (label) =>
       page.locator('.metric', { has: page.locator('.metric-label', { hasText: label }) })
+    await expect(metric('Total cells').locator('.metric-value')).toHaveText('118,260')
     await expect(metric('Missing cells').locator('.metric-value')).toHaveText('7,829')
+    await expect(metric('Complete').locator('.metric-value')).toHaveText('93.4%')
     await expect(metric('Columns affected').locator('.metric-value')).toHaveText('19')
 
-    // One %-bar per affected column.
-    await expect(page.locator('.wfe-mbar-fill')).toHaveCount(19)
+    // The danger bar chart covers every gapped column (19), role="img" + a11y
+    // table whose Missing cells sum to the payload's total.
+    await expect(
+      page.getByRole('img', { name: 'Bar chart of missing cells per column — 19 columns with gaps' }),
+    ).toBeVisible()
+    const missingTable = page.locator('.visually-hidden table', {
+      hasText: 'Missing cells per column (raw file)',
+    })
+    await expect(missingTable.locator('tbody tr')).toHaveCount(19)
+    const cellSum = await missingTable.locator('tbody tr').evaluateAll((trs) =>
+      trs.reduce(
+        (sum, row) => sum + Number(row.children[1]?.textContent?.replace(/[^\d]/g, '') ?? 0),
+        0,
+      ),
+    )
+    expect(cellSum).toBe(7829)
 
-    // LotFrontage names the real neighbourhood-median treatment (C5).
+    // Repair table: LotFrontage names the real neighbourhood-median treatment
+    // (C5), and every affected column gets a coverage bar "x% → 100%".
     await expect(
       page.locator('tbody tr', { hasText: 'LotFrontage' }).locator('.badge'),
-    ).toHaveText(/neighbou?rhood median/i)
+    ).toHaveText('Neighborhood median')
+    await expect(page.locator('.coverage-fill')).toHaveCount(19)
 
     expectClean(w)
   })
 
-  test('05 viz: histogram, unsampled scatter, correlation grid', async ({ page }) => {
+  test('05 viz: histogram grid, unsampled scatter, correlation heat map', async ({ page }) => {
     const w = watch(page)
     await page.goto(ames('05-viz'))
+    await expect(page).toHaveTitle('Visualization · PropPulse')
 
-    // Default: SalePrice histogram, 30 bars.
-    const chart = page.locator('.wfe-viz-chart')
-    await expect(chart).toBeVisible()
-    await expect(chart.locator('.recharts-bar-rectangle')).toHaveCount(30)
-    const caption = page.locator('.wfe-viz-caption')
-    await expect(caption).toContainText('1,460 rows · 30 bins')
+    // The sticky section nav anchors the four real sections.
+    await expect(page.locator('.viz-nav a')).toHaveCount(4)
 
+    // #distributions — six histogram cards; the SalePrice card leads and plots
+    // 30 bins over the full 1,460 rows.
+    const distributions = page.locator('#distributions')
+    await expect(distributions.locator('.chart-card')).toHaveCount(6)
+    await expect(
+      page.getByRole('img', { name: /^Histogram of SalePrice — 30 bins over 1,460 rows/ }),
+    ).toBeVisible()
     // The a11y table carries the exact plotted bins; its counts sum to 1,460.
     const histTable = page.locator('.visually-hidden table', {
-      hasText: 'Histogram of SalePrice',
+      hasText: 'Histogram of SalePrice: bin ranges and row counts',
     })
-    const binSum = await histTable.locator('tbody tr').evaluateAll((rows) =>
-      rows.reduce(
+    const binSum = await histTable.locator('tbody tr').evaluateAll((trs) =>
+      trs.reduce(
         (sum, row) => sum + Number(row.children[1]?.textContent?.replace(/[^\d]/g, '') ?? 0),
         0,
       ),
     )
     expect(binSum).toBe(1460)
 
-    // Scatter: GrLivArea × SalePrice — every row plotted, no Sampled badge.
-    await page.getByRole('button', { name: 'Scatter', exact: true }).click()
-    await expect(caption).toContainText('1,460 rows — every row plotted')
-    await expect(page.locator('.wfe-sampled')).toHaveCount(0)
+    // #relationships — GrLivArea × SalePrice: every row plotted, no Sampled badge.
+    const relationships = page.locator('#relationships')
+    await expect(
+      relationships.getByRole('img', {
+        name: 'Scatter plot of SalePrice against GrLivArea — 1,460 points',
+      }),
+    ).toBeVisible()
+    await expect(relationships.locator('.wfv-caption')).toContainText(
+      '1,460 rows — every row plotted',
+    )
+    await expect(relationships.locator('.badge', { hasText: 'Sampled' })).toHaveCount(0)
     const scatterTable = page.locator('.visually-hidden table', {
       hasText: 'Scatter points: GrLivArea versus SalePrice',
     })
     await expect(scatterTable.locator('tbody tr')).toHaveCount(1460)
 
-    // Correlation top-20: 21×21 = 441 cells, OverallQual leads by |corr|.
-    await page.getByRole('button', { name: 'Correlation', exact: true }).click()
-    await expect(page.locator('.wfe-heat-cell')).toHaveCount(441)
-    await expect(page.locator('.wfe-heat-rowhead').first()).toHaveText('OverallQual')
+    // #correlations — top-20 + target: 21×21 = 441 cells, OverallQual leads by |r|.
+    await expect(page.locator('.heat-cell')).toHaveCount(441)
+    await expect(page.locator('.heat-row-label').first()).toHaveText('OverallQual')
 
     expectClean(w)
   })
@@ -330,6 +387,7 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
   test('06 preprocess: run → 945/338/175 + leakage note + SIMULATED step', async ({ page }) => {
     const w = watch(page)
     await page.goto(ames('06-preprocess'))
+    await expect(page).toHaveTitle('Preprocessing · PropPulse')
 
     await page.getByRole('button', { name: 'Run preprocessing' }).click()
 
@@ -356,6 +414,7 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     test.setTimeout(180_000) // real fit in a subprocess — bounded 120 s poll + UI
     const w = watch(page)
     await page.goto(ames('07-train'))
+    await expect(page).toHaveTitle('Model Training · PropPulse')
 
     // The classification tab itself carries the SIMULATED badge.
     await expect(
@@ -395,12 +454,23 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     )
 
     // Comparison table (auto-refreshed on the terminal toast): linear row with
-    // the real validation RMSLE, carrying the best chip (sole candidate).
+    // the real validation RMSLE. The "best" chip follows the server's rule
+    // (lowest validation RMSLE) and lands on whichever candidate wins — a
+    // previously-persisted candidate may out-score linear (ridge did on the
+    // 2026-08-11 regression), so assert the chip on the server-flagged best row
+    // via the trace-truth models API rather than assuming a clean sandbox.
     const table = page.locator('.wf-comparison')
     const row = table.locator('tbody tr', { hasText: 'linear' })
     await expect(row).toBeVisible()
-    await expect(row.locator('td').nth(1)).toHaveText(formatMetric(journey.rmsle))
-    await expect(row.locator('.wf-best-chip')).toHaveText('best')
+    await expect(row.locator('td').nth(1)).toHaveText(formatMetric(journey.rmsle, 4))
+    const models = await (
+      await fetch(`${BACKEND}/workflow/datasets/ames/models?objective=regression`)
+    ).json()
+    const bestName = models.candidates.find((c) => c.best)?.name
+    expect(bestName).toBeTruthy() // exactly one server-flagged best for regression
+    await expect(
+      table.locator('tbody tr', { hasText: bestName }).locator('.wf-best-chip'),
+    ).toHaveText('best')
     // Sort control works on RMSLE (aria-sort flips ascending).
     const rmsleHeader = table.getByRole('columnheader', { name: 'RMSLE' })
     await rmsleHeader.getByRole('button').click()
@@ -415,6 +485,7 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
   test('08 evaluate: regression workspace from the persisted val predictions', async ({ page }) => {
     const w = watch(page)
     await page.goto(`${ames('08-evaluate')}&job=${journey.jobId}`)
+    await expect(page).toHaveTitle('Model Evaluation · PropPulse')
 
     // Deep-linked job + first done candidate are auto-selected.
     await expect(page.locator('#wf-eval-job')).toHaveValue(journey.jobId)
@@ -471,6 +542,7 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     const before = logLines()
 
     await page.goto(ames('09-predict'))
+    await expect(page).toHaveTitle('Predict Property · PropPulse')
     await expect(page.locator('#wf-sb-job')).toBeVisible()
     await expect(page.locator('#wf-sb-candidate')).toHaveValue('linear')
 
@@ -494,7 +566,7 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
         `via ${json.model?.candidate} of ${json.model?.job_id}`,
     )
 
-    // The result card renders exactly the API number + the verbatim label.
+    // The result panel renders exactly the API number + the verbatim label.
     await expect(page.locator('.wf-result-price')).toHaveText(formatUsd(json.estimated_price))
     await expect(page.locator('.wf-result-range')).toContainText(
       formatUsd(json.price_range.low),
@@ -517,7 +589,7 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     await marketCta.click()
     await expect(page).toHaveURL(/\/market$/)
     await expect(
-      page.getByRole('heading', { name: 'Four micro-markets, twenty-five neighborhoods' }),
+      page.getByRole('heading', { name: 'Micro-markets across Ames' }),
     ).toBeVisible()
 
     await page.goto(ames('11-explain'))
@@ -554,10 +626,6 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
       'href',
       `/workflow/07-train?dataset=${journey.uploadId}`,
     )
-    // The stepper marks 08 locked (button, not a link).
-    await expect(
-      page.locator('.wf-step[data-stage="08-evaluate"][data-status="locked"]'),
-    ).toBeVisible()
 
     // Server truth wins: a reload keeps the lock (no localStorage unlocking).
     await page.reload()
@@ -593,15 +661,15 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     await page.setViewportSize({ width: 390, height: 844 })
 
     // Per-stage content anchors (post-journey state: ames prepared + job done).
+    // 08-evaluate is asserted by its own dedicated test below.
     const anchors = {
-      '01-upload': '.wfe-drop',
-      '02-features': '.wfe-target',
-      '03-stats': '.wfe-spot',
-      '04-missing': '.wfe-mbar-fill',
-      '05-viz': '.wfe-viz-chart',
+      '01-upload': '.upload-drop',
+      '02-features': '.wff-target',
+      '03-stats': '.table-scroll.scroll-68 tbody tr',
+      '04-missing': '.coverage-fill',
+      '05-viz': '.heat-cell',
       '06-preprocess': '.wf-flow-node',
       '07-train': '.wf-candidates',
-      '08-evaluate': '.chart-card',
       '09-predict': '#wf-sb-job',
       '10-market': '.wf-bridge-cta',
       '11-explain': '.wf-bridge-cta',
@@ -621,41 +689,69 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     expectClean(w)
   })
 
-  test('audit m2: a synchronous double-fire on the dropzone uploads once', async ({ page }) => {
+  // Regression guard: at 390px the regression importance card on stage 08 once
+  // overflowed the viewport by exactly 70px — the card head's `.chart-tag`
+  // ("native importance, aggregated to base features — not SHAP") was
+  // `white-space: nowrap` via the global rule and the wrap override covered
+  // only `.eval-duo .chart-tag`. Fixed in workflow-evaluate.css (card-head
+  // children may shrink, the tag wraps). This test pins the fix.
+  test('responsive: 08-evaluate at 390px — no horizontal overflow', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto(ames('08-evaluate'))
+    await page.locator('.chart-card').first().waitFor()
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    )
+    expect(overflow).toBeLessThanOrEqual(1)
+  })
+
+  // Regression guard: a synchronous double-submit of the stage-01 upload form
+  // once fired TWO POST /workflow/datasets (two identical datasets stored) —
+  // the `uploading` React state lags one render and cannot catch a second
+  // submit inside the same tick. Fixed by a ref interlock
+  // (`uploadLock`) in UploadStage.handleUpload. This test pins the fix.
+  test('audit m2: a synchronous double-submit of the upload form uploads once', async ({ page }) => {
     const w = watch(page)
     const ctx = await request.newContext()
-    let datasetId = null
+    const createdIds = []
     const posts = []
     page.on('request', (r) => {
       if (r.method() === 'POST' && r.url().includes('/workflow/datasets')) posts.push(r.url())
     })
+    page.on('response', (r) => {
+      if (r.request().method() === 'POST' && r.url().includes('/workflow/datasets') && r.status() === 201) {
+        r.json()
+          .then((body) => body?.dataset_id && createdIds.push(body.dataset_id))
+          .catch(() => {})
+      }
+    })
     try {
       await page.goto(ames('01-upload'))
-      await page.locator('.wfe-drop').waitFor()
+      await page.locator('.upload-drop').waitFor()
 
-      // Two change events in one synchronous tick — the `uploading` state
-      // cannot have re-rendered yet, so only the ref guard can stop the dupe.
+      // Select the slice, then fire two submits in one synchronous tick — the
+      // `uploading` state cannot have re-rendered yet, so only an explicit
+      // guard (ref/disabled) can stop the duplicate POST.
+      await page
+        .locator('.upload-drop input[type="file"]')
+        .setInputFiles({ name: 'dup-fire.csv', mimeType: 'text/csv', buffer: buildUploadCsv() })
       const [created] = await Promise.all([
         page.waitForResponse(
           (r) => r.url().includes('/workflow/datasets') && r.request().method() === 'POST',
         ),
-        page.locator('.wfe-drop-input').evaluate((el, content) => {
-          const file = new File([content], 'dup-fire.csv', { type: 'text/csv' })
-          const dt = new DataTransfer()
-          dt.items.add(file)
-          Object.defineProperty(el, 'files', { value: dt.files, configurable: true })
-          el.dispatchEvent(new Event('change', { bubbles: true }))
-          el.dispatchEvent(new Event('change', { bubbles: true }))
-        }, buildUploadCsv().toString('utf8')),
+        page.locator('form.upload-form').evaluate((form) => {
+          form.requestSubmit()
+          form.requestSubmit()
+        }),
       ])
       expect(created.status()).toBe(201)
-      datasetId = (await created.json()).dataset_id
 
       // One validation report, and exactly one upload request left the browser.
-      await expect(page.locator('.wfe-report--ok')).toBeVisible()
+      await expect(page.locator('.wfu-report--ok')).toBeVisible()
       expect(posts).toHaveLength(1)
     } finally {
-      if (datasetId) await ctx.delete(`${BACKEND}/workflow/datasets/${datasetId}`)
+      await page.waitForTimeout(300) // let any duplicate response land for cleanup
+      for (const id of createdIds) await ctx.delete(`${BACKEND}/workflow/datasets/${id}`)
       await ctx.dispose()
     }
 
@@ -669,11 +765,11 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     page.on('pageerror', (e) => pageErrors.push(String(e)))
 
     await page.goto(ames('03-stats'))
-    await expect(page.locator('.wfe-spot')).toBeVisible()
+    await expect(page.locator('.table-scroll.scroll-68 tbody tr').first()).toBeVisible()
 
     // Offline mid-navigation: the never-visited stage 05 chunk cannot load.
     await page.route('**/src/pages/workflow/VizStage*', (route) => route.abort())
-    await page.locator('.wf-step[data-stage="05-viz"]').click()
+    await page.locator('.pipeline-stepper a[data-stage="05-viz"]').click()
     await expect(page).toHaveURL(/05-viz/)
 
     // The boundary panel renders inside the content area…
@@ -681,14 +777,15 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     await expect(crash).toBeVisible()
     await expect(crash.locator('.alert-title')).toHaveText('This section failed to render')
     await expect(crash.getByRole('button', { name: 'Reload page' })).toBeVisible()
-    // …while the stepper and dataset picker survive (pre-M1 the whole shell went).
-    await expect(page.locator('.wf-stepper .wf-step')).toHaveCount(12)
+    // …while the sidebar stepper and dataset picker survive (pre-M1 the whole
+    // shell went).
+    await expect(sidebarStages(page)).toHaveCount(9)
     await expect(page.locator('.wf-ds-chip-name')).toHaveText('Ames Housing (bundled)')
 
     // Navigating away remounts the boundary (per-stage key): stage 03 works.
     await page.unroute('**/src/pages/workflow/VizStage*')
-    await page.locator('.wf-step[data-stage="03-stats"]').click()
-    await expect(page.locator('.wfe-spot')).toBeVisible()
+    await page.locator('.pipeline-stepper a[data-stage="03-stats"]').click()
+    await expect(page.locator('.table-scroll.scroll-68 tbody tr').first()).toBeVisible()
 
     expect(pageErrors).toEqual([])
   })

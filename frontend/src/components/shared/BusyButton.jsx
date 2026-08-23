@@ -41,7 +41,8 @@ export default function BusyButton({
     }
   }
 
-  // The default spinner is ink-on-teal; quiet variants need the dark track.
+  // The default spinner is ink-on-amber (the primary button's --accent-ink on
+  // --accent); quiet variants need the dark track.
   const spinnerClass = className.includes('btn-primary')
     ? 'spinner'
     : 'spinner spinner--dark'

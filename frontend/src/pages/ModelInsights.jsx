@@ -1,13 +1,16 @@
 /**
- * Model Insights page (SPEC §5.4): the trust page — champion framing,
- * validation vs sealed-test evidence, global drivers, and open caveats, so a
- * reviewer can judge the model system without opening Python code.
+ * Model Insights page: the trust page — champion framing, validation vs
+ * sealed-test evidence, global drivers, and open caveats, so a reviewer can
+ * judge the model system without opening Python code. Rebuilt on the
+ * reference's Model Evaluation language (blueprint §8.9): verdict-first
+ * metric strip, named champion panels, dense metric tables with one-line
+ * hints, the amber honesty banner, and reference notes in mono microcopy.
  *
- * Fetch architecture (AUDIT §2.4 fix): exactly two async units, each behind
- * one AsyncSection with its own skeleton → error+retry → content lifecycle —
- *   1. GET /model/info       → champions, performance tables, confusion
- *                              matrices, bootstrap honesty banner. One failure
- *                              renders ONE error box, never three.
+ * Fetch architecture: exactly two async units, each behind one AsyncSection
+ * with its own skeleton → error+retry → content lifecycle —
+ *   1. GET /model/info       → headline strip, champions, performance tables,
+ *                              confusion matrices, bootstrap honesty banner.
+ *                              One failure renders ONE error box, never three.
  *   2. GET /model/importance → global drivers (503 on artifact failure).
  * Methodology, disclosures, and the CTA are contract-standing copy and render
  * even when an endpoint is down. Both GETs are session-cached (client.js).
@@ -17,6 +20,8 @@ import { Link } from 'react-router'
 import { api } from '../api/client'
 import { useApi } from '../api/useApi'
 import { formatMetric, formatPct, formatUsd } from '../format'
+import { SPLIT_CONTRACT } from '../constants'
+import { confusionTotal } from '../utils/splits'
 import { useToast } from '../components/Toast'
 import ConfusionMatrix from '../components/ConfusionMatrix'
 import AsyncSection from '../components/insights/AsyncSection'
@@ -24,9 +29,11 @@ import BootstrapNote from '../components/insights/BootstrapNote'
 import ChampionDuo from '../components/insights/ChampionDuo'
 import Disclosures from '../components/insights/Disclosures'
 import GlobalDrivers from '../components/insights/GlobalDrivers'
+import HeadlineMetrics from '../components/insights/HeadlineMetrics'
 import Methodology from '../components/insights/Methodology'
 import MetricsTable from '../components/insights/MetricsTable'
 import { SkeletonBlock } from '../components/shared/Skeleton'
+import '../styles/confusion-matrix.css'
 import '../styles/insights.css'
 
 /** ISO timestamp → "Aug 7, 2026" (date-only; selection date, not a time). */
@@ -62,10 +69,11 @@ function classificationRows(classification) {
   ]
 }
 
-/** First-load skeleton matching the info group's shape (duo + two tables). */
+/** First-load skeleton matching the info group's shape (strip + duo + tables). */
 function InfoSkeleton() {
   return (
     <div className="insights-sk" aria-hidden="true">
+      <SkeletonBlock height={64} />
       <div className="grid-2">
         <SkeletonBlock height={210} />
         <SkeletonBlock height={210} />
@@ -103,15 +111,23 @@ export default function ModelInsightsPage() {
 
   const infoData = info.data
 
+  // The payload has no split sizes — derive val/test from the classification
+  // confusion matrices (real split counts), else the contract constants.
+  const splitVal =
+    confusionTotal(infoData?.classification?.val_metrics?.confusion_matrix) ?? SPLIT_CONTRACT.val
+  const splitTest =
+    confusionTotal(infoData?.classification?.test_metrics?.confusion_matrix) ?? SPLIT_CONTRACT.test
+
   return (
     <div>
-      <div className="page-head">
-        <span className="kicker">Model Insights</span>
+      <header className="page-head">
+        <p className="kicker">Model Insights</p>
         <h1 className="page-title">Can you trust the numbers?</h1>
         <p className="page-desc">
           The two production champions, their validation vs sealed-test
-          evidence, and the global drivers of price — every figure traced to a
-          live API response, every caveat stated plainly.
+          evidence, and the global drivers of price — every metric traced to a
+          live API response, with training-window facts labeled as
+          data-contract constants, and every caveat stated plainly.
         </p>
         {infoData && (
           <p className="page-meta">
@@ -120,10 +136,12 @@ export default function ModelInsightsPage() {
             {formatDate(infoData.selected_at)}
           </p>
         )}
-      </div>
+      </header>
+
+      <hr className="divider" aria-hidden="true" />
 
       {/* Everything served by GET /model/info is ONE async unit — a single
-          skeleton/error/empty state for champions + tables + matrices. */}
+          skeleton/error/empty state for the strip + champions + tables. */}
       <AsyncSection
         state={info}
         skeleton={<InfoSkeleton />}
@@ -133,23 +151,41 @@ export default function ModelInsightsPage() {
           const classification = data.classification || {}
           const threshold =
             classification.test_metrics?.threshold ?? classification.threshold
+          // Split sizes straight from the confusion matrices; when a matrix
+          // is missing the notes below render without the number, never a
+          // hardcoded n.
+          const valN = confusionTotal(classification.val_metrics?.confusion_matrix)
+          const testN = confusionTotal(classification.test_metrics?.confusion_matrix)
           return (
             <>
-              <section className="section insights-section-first">
+              <section className="section">
+                <div className="section-head">
+                  <h2 className="section-title">The headline — sealed test evidence</h2>
+                  <span className="section-note">
+                    sealed test{testN !== null ? ` n=${testN}` : ''} (2010) · out-of-time
+                  </span>
+                </div>
+                <HeadlineMetrics info={data} />
+              </section>
+
+              <hr className="divider" aria-hidden="true" />
+
+              <section className="section">
                 <div className="section-head">
                   <h2 className="section-title">The champions</h2>
-                  <span className="section-note">GET /model/info</span>
+                  <span className="section-note">Live from the model registry</span>
                 </div>
                 <ChampionDuo info={data} />
               </section>
 
-              <hr className="divider" />
+              <hr className="divider" aria-hidden="true" />
 
               <section className="section">
                 <div className="section-head">
                   <h2 className="section-title">Regression performance</h2>
                   <span className="section-note">
-                    validation n=338 (2009) · sealed test n=175 (2010)
+                    validation{valN !== null ? ` n=${valN}` : ''} (2009) ·
+                    sealed test{testN !== null ? ` n=${testN}` : ''} (2010)
                   </span>
                 </div>
                 <MetricsTable
@@ -157,14 +193,14 @@ export default function ModelInsightsPage() {
                   caption="Ridge regression champion — validation vs sealed-test metrics"
                 />
                 <p className="note insights-table-note">
-                  The served ~80% price range is an additive interval in log1p
+                  The served ~80% price range is an additive interval in log
                   space from validation residual quantiles — nominal, not a 95%
                   confidence interval. Measured coverage on the sealed 2010
                   test: {formatPct(data.regression?.test_metrics?.interval_coverage)}.
                 </p>
               </section>
 
-              <hr className="divider" />
+              <hr className="divider" aria-hidden="true" />
 
               <section className="section">
                 <div className="section-head">
@@ -178,7 +214,7 @@ export default function ModelInsightsPage() {
                 <p className="note insights-table-note">
                   Decision threshold {formatMetric(threshold, 6)} — chosen to
                   maximize F1 on validation, deliberately below the 0.5 default.
-                  The target is simulated (ADR-3): these numbers grade
+                  The target is simulated: these numbers grade
                   consistency with a seeded sale-speed simulation, not a
                   real-world listing forecast.
                 </p>
@@ -200,7 +236,7 @@ export default function ModelInsightsPage() {
                 </p>
               </section>
 
-              <hr className="divider" />
+              <hr className="divider" aria-hidden="true" />
 
               <section className="section">
                 <div className="section-head">
@@ -217,13 +253,13 @@ export default function ModelInsightsPage() {
         }}
       </AsyncSection>
 
-      <hr className="divider" />
+      <hr className="divider" aria-hidden="true" />
 
       {/* Independent fetch: an importance failure degrades only this section. */}
       <section className="section">
         <div className="section-head">
           <h2 className="section-title">Global drivers of price</h2>
-          <span className="section-note">GET /model/importance</span>
+          <span className="section-note">Live from the explainability service</span>
         </div>
         <AsyncSection
           state={importance}
@@ -234,17 +270,19 @@ export default function ModelInsightsPage() {
         </AsyncSection>
       </section>
 
-      <hr className="divider" />
+      <hr className="divider" aria-hidden="true" />
 
       <section className="section">
         <div className="section-head">
           <h2 className="section-title">How the champions were trained and judged</h2>
-          <span className="section-note">train 945 · val 338 · sealed test 175</span>
+          <span className="section-note">
+            train {SPLIT_CONTRACT.train} · val {splitVal} · sealed test {splitTest}
+          </span>
         </div>
         <Methodology info={infoData} />
       </section>
 
-      <hr className="divider" />
+      <hr className="divider" aria-hidden="true" />
 
       <section className="section">
         <div className="section-head">
@@ -253,9 +291,11 @@ export default function ModelInsightsPage() {
         <Disclosures />
       </section>
 
+      <hr className="divider" aria-hidden="true" />
+
       <section className="section insights-cta">
         <Link className="btn btn-primary" to="/valuation">
-          Try the model →
+          Estimate value →
         </Link>
         <Link className="btn btn-secondary" to="/health">
           Model health →

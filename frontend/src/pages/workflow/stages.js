@@ -13,7 +13,7 @@
 
 export const WORKFLOW_STAGES = [
   { num: '01', slug: '01-upload', short: 'Upload', title: 'Upload Dataset' },
-  { num: '02', slug: '02-features', short: 'Features', title: 'Analyse Features' },
+  { num: '02', slug: '02-features', short: 'Features', title: 'Analyze Features' },
   { num: '03', slug: '03-stats', short: 'Stats', title: 'Descriptive Statistics' },
   { num: '04', slug: '04-missing', short: 'Missing', title: 'Missing Values' },
   { num: '05', slug: '05-viz', short: 'Visualize', title: 'Visualization' },
@@ -21,7 +21,7 @@ export const WORKFLOW_STAGES = [
   { num: '07', slug: '07-train', short: 'Train', title: 'Model Training' },
   { num: '08', slug: '08-evaluate', short: 'Evaluate', title: 'Model Evaluation' },
   { num: '09', slug: '09-predict', short: 'Predict', title: 'Predict Property' },
-  { num: '10', slug: '10-market', short: 'Market', title: 'Neighbourhood Intelligence' },
+  { num: '10', slug: '10-market', short: 'Market', title: 'Market Intelligence' },
   { num: '11', slug: '11-explain', short: 'Explain', title: 'Model Explainability' },
   { num: '12', slug: '12-health', short: 'Health', title: 'Model Health' },
 ]
@@ -35,18 +35,4 @@ export const DATASET_ID_RE = /^(ames|ds_[0-9a-f]{8})$/
 /** @returns the stage definition for a slug, or null for unknown slugs. */
 export function stageBySlug(slug) {
   return WORKFLOW_STAGES.find((stage) => stage.slug === slug) ?? null
-}
-
-/**
- * document.title for any /workflow/* path (Layout's TITLES map covers the
- * five product pages). Returns null for non-workflow paths so the caller can
- * fall through to its catch-all title.
- */
-export function workflowDocumentTitle(pathname) {
-  if (!pathname.startsWith('/workflow')) return null
-  const match = pathname.match(/^\/workflow\/([^/?#]+)/)
-  const stage = match ? stageBySlug(match[1]) : null
-  return stage
-    ? `ML Workbench · ${stage.title} — PropPulse`
-    : 'ML Workbench — PropPulse'
 }

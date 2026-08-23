@@ -33,12 +33,14 @@ export default function HealthStage() {
         </p>
       </header>
 
+      <hr className="divider" />
+
       <section className="section" aria-labelledby="wf-sb-health-title">
         <div className="section-head">
           <h2 className="section-title" id="wf-sb-health-title">
             Your models — sandbox workbench facts
           </h2>
-          <span className="section-note">GET /workflow/datasets/…/state</span>
+          <span className="section-note">Live from the sandbox workbench state</span>
         </div>
 
         {stateLoading && <PanelSkeleton height={120} />}

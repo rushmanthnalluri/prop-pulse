@@ -134,13 +134,13 @@ export default function JobStatus({ jobId, datasetId, onTerminal }) {
         </ul>
 
         {job.status === 'failed' && job.error && (
-          <div className="alert alert-error" role="alert" style={{ marginTop: 12 }}>
+          <div className="alert alert-error mt-12" role="alert">
             <span className="alert-title">Job failed</span>
             {job.error}
           </div>
         )}
         {job.status === 'done' && (
-          <p className="note" style={{ marginTop: 12 }}>
+          <p className="note mt-12">
             Job complete.{' '}
             <Link to={`/workflow/08-evaluate?dataset=${datasetId}&job=${job.job_id}`}>
               Open stage 08 — evaluation →

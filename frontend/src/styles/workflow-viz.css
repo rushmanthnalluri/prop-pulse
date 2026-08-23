@@ -1,0 +1,70 @@
+/* ==========================================================================
+   ML Workbench — stage 05 Visualization (WORKFLOW §6.3-05, blueprint §8.6)
+   Page-scoped styles for VizStage + VizExplorer only. The section chrome
+   (.viz-nav, .viz-section), the correlation heat map (.heat-*), and the
+   chart-card/.chart-tag/.chart-select vocabulary all live in styles.css;
+   everything below is a layout tweak those classes don't cover or a state the
+   old explorer's now-deleted page stylesheet once carried. Tokens only; no
+   shadows; the heatmap-legend gradient stays the system's single allowed
+   gradient (defined in styles.css).
+   ========================================================================== */
+
+/* ProvenanceBanner directly under the page head — tighten the rhythm, and
+   keep the reference's air between banner and the sticky anchor strip. */
+.wfv-banner-slot { margin-top: -14px; }
+.wfv-banner-slot + .viz-nav { margin-top: 22px; }
+
+/* Card heads carrying a compact .chart-select align on center so the control
+   doesn't hang off the text baseline. */
+.wfv-card-head { align-items: center; }
+
+/* Server column-validation errors (422) inside a chart card — compact
+   variant of the shared alert that fits the card width. */
+.wfv-card-alert {
+  max-width: none;
+  margin-top: 4px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+}
+.wfv-card-alert .alert-actions { margin-top: 8px; }
+
+/* The current chart stays on screen, dimmed, while its refreshed payload is
+   in flight — never a skeleton swap on user-triggered re-fetches. */
+.wfv-dim { opacity: 0.55; transition: opacity var(--dur-hover); }
+
+/* Mono caption row under scatter / influence charts (n + sampling honesty). */
+.wfv-caption {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 10px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-3);
+}
+
+/* Wide category charts (> 12 groups) size by group count, set inline. */
+.wfv-chart-auto { position: relative; min-height: 200px; }
+
+/* x/y microcopy next to the scatter head selects. */
+.wfv-head-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.wfv-axis-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* §10 breakpoints — the shared sheet already collapses .chart-grid at 820px
+   and scrolls .heat-scroll; only the composite card heads need help. */
+@media (max-width: 520px) {
+  .wfv-card-head { flex-wrap: wrap; }
+  .wfv-head-controls { width: 100%; justify-content: flex-end; }
+}

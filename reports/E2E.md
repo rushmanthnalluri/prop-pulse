@@ -1,5 +1,94 @@
 # PropPulse — End-to-End (Playwright) Test Report
 
+> **Design-system-rebuild reconciliation (2026-08-09):** the frontend was
+> rebuilt onto the reference design system; the suite was re-anchored to the
+> new UI (tests only — no frontend/backend code was touched). Suite is now
+> **4 spec files / 47 tests (45 run, 2 `.fixme` on genuine UI bugs)**:
+> `workflow.spec.js` (16 — 2 fixme), `dashboard.spec.js` (10 — 404 test
+> added), `audit-blackbox.spec.js` (11), `frontend-fixes.spec.js` (10).
+>
+> Selector migrations (old → new):
+> - **Stage nav:** the in-shell `.wf-stepper`/`.wf-step` strip is gone. Stage
+>   nav is the sidebar `.pipeline-stepper` (`li.is-active > a[data-stage]`
+>   with `.step-num`/`.step-label`, `aria-current="page"`; only the nine
+>   pipeline stages 01–09) + the `.stage-pager` prev/next links at every
+>   stage foot. The locked-stage stepper marker (`data-status="locked"`) no
+>   longer exists — gating is asserted on the designed locked state only.
+> - **Upload (01):** `.wfe-drop` → `label.upload-drop` (select-only; the
+>   input is `.upload-drop input[type="file"]`); the POST now requires
+>   clicking **"Upload dataset"**; `.wfe-report--ok` → `.wfu-report--ok`,
+>   `.wfe-check` → `.wfu-check`; CTA "Continue to Analyse Features →".
+> - **Features (02):** the sortable/filterable toolbar table was removed by
+>   design (blueprint §5) — `.wfe-chev`/`.wfe-toolbar-count`/`aria-sort`/
+>   `.wfe-feat-*` assertions deleted, replaced by the payload-derived
+>   `.registry-group` families (live ames: Identifier 1, Numeric inputs 36,
+>   Categorical inputs 41, Targets 1, Excluded 2, Pipeline-derived 15).
+>   `.wfe-target` → `.wff-target` (×3, `.wf-sim-badge` kept).
+> - **Stats (03):** `.wfe-spot` spotlight gone — one sticky
+>   `.table-scroll.scroll-68` table (38 numeric rows; SalePrice badged
+>   `target`, real mean 180,921 / median 163,000, verbatim log1p note).
+> - **Missing (04):** `.wfe-mbar-fill` gone — the danger bar chart
+>   (role="img") + ChartA11yTable (19 rows, cells sum to 7,829) + the repair
+>   table's `.coverage-fill` "x% → 100%" bars; LotFrontage keeps its
+>   "Neighbourhood median" badge.
+> - **Viz (05):** chart-type tab buttons gone — one sectioned page
+>   (`.viz-nav` + `#distributions`/`#correlations`/`#categories`/
+>   `#relationships`); heat map is `.heat-grid`/`.heat-cell` ×441 with
+>   `.heat-row-label` (OverallQual first).
+> - **Valuation:** the probability gauge (and ProbabilityGauge.jsx) is gone —
+>   the result panel carries the 8px `.result-track` (role=meter,
+>   aria-valuenow=percent) + mono `.result-meta` ("{p}% probability" /
+>   "threshold {t}%"). `.result-price`, `.band`/`.band-scale`, `.mm-label`,
+>   `.factor-list .factor-row`, `form.valuation-form`, "Estimate value",
+>   `.position-marker` ×3, `.hero-confidence`, comps/scenario panels all
+>   preserved. The form's error summary now reads **"Check the highlighted
+>   inputs"** (was "Fix the highlighted fields").
+> - **Overview (/):** new structure — h1 "PropPulse", `.metrics.metrics-rows`
+>   8 cells, top-**5** `.driver-row`, `.group-index` tiles ×8, `.pipeline-list`
+>   ×9 (old hero h1, `.metrics--6`, 8 driver rows, `.cluster-card` ×4 gone).
+> - **Shell chrome:** `.sidebar`/`.topbar`/`.sticky-rail` →
+>   `.pipeline-sidebar` + `.predict-result` (screenshot pin styles updated);
+>   `document.title` is "{Page} · PropPulse" everywhere (asserted per page).
+> - **/market** h1 is "Micro-markets across Ames"; trends section is
+>   "Trends — median sale price by half-year".
+>
+> Two accessible-name collisions surfaced and are handled in the specs:
+> sidebar "Model Evaluation" substring-matches `name: 'Valuation'` (use
+> `exact: true`); the Valuation page error alert quotes "Check the
+> highlighted inputs" (scope the form summary lookup to `form.valuation-form`).
+>
+> **Two genuine UI bugs found (both `.fixme` + reported for red-team):**
+> 1. **Stage 08 overflows 70px at 390px** — the regression importance card's
+>    `.chart-tag` ("native importance, aggregated to base features — not
+>    SHAP", EvaluationWorkspace.jsx) is `white-space: nowrap` (global
+>    styles.css `.chart-tag`); the wrap override in workflow-evaluate.css only
+>    covers `.eval-duo .chart-tag`. Repro: 390×844, /workflow/08-evaluate with
+>    any done regression job → `scrollWidth 460 > clientWidth 390`.
+> 2. **Stage-01 upload double-submit** — a synchronous double
+>    `form.requestSubmit()` fires TWO `POST /workflow/datasets` (two identical
+>    datasets stored). `UploadStage.handleUpload` guards on React state
+>    (`if (!selected || uploading) return`), which cannot catch a second
+>    submit in the same tick; the pre-rebuild dropzone had an explicit ref
+>    guard (audit m2). Fix candidate: an interlock ref in handleUpload.
+>
+> Final run (2026-08-09, live stack :8200/:5300): **45 passed, 2 skipped
+> (the two fixme bug repros), 0 failed — 4.7m** (`cd e2e && npm test`).
+> Journey evidence: linear job RMSLE 0.1425 (val, 338 rows), sandbox
+> prediction $162,041 [$140,179 – $182,929], upload teardown DELETE → 204,
+> `models/workflow` + `data/uploads` scrubbed, both servers left running.
+>
+> **Status update (2026-08-19 audit):** both fixme bugs above are **fixed** —
+> the stage-08 `.chart-tag` wrap now covers `.chart-card .chart-tag`
+> (`frontend/src/styles/workflow-evaluate.css`) and `UploadStage.handleUpload`
+> has a synchronous interlock ref against double `requestSubmit()`. The fixme
+> repros were converted to plain passing tests and `dashboard.spec.js` grew
+> (pinned-estimate compare ×2, model health, 404): the suite is now **49
+> tests / 4 spec files, 0 fixme/skip** (`dashboard` 12, `audit-blackbox` 11,
+> `frontend-fixes` 10, `workflow` 16). Last full run 2026-08-18: **all
+> passed** (`e2e/test-results/.last-run.json`).
+>
+> Everything below this note describes earlier runs and is kept for history.
+
 > **WP-7a integration-hardening addendum (2026-08-08):** the suite was
 > rewritten for the rebuilt UI (routes `/` Overview, `/valuation`, `/market`,
 > `/model`, `/health`; panel-based valuation rail; 7-lever what-if explorer;

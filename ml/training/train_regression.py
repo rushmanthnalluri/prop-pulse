@@ -124,7 +124,7 @@ def _val_report(
 ) -> dict[str, Any]:
     """Dollar-scale metrics + log-space RMSE + residual interval on val."""
     pred_log = np.asarray(pipeline.predict(X_val), dtype=float)
-    metrics = regression_metrics(np.expm1(y_val_log.to_numpy()), np.expm1(pred_log))
+    metrics = regression_metrics(y_val_dollar.to_numpy(), np.expm1(pred_log))
     metrics["rmse_log"] = float(
         np.sqrt(np.mean((y_val_log.to_numpy() - pred_log) ** 2))
     )

@@ -1,50 +1,63 @@
 /**
  * PropPulse dashboard E2E (real Chromium, live backend :8200 + frontend :5300).
  *
- * WP-7a (2026-08-08): rewritten for the rebuilt UI. Stale anchors replaced:
- *   - routes: /model-insights → /model, /market-map → /market, the valuation
- *     form moved / → /valuation ("/" is now the Overview page)
- *   - headings: "Property valuation" → "Value a property", "Market map" →
- *     "Four micro-markets, twenty-five neighborhoods", "Model insights" →
- *     "Can you trust the numbers?"
- *   - result column: .result-card is gone — the sticky .valuation-rail stacks
- *     panels (ResultHero .result-price + .band, ProbabilityGauge .gauge,
- *     MicroMarketCard .mm-label, MarketPosition .position-marker,
- *     FactorBars .factor-row, CompsTable .table, ScenarioExplorer)
- *   - "Explore scenarios" → "What-if scenarios" with 7 #lever-<name> sliders
- *   - the drift panel moved to /health; /model carries champions + drivers
- *   - out-of-range core inputs are now caught by client-side validation
- *     (formConfig.validateField), so the old "API 422 surfaces in the UI"
- *     scenario became a client-validation scenario here; the server-422 →
- *     field-mapping path is covered mocked in frontend-fixes.spec.js.
+ * Design-system rebuild reconciliation (2026-08-09): the suite was re-anchored
+ * to the rebuilt UI —
+ *   - Overview (/) is the reference home: h1 "PropPulse", 8-cell
+ *     `.metrics.metrics-rows`, top-5 `.driver-row`, `.group-index` record
+ *     tiles, and the 9-row `.pipeline-list` (the old hero h1, `.metrics--6`
+ *     ×6, 8 driver rows, and 4 `.cluster-card`s are gone)
+ *   - Valuation (/valuation): the probability gauge was deleted with
+ *     ProbabilityGauge.jsx — the result panel now carries the 8px
+ *     `.result-track` (role=meter) + `.result-meta` ("{p}% probability" /
+ *     "threshold {t}%"); `.result-price`, `.band`, `.mm-label`,
+ *     `.factor-list .factor-row`, `form.valuation-form`, "Estimate value"
+ *     survive
+ *   - the client/server validation summary reads "Check the highlighted
+ *     inputs" (was "Fix the highlighted fields")
+ *   - /market h1 is "Micro-markets across Ames"; the trends section is
+ *     "Trends — median sale price by half-year"
+ *   - document.title follows "{Page} · PropPulse" everywhere
+ *   - the shell chrome is `.pipeline-sidebar` + `.predict-result` sticky
+ *     aside (`.sidebar`/`.topbar`/`.sticky-rail` are gone)
+ * WP-7a history: routes /model-insights → /model, /market-map → /market, the
+ * valuation form moved / → /valuation; out-of-range core inputs are caught by
+ * client-side validation (formConfig.validateField) — the server-422 →
+ * field-mapping path is covered mocked in frontend-fixes.spec.js.
  *
  * Scenario order matters — tests run sequentially (workers: 1):
- *   1. overview loads (hero, 6 headline metrics, driver rows, market cards)
+ *   1. overview loads (hero, 8 headline metrics, driver rows, pipeline list)
  *   2. valuation flow (happy path, exactly 5 top factors)
  *   3. valuation result extras (confidence badge, price position strip,
  *      comparable-sales panel, what-if scenario explorer + reset)
- *   4. prefill flow (?neighborhood= pre-selects the form's neighborhood)
- *   5. client validation (out-of-range living area names the field, no result)
- *   6. market page (leaflet markers, popup cluster stats, directory, trends)
- *   7. model insights (champions, decision threshold, drivers ledger, CMs)
- *   8. model health (service status, traffic counters, drift sections)
- *   9. API-down state (LAST — stops the backend on port 8200 itself)
+ *   4. pinned-estimate comparison (pin → zero delta → cheaper re-estimate →
+ *      negative signed delta → remove)
+ *   5. pinned estimate persists across reload (localStorage) and compares
+ *      against the next estimate
+ *   6. prefill flow (?neighborhood= pre-selects the form's neighborhood)
+ *   7. client validation (out-of-range living area names the field, no result)
+ *   8. market page (leaflet markers, popup cluster stats, directory, trends)
+ *   9. model insights (champions, decision threshold, drivers ledger, CMs)
+ *   10. model health (service status, traffic counters, drift sections)
+ *   11. 404 page (unknown URL → designed not-found + recovery links)
+ *   12. API-down state (LAST — stops the backend on port 8200 itself)
  *
  * Portfolio screenshots land in docs/screenshots/ (full page, 1440x900).
  */
 import { test, expect } from '@playwright/test'
 import { execFile } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
+import { ensureBackend } from '../helpers/backend.js'
 
 /** E2E-owned backend port (started externally; the LAST scenario kills it). */
 const BACKEND_PORT = 8200
 
 const SCREENSHOTS = fileURLToPath(new URL('../../docs/screenshots/', import.meta.url))
 const shot = async (page, name) => {
-  // Full-page captures stitch scroll positions, which makes the fixed sidebar,
-  // topbar, and sticky result rail float mid-page — pin them for the shot only.
+  // Full-page captures stitch scroll positions, which makes the sticky sidebar
+  // and sticky result rail float mid-page — pin them for the shot only.
   await page.addStyleTag({
-    content: '.sidebar, .topbar, .sticky-rail { position: static !important; }',
+    content: '.pipeline-sidebar, .predict-result { position: static !important; }',
   })
   await page.screenshot({ path: `${SCREENSHOTS}${name}.png`, fullPage: true })
 }
@@ -90,37 +103,66 @@ function killPort(port) {
   })
 }
 
-test('overview loads: hero, 6 headline metrics, driver rows, micro-market cards', async ({ page }) => {
+// Self-heal: this spec's tests read live API data and it runs right after the
+// audit-blackbox spec (whose LAST test kills + respawns :8200). Guard so a
+// stale down-backend can never cascade the dashboard specs.
+test.beforeAll(async () => {
+  await ensureBackend()
+})
+
+test('overview loads: hero, 8 headline metrics, driver rows, pipeline list', async ({ page }) => {
   await page.goto('/')
-  await expect(
-    page.getByRole('heading', { name: 'Know what an Ames home is worth — and why.' }),
-  ).toBeVisible()
+  await expect(page).toHaveTitle('Overview · PropPulse')
+  await expect(page.getByRole('heading', { name: 'PropPulse', exact: true })).toBeVisible()
   // Sidebar health pill resolves once GET /health succeeds.
   await expect(page.locator('.api-status--up').first()).toHaveText('API connected')
 
-  // Headline metric strip (GET /model/info + /market/clusters).
-  const metricValues = page.locator('.metrics--6 .metric-value')
-  await expect(metricValues).toHaveCount(6)
-  await expect(page.locator('.metrics--6 .metric', { hasText: 'Neighborhoods' })).toContainText(
-    '25',
+  // Hero CTAs into the pipeline + the data.
+  await expect(page.getByRole('link', { name: 'Start the pipeline' })).toHaveAttribute(
+    'href',
+    '/workflow/01-upload',
   )
-  await expect(page.locator('.metrics--6 .metric', { hasText: 'Micro-markets' })).toContainText(
-    '4',
+  await expect(page.getByRole('link', { name: 'Explore the data' })).toHaveAttribute(
+    'href',
+    '/workflow/05-viz',
   )
 
-  // Top value drivers (GET /model/importance) — top-8 slice on Overview.
+  // Active-model panel names the served champion (GET /model/info).
+  const activeModel = page.locator('.panel', { has: page.getByText('Active model') })
+  await expect(activeModel).toContainText('ridge_v1')
+
+  // Headline metric strip: 8 cells from /market/clusters + /market/trends +
+  // /model/info (two rows of four).
+  const metrics = page.locator('.metrics.metrics-rows .metric')
+  await expect(metrics).toHaveCount(8)
+  const metric = (label) =>
+    page.locator('.metrics.metrics-rows .metric', {
+      has: page.locator('.metric-label', { hasText: label }),
+    })
+  await expect(metric('Training sales').locator('.metric-value')).toHaveText('945')
+  await expect(metric('Neighborhoods').locator('.metric-value')).toHaveText('25')
+  await expect(metric('Micro-markets').locator('.metric-value')).toHaveText('4')
+  await expect(metric('Model features').locator('.metric-value')).toHaveText('94')
+
+  // Top value drivers (GET /model/importance) — top-5 slice on Overview.
   const drivers = page.locator('.driver-row')
   await expect(drivers.first()).toBeVisible({ timeout: 60_000 })
-  expect(await drivers.count()).toBe(8)
+  expect(await drivers.count()).toBe(5)
 
-  // Four micro-market cards link to /market.
-  await expect(page.locator('.cluster-card')).toHaveCount(4)
+  // The record tiles (8 domain groups) link into stage 02.
+  expect(await page.locator('.group-index .group-cell').count()).toBe(8)
+
+  // The pipeline roadmap lists the nine live stages into /workflow/*.
+  const stages = page.locator('.pipeline-list .pipeline-row')
+  await expect(stages).toHaveCount(9)
+  await expect(stages.first()).toHaveAttribute('href', '/workflow/01-upload')
 })
 
 test('valuation flow: form → price, range, probability, micro-market, 5 factors', async ({ page }) => {
   await page.goto('/valuation')
+  await expect(page).toHaveTitle('Valuation · PropPulse')
   await expect(page.getByRole('heading', { name: 'Value a property' })).toBeVisible()
-  // Empty hero before any submission (the "—" placeholder price).
+  // Idle result panel before any submission (the "—" placeholder verdict).
   await expect(
     page.getByText(/Submit the form to see the estimate/),
   ).toBeVisible()
@@ -138,9 +180,13 @@ test('valuation flow: form → price, range, probability, micro-market, 5 factor
   const bandScale = await rail.locator('.band-scale').innerText()
   expect(bandScale.match(/\$[\d,]+/g)?.length ?? 0).toBeGreaterThanOrEqual(2)
 
-  // 30-day sale probability renders as a percentage on the gauge.
-  await expect(rail.locator('.gauge')).toBeVisible()
-  await expect(rail.locator('.gauge-meta')).toContainText(/\d+(\.\d+)?% within 30 days/)
+  // 30-day sale probability renders on the result track with its served
+  // threshold (the gauge is gone — the panel carries the meter now).
+  const track = rail.locator('.result-track')
+  await expect(track).toBeVisible()
+  await expect(track).toHaveAttribute('role', 'meter')
+  await expect(rail.locator('.result-meta')).toContainText(/\d+(\.\d+)?% probability/)
+  await expect(rail.locator('.result-meta')).toContainText(/threshold \d+(\.\d+)?%/)
 
   // Micro-market label is non-empty.
   const label = (await rail.locator('.mm-label').innerText()).trim()
@@ -189,8 +235,83 @@ test('valuation result: confidence badge, price position, comps, scenario explor
   await expect(deltaList).toHaveCount(1)
   await expect(deltaList.locator('dt')).toContainText('Overall quality 8 → 9')
   await expect(deltaList.locator('dd')).toHaveText(/[+−]\$[\d,]+/, { timeout: 60_000 })
-  await scenarios.getByRole('button', { name: 'Reset scenarios' }).click()
+  // Keyboard, not pointer: the estimate panel sticks at top:24px and the rail
+  // scrolls beneath it by design — a pointer click can land in the covered
+  // band when scrollIntoView aligns the button to the viewport top.
+  await scenarios.getByRole('button', { name: 'Reset scenarios' }).press('Enter')
   await expect(scenarios.locator('dl.kv')).toHaveCount(0)
+})
+
+test('pinned estimate: pin, zero delta, cheaper re-estimate shows negative delta, remove', async ({ page }) => {
+  await page.goto('/valuation')
+  await fillValuationForm(page)
+  await page.getByRole('button', { name: 'Estimate value' }).click()
+
+  const rail = page.locator('.valuation-rail')
+  await expect(rail.locator('.result-price')).toHaveText(/\$[\d,]+/, { timeout: 60_000 })
+
+  // Nothing pinned yet: the quiet affordance renders, no comparison panel.
+  await expect(page.locator('.compare-panel')).toHaveCount(0)
+  // Rail buttons are keyboard-pressed (same sticky-estimate overlay as above).
+  await page.getByRole('button', { name: 'Pin this estimate' }).press('Enter')
+
+  const compare = page.locator('.compare-panel')
+  await expect(compare).toBeVisible()
+  // The pinned snapshot names the stored property (real payload fields).
+  await expect(compare).toContainText('Northridge Heights')
+  await expect(compare).toContainText('2,200 sq ft')
+  await expect(compare).toContainText('built 2003')
+  // Pinned against itself: a zero delta, never a fabricated one.
+  await expect(compare.locator('.compare-delta')).toHaveText('+$0 (+0.0%)')
+
+  // A cheaper profile (overall quality 8 → 6) re-scores lower: signed delta.
+  // Form-scoped: the scenario lever shares the accessible name once a result
+  // is on screen (strict-mode).
+  const qualityInput = page
+    .locator('form.valuation-form')
+    .getByLabel('Overall quality', { exact: true })
+  await qualityInput.fill('6')
+  await page.getByRole('button', { name: 'Estimate value' }).click()
+  await expect(compare.locator('.compare-delta')).toHaveText(/−\$[\d,]+ \(−[\d.]+%\)/, {
+    timeout: 60_000,
+  })
+
+  // Remove the pin → panel gone, the affordance returns.
+  await page.getByRole('button', { name: 'Remove pin' }).press('Enter')
+  await expect(page.locator('.compare-panel')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: 'Pin this estimate' })).toBeVisible()
+})
+
+test('pinned estimate persists across reload and compares against the next estimate', async ({ page }) => {
+  await page.goto('/valuation')
+  await fillValuationForm(page)
+  await page.getByRole('button', { name: 'Estimate value' }).click()
+
+  const rail = page.locator('.valuation-rail')
+  await expect(rail.locator('.result-price')).toHaveText(/\$[\d,]+/, { timeout: 60_000 })
+  await page.getByRole('button', { name: 'Pin this estimate' }).press('Enter')
+  await expect(page.locator('.compare-panel')).toBeVisible()
+
+  // Reload: the stored pin survives (localStorage proppulse:pinned-estimate);
+  // the result does not — a fresh load waits for the next submit (§5.2.2).
+  await page.reload()
+  await expect(page.locator('.compare-panel')).toHaveCount(0)
+
+  // The URL mirror re-prefills the form; switch neighborhood + quality so the
+  // next estimate genuinely differs from the pinned one.
+  await page.getByLabel('Neighborhood').selectOption('OldTown')
+  await page
+    .locator('form.valuation-form')
+    .getByLabel('Overall quality', { exact: true })
+    .fill('5')
+  await page.getByRole('button', { name: 'Estimate value' }).click()
+  await expect(rail.locator('.result-price')).toHaveText(/\$[\d,]+/, { timeout: 60_000 })
+
+  const compare = page.locator('.compare-panel')
+  await expect(compare).toBeVisible()
+  // The pinned side still names the stored property — not the current one.
+  await expect(compare).toContainText('Northridge Heights')
+  await expect(compare.locator('.compare-delta')).toHaveText(/[+−]\$[\d,]+ \([+−][\d.]+%\)/)
 })
 
 test('prefill flow: /valuation?neighborhood=StoneBr pre-selects StoneBr in the form', async ({ page }) => {
@@ -211,13 +332,13 @@ test('client validation: out-of-range living area names the field, no result ren
   await page.getByLabel('Living area (sq ft)').fill('50')
   await page.getByRole('button', { name: 'Estimate value' }).click()
 
-  const summary = page.getByRole('alert').filter({ hasText: 'Fix the highlighted fields' })
+  const summary = page.getByRole('alert').filter({ hasText: 'Check the highlighted inputs' })
   await expect(summary).toBeVisible()
   await expect(summary).toContainText('Living area')
   await expect(page.locator('#pf-gr_liv_area-error')).toContainText(
     'Must be between 300 and 6,000',
   )
-  // No request succeeded — the empty hero is still up, no range band exists.
+  // No request succeeded — the idle panel is still up, no range band exists.
   await expect(page.locator('.band')).toHaveCount(0)
 
   await shot(page, 'error-state')
@@ -225,8 +346,9 @@ test('client validation: out-of-range living area names the field, no result ren
 
 test('market page: leaflet markers, popup cluster stats, directory, trends', async ({ page }) => {
   await page.goto('/market')
+  await expect(page).toHaveTitle('Market Intelligence · PropPulse')
   await expect(
-    page.getByRole('heading', { name: 'Four micro-markets, twenty-five neighborhoods' }),
+    page.getByRole('heading', { name: 'Micro-markets across Ames' }),
   ).toBeVisible()
 
   await expect(page.locator('.leaflet-container')).toBeVisible()
@@ -244,7 +366,7 @@ test('market page: leaflet markers, popup cluster stats, directory, trends', asy
   // Every 30-day velocity figure carries the simulated-target caveat caption.
   await expect(popup.locator('.velocity-note')).toBeVisible()
   // The popup links to the valuation form prefilled with this neighborhood.
-  await expect(popup.getByRole('link', { name: 'Value a home here' })).toHaveAttribute(
+  await expect(popup.getByRole('link', { name: 'Estimate value' })).toHaveAttribute(
     'href',
     /^\/valuation\?neighborhood=[A-Za-z]+$/,
   )
@@ -253,20 +375,23 @@ test('market page: leaflet markers, popup cluster stats, directory, trends', asy
   await expect(page.locator('.market-directory table tbody tr')).toHaveCount(25)
 
   // Market trends section (GET /market/trends): one line per micro-market.
-  await expect(page.locator('.market-trends .chart-title')).toHaveText(
-    'Price trends by micro-market',
-  )
+  await expect(
+    page.locator('.market-trends').getByRole('heading', {
+      name: 'Trends — median sale price by half-year',
+    }),
+  ).toBeVisible()
   const trendLines = page.locator('.market-trends .recharts-line')
   await expect(trendLines.first()).toBeVisible({ timeout: 60_000 })
   expect(await trendLines.count()).toBeGreaterThanOrEqual(2) // 4 clusters today
 
-  // Give OSM tiles a moment so the portfolio screenshot shows the basemap.
+  // Give map tiles a moment so the portfolio screenshot shows the basemap.
   await page.waitForTimeout(2500)
   await shot(page, 'market-map')
 })
 
 test('model insights: champions, decision threshold, >=10 driver rows, matrices', async ({ page }) => {
   await page.goto('/model')
+  await expect(page).toHaveTitle('Model Insights · PropPulse')
   await expect(page.getByRole('heading', { name: 'Can you trust the numbers?' })).toBeVisible()
 
   // Champion cards name the served versions (mono tags in the panel titles).
@@ -292,6 +417,7 @@ test('model insights: champions, decision threshold, >=10 driver rows, matrices'
 
 test('model health: service status, traffic counters, drift sections', async ({ page }) => {
   await page.goto('/health')
+  await expect(page).toHaveTitle('Model Health · PropPulse')
   await expect(page.getByRole('heading', { name: 'Live service & drift' })).toBeVisible()
 
   // Service status (GET /health): API ok + both champions loaded + uptime.
@@ -311,19 +437,37 @@ test('model health: service status, traffic counters, drift sections', async ({ 
   await expect(traffic.locator('.metric', { hasText: 'Requests' })).toBeVisible()
   await expect(traffic.locator('.metric', { hasText: 'Avg latency' })).toBeVisible()
 
-  // Feature drift: the PSI report, or the documented no_data empty state —
-  // "Drift status" is present either way (metric label vs empty-state kicker).
+  // Feature drift: the PSI report panel, or the documented no_data empty
+  // state ("Drift status — no_data" kicker + guidance).
   const drift = page.locator('section', {
     has: page.getByRole('heading', { name: 'Feature drift' }),
   })
-  await expect(drift.getByText(/Drift status/)).toBeVisible()
-  const hasReport = (await drift.locator('.factor-row').count()) > 0
-  if (!hasReport) {
+  const hasReport = (await drift.locator('.panel', { hasText: 'Drift report' }).count()) > 0
+  if (hasReport) {
+    await expect(drift.getByText('Max PSI')).toBeVisible()
+  } else {
+    await expect(drift.getByText(/Drift status/)).toBeVisible()
     await expect(drift.getByText('No scored traffic in the drift window yet')).toBeVisible()
   }
 
   // Prediction drift section renders its own state.
   await expect(page.getByRole('heading', { name: 'Prediction drift' })).toBeVisible()
+})
+
+test('404 page: unknown URL renders the designed not-found with recovery links', async ({ page }) => {
+  await page.goto('/definitely-not-a-page')
+  await expect(page).toHaveTitle('404 · PropPulse')
+  await expect(page.getByText('Error 404')).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible()
+
+  // Both recovery links are real routes; the primary navigates back to /.
+  await expect(page.getByRole('link', { name: 'Go to Upload' })).toHaveAttribute(
+    'href',
+    '/workflow/01-upload',
+  )
+  await page.getByRole('link', { name: 'Back to overview' }).click()
+  await expect(page).toHaveURL(/\/$/)
+  await expect(page.getByRole('heading', { name: 'PropPulse', exact: true })).toBeVisible()
 })
 
 test('API-down state: valuation submit shows a reachable error (LAST — stops backend)', async ({ page }) => {

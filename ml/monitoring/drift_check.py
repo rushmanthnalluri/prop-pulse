@@ -46,10 +46,27 @@ from ml.monitoring.reference import (
     REFERENCE_STATS_PATH,
     load_reference_stats,
 )
-from ml.paths import LOGS_DIR, REPORTS_DIR
+from ml.paths import LOGS_DIR, REPORTS_DIR, REPO_ROOT
 from ml.training.common import write_json
 
 logger = logging.getLogger(__name__)
+
+
+def _display_path(path: Path) -> str:
+    """Repo-relative form for report fields (never leak absolute server paths).
+
+    The report is served verbatim by ``GET /metrics``; an absolute path would
+    disclose the host filesystem layout (AUD-hardening). Falls back to the
+    plain string only for absolute paths outside the repo (e.g. a ``--log``
+    override — the serving layer scrubs those to the file name).
+    """
+    path = Path(path)
+    if not path.is_absolute():
+        return path.as_posix()
+    try:
+        return path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return str(path)
 
 #: Default number of most-recent log lines analyzed per run (SPEC §10).
 DEFAULT_WINDOW: int = 500
@@ -63,8 +80,10 @@ LOW_SAMPLE_THRESHOLD: int = 50
 DRIFT_THRESHOLD_ENV_VAR: str = "DRIFT_PSI_THRESHOLD"
 #: Calendar-derived features (AUD-07). They drift structurally on sustained
 #: live traffic — the time-based train/val/test split ends in 2010 while
-#: serving stamps the sale date as today — so drift limited to these features
-#: must never trigger a retraining recommendation.
+#: serving defaults an omitted sale date to the latest train month (2008-12)
+#: and clamps later dates to that boundary, so live rows pile up at the
+#: window edge — meaning drift limited to these features must never trigger
+#: a retraining recommendation.
 CALENDAR_FEATURES: frozenset[str] = frozenset(
     {
         "YrSold",
@@ -325,10 +344,11 @@ def run_drift_check(
     log_path = Path(log_path)
     reference = load_reference_stats(reference_path)
     drift_threshold = psi_drift_threshold()
+    display_log_path = _display_path(log_path)
     base: dict[str, Any] = {
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "window": int(window),
-        "log_path": str(log_path),
+        "log_path": display_log_path,
         "psi_threshold": drift_threshold,
         "warn_threshold": PSI_WARN_THRESHOLD,
         "min_sample_for_retraining": MIN_SAMPLE_FOR_RETRAINING,
@@ -337,9 +357,9 @@ def run_drift_check(
     }
 
     if not log_path.exists():
-        report = _no_data_report(base, f"log not found: {log_path}")
+        report = _no_data_report(base, f"log not found: {display_log_path}")
     elif log_path.stat().st_size == 0:
-        report = _no_data_report(base, f"log is empty: {log_path}")
+        report = _no_data_report(base, f"log is empty: {display_log_path}")
     else:
         records, n_invalid = read_prediction_window(log_path, window)
         base["n_invalid_lines"] = n_invalid

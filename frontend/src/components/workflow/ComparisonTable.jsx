@@ -1,13 +1,21 @@
 /**
  * ComparisonTable (WORKFLOW §6.3-07/08) — the per-objective model comparison
  * from GET …/models?objective=… (latest successful result per candidate
- * across jobs). Sortable on every metric (useSortable + SortHeader, UX §7.6);
- * the best row follows the server's selection rule and carries the chip +
- * --accent-wash highlight. The regression paired-bootstrap block renders as
- * the honesty banner — "not statistically decisive" framing when
- * significant=false (§7; the BootstrapNote pattern, UX §5.4-5). Every number
- * is validation-only; the ProvenanceBanner states dataset, n_train/n_val, and
- * the classification table carries the SimulatedBadge (ADR-3).
+ * across jobs), presented as the reference's "verdict" table (blueprint
+ * §8.9): the selection metric renders as the accent column, lower-is-better
+ * headers carry the ↓ marker, and the server-flagged best row keeps the
+ * champion tint + "best" chip (e2e-pinned copy — PropPulse's only "Champion"
+ * is the production model, so the sandbox best is labelled "best").
+ *
+ * Reference deviations, all deliberate: the table stays sortable on every
+ * metric (useSortable + SortHeader, UX §7.6 — e2e-pinned), and stage 08
+ * passes metricDigits={4} for the benchmark-table 4dp convention (§12)
+ * while stage 07 keeps the 3dp default. The regression paired-bootstrap
+ * block renders as the honesty banner — "not statistically decisive"
+ * framing when significant=false (§7; the BootstrapNote pattern, UX §5.4-5).
+ * Every number is validation-only; the ProvenanceBanner states dataset,
+ * n_train/n_val, and the classification table carries the SimulatedBadge
+ * (ADR-3).
  *
  * Self-contained states: skeleton while loading, inline error + retry, empty
  * state when no candidate has completed for the objective.
@@ -19,26 +27,41 @@ import ProvenanceBanner from './ProvenanceBanner'
 import SimulatedBadge from './SimulatedBadge'
 import { formatMetric, formatNumber } from '../../format'
 
-/** Column sets per objective: [sortKey, label, numeric, render?]. */
+/**
+ * Column sets per objective. `lower` marks lower-is-better headers (↓);
+ * `accent` is the fallback accent column when the server's selection metric
+ * does not name a column; `usd`/`int` pick the cell format; anything else is
+ * a unitless metric rendered at the table's metricDigits.
+ */
 const COLUMNS = {
   regression: [
-    ['rmsle', 'RMSLE', true],
-    ['rmse', 'RMSE', true, (v) => `$${formatNumber(v, 0)}`],
-    ['mae', 'MAE', true, (v) => `$${formatNumber(v, 0)}`],
-    ['r2', 'R²', true],
+    { key: 'rmsle', label: 'RMSLE', lower: true, accent: true },
+    { key: 'rmse', label: 'RMSE', lower: true, usd: true },
+    { key: 'mae', label: 'MAE', lower: true, usd: true },
+    { key: 'r2', label: 'R²' },
   ],
   classification: [
-    ['pr_auc', 'PR-AUC', true],
-    ['roc_auc', 'ROC-AUC', true],
-    ['f1', 'F1', true],
-    ['brier', 'Brier', true],
+    { key: 'pr_auc', label: 'PR-AUC' },
+    { key: 'roc_auc', label: 'ROC-AUC', accent: true },
+    { key: 'f1', label: 'F1' },
+    { key: 'brier', label: 'Brier', lower: true },
   ],
   clustering: [
-    ['n_clusters', 'Clusters', true, (v) => formatNumber(v, 0)],
-    ['n_noise', 'Noise', true, (v) => formatNumber(v, 0)],
-    ['eps', 'eps', true],
-    ['min_samples', 'min samples', true, (v) => formatNumber(v, 0)],
+    { key: 'n_clusters', label: 'Clusters', int: true },
+    { key: 'n_noise', label: 'Noise', int: true },
+    { key: 'eps', label: 'eps', digits: 3 },
+    { key: 'min_samples', label: 'min samples', int: true },
   ],
+}
+
+/** One-line reading guide per objective, under the table (no numbers). */
+const OBJECTIVE_NOTES = {
+  regression:
+    'RMSLE is the selection metric — a log-space error, so a 10% miss costs the same at $100k and $1M. RMSE and MAE are the dollar misses; RMSE punishes outliers harder.',
+  classification:
+    'Brier measures probability quality (lower is better) — it is what the operating threshold trades against. ROC-AUC and PR-AUC are pure ranking: a monotone remap of probabilities never changes them.',
+  clustering:
+    'DBSCAN exposes no validation metric — a clustering run is judged by coverage and noise share, not a score. eps comes from the k-distance knee computed at prepare time.',
 }
 
 /** Flatten a candidate entry into a sortable row. */
@@ -53,7 +76,6 @@ function toRow(candidate) {
     stale: Boolean(candidate?.stale_split),
     seconds: candidate?.train_seconds ?? null,
     threshold: metrics.threshold ?? null,
-    params: candidate?.best_params ? JSON.stringify(candidate.best_params) : '',
     rmsle: metrics.rmsle ?? null,
     rmse: metrics.rmse ?? null,
     mae: metrics.mae ?? null,
@@ -67,6 +89,14 @@ function toRow(candidate) {
     eps: metrics.eps ?? null,
     min_samples: metrics.min_samples ?? null,
   }
+}
+
+/** Cell text per column format; null/NaN discipline = the app-wide '—'. */
+function formatCell(col, value, metricDigits) {
+  if (value === null || value === undefined || !Number.isFinite(Number(value))) return '—'
+  if (col.usd) return `$${formatNumber(value, 0)}`
+  if (col.int) return formatNumber(value, 0)
+  return formatMetric(value, col.digits ?? metricDigits)
 }
 
 /** The paired-bootstrap honesty banner (regression only, §3.9/§7). */
@@ -95,7 +125,14 @@ function BootstrapBanner({ bootstrap, bestName }) {
   )
 }
 
-export default function ComparisonTable({ objective, data, loading, error, onRetry }) {
+export default function ComparisonTable({
+  objective,
+  data,
+  loading,
+  error,
+  onRetry,
+  metricDigits = 3,
+}) {
   const rows = (data?.candidates ?? []).map(toRow)
   const { sorted, sort, toggleSort } = useSortable(rows)
 
@@ -108,12 +145,19 @@ export default function ComparisonTable({ objective, data, loading, error, onRet
       <EmptyState
         kicker="No candidates"
         title={`No completed ${objective} candidates yet`}
-        detail="Train one in stage 07 — the latest successful result per candidate lands here."
+        detail="Train a candidate first — the latest successful result per candidate lands here."
       />
     )
   }
 
   const columns = COLUMNS[objective] ?? COLUMNS.regression
+  // The accent column follows the server's selection rule; when the metric
+  // name is not a column (or is absent), the per-objective fallback applies.
+  const selectionMetric = data.selection?.metric ?? null
+  const accentKey =
+    (selectionMetric && columns.some((col) => col.key === selectionMetric)
+      ? selectionMetric
+      : null) ?? columns.find((col) => col.accent)?.key ?? null
   const bestName = rows.find((row) => row.best)?.name ?? 'best'
   const simulated = data.provenance?.simulated_target === true
   const staleAny = rows.some((row) => row.stale)
@@ -137,7 +181,7 @@ export default function ComparisonTable({ objective, data, loading, error, onRet
       )}
       {simulated && (
         <p className="note wf-sim-note">
-          <SimulatedBadge /> Every number below is against a simulated target (ADR-3) — a
+          <SimulatedBadge /> Every number below is against a simulated target — a
           seeded days-on-market simulation, not an observed market outcome.
         </p>
       )}
@@ -150,12 +194,12 @@ export default function ComparisonTable({ objective, data, loading, error, onRet
           <thead>
             <tr>
               <SortHeader label="Candidate" sortKey="name" sort={sort} onToggle={toggleSort} />
-              {columns.map(([key, label, numeric]) => (
+              {columns.map((col) => (
                 <SortHeader
-                  key={key}
-                  label={label}
-                  sortKey={key}
-                  numeric={numeric}
+                  key={col.key}
+                  label={col.lower ? `${col.label} ↓` : col.label}
+                  sortKey={col.key}
+                  numeric
                   sort={sort}
                   onToggle={toggleSort}
                 />
@@ -167,19 +211,19 @@ export default function ComparisonTable({ objective, data, loading, error, onRet
                 sort={sort}
                 onToggle={toggleSort}
               />
-              <th scope="col">Best params</th>
             </tr>
           </thead>
           <tbody>
             {sorted.map((row) => (
-              <tr key={row.name} className={row.best ? 'wf-best-row' : undefined}>
+              <tr key={row.name} className={row.best ? 'champion-row' : undefined}>
                 <td className="mono strong">
                   {row.name}
                   {row.best && <span className="badge badge-accent wf-best-chip">best</span>}
                   {row.stale && (
                     <span
                       className="badge badge-warn wf-stale-chip"
-                      title="Trained on a previous preprocessing configuration — these validation metrics describe the previous split."
+                      tabIndex={0}
+                      aria-label="Old split — trained on a previous preprocessing configuration; these validation metrics describe the previous split."
                     >
                       old split
                     </span>
@@ -188,22 +232,27 @@ export default function ComparisonTable({ objective, data, loading, error, onRet
                     <span className="wf-threshold-hint mono">t={formatMetric(row.threshold, 2)}</span>
                   )}
                 </td>
-                {columns.map(([key, , numeric, render]) => (
-                  <td key={key} className={numeric ? 'num' : undefined}>
-                    {row[key] == null ? '—' : render ? render(row[key]) : formatMetric(row[key])}
+                {columns.map((col) => (
+                  <td
+                    key={col.key}
+                    className={col.key === accentKey ? 'num accent' : 'num'}
+                  >
+                    {formatCell(col, row[col.key], metricDigits)}
                   </td>
                 ))}
                 <td className="num">{row.seconds == null ? '—' : formatNumber(row.seconds, 1)}</td>
-                <td className="mono dim wf-params" title={row.params}>
-                  {row.params.length > 44 ? `${row.params.slice(0, 44)}…` : row.params || '—'}
-                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+      {OBJECTIVE_NOTES[objective] && (
+        <p className="note mt-10">
+          {OBJECTIVE_NOTES[objective]}
+        </p>
+      )}
       {data.selection?.note && (
-        <p className="note" style={{ marginTop: 10 }}>
+        <p className="note mt-10">
           Selection: <span className="mono">{data.selection.metric ?? '—'}</span> (
           {data.selection.rule ?? '—'}) — {data.selection.note}
         </p>

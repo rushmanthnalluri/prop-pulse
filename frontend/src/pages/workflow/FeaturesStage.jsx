@@ -1,17 +1,15 @@
 /**
- * FeaturesStage (WORKFLOW §6.3-02) — stage 02 of the guided workbench:
- * "analyse features" over `GET /workflow/datasets/{id}/features`.
+ * FeaturesStage (WORKFLOW §6.3-02, blueprint §8.3) — stage 02 of the guided
+ * workbench: the field registry of the active dataset over
+ * `GET /workflow/datasets/{id}/features`.
  *
- * Sections (one fetch feeds all three; §6.4 states):
- *   1. Prediction objectives — TargetCards (regression / classification with
- *      the structural SimulatedBadge / clustering), availability + the API
- *      notes verbatim. Detection is REPORTED here; the objective is chosen
- *      at stage 07.
- *   2. Raw features — the sortable/filterable FeatureTable with per-feature
- *      inspect expansion (81 columns on any validated dataset).
- *   3. Pipeline-derived features — the engineered + neighborhood-stat columns
- *      the pipeline computes, collapsed by default and flagged as
- *      computed-not-raw.
+ * Structure (reference §8.3, adapted to the real payload): page-head
+ * (kicker "Stage 02 · Records" / h1 / desc + the reference's "Dataset · name
+ * (bundled default)" page-meta) → divider → bare metrics grid-3 (Fields per
+ * record / Numeric / Categorical, counted from `raw_features`) → Prediction
+ * objectives (TargetCards — carries the structural ADR-3 SimulatedBadge; the
+ * objective itself is chosen at stage 07) → the registry: one
+ * `.registry-group` per family via FeatureTable (raw + pipeline-derived).
  *
  * An empty `raw_features` "can't happen" on a validated dataset (§6.3-02) but
  * is specced anyway per UX §7.
@@ -21,40 +19,10 @@ import { getFeatures } from '../../api/workflow'
 import { useApi } from '../../api/useApi'
 import { formatNumber } from '../../format'
 import { EmptyState, ErrorState, PageSkeleton } from '../../components/StateView'
-import ProvenanceBanner from '../../components/workflow/ProvenanceBanner'
 import TargetCards from '../../components/workflow/TargetCards'
 import FeatureTable from '../../components/workflow/FeatureTable'
 import { useWorkflow } from './WorkflowShell'
-import '../../styles/workflow-eda.css'
-
-/** Collapsible list of the pipeline-computed columns (engineered + neighborhood stats). */
-function PipelineFeatures({ features }) {
-  const items = Array.isArray(features) ? features : []
-  if (items.length === 0) return null
-  return (
-    <details className="fieldset wfe-pipe">
-      <summary>
-        {formatNumber(items.length, 0)} pipeline-derived features — computed, not raw columns
-      </summary>
-      <p className="note wfe-pipe-note">
-        {items[0]?.note ?? 'computed in the pipeline — not a raw column'}. They appear after
-        preprocessing (stage 06), never in the raw CSV.
-      </p>
-      <ul className="wfe-pipe-list">
-        {items.map((item) => (
-          <li key={item?.name} className="wfe-pipe-item">
-            <span className="mono">{item?.name}</span>
-            <span
-              className={`badge ${item?.role === 'engineered' ? 'badge-accent' : 'badge-muted'}`}
-            >
-              {item?.role === 'neighborhood_stat' ? 'neighborhood stat' : (item?.role ?? '—')}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </details>
-  )
-}
+import '../../styles/workflow-features.css'
 
 export default function FeaturesStage() {
   const { datasetId, dataset } = useWorkflow()
@@ -63,28 +31,27 @@ export default function FeaturesStage() {
 
   if (loading && !data) return <PageSkeleton />
 
-  const rawCount = data?.raw_features?.length ?? null
-  const metaParts = dataset
-    ? [
-        dataset.name,
-        `${formatNumber(dataset.n_rows, 0)} × ${formatNumber(dataset.n_cols, 0)}`,
-        ...(rawCount !== null
-          ? [`${formatNumber(rawCount, 0)} raw columns analysed`]
-          : []),
-      ]
-    : ['Loading dataset record…']
+  const raw = (data?.raw_features ?? []).filter(Boolean)
+  const numericCount = raw.filter((f) => f?.dtype === 'numeric').length
+  const categoricalCount = raw.length - numericCount
+
+  const pageMeta = dataset
+    ? `Dataset · ${dataset.name}${dataset.source === 'bundled' && !dataset.name.endsWith('(bundled)') ? ' (bundled default)' : ''}`
+    : 'Loading dataset record…'
 
   return (
     <div>
       <div className="page-head">
-        <span className="kicker">Stage 02 · Analyse Features</span>
-        <h1 className="page-title">Feature analysis</h1>
+        <span className="kicker">Stage 02 · Records</span>
+        <h1 className="page-title">Analyze Features</h1>
         <p className="page-desc">
-          Every raw column of the active dataset, its pipeline role, and the three modelling
-          objectives the workbench can train toward.
+          Every column in the record — its type, pipeline role, coverage, and sample values —
+          before any analysis begins.
         </p>
-        <p className="page-meta">{metaParts.join(' · ')}</p>
+        <p className="page-meta">{pageMeta}</p>
       </div>
+
+      <hr className="divider" />
 
       {error && !data ? (
         <div className="section">
@@ -92,50 +59,46 @@ export default function FeaturesStage() {
         </div>
       ) : (
         <>
-          <div className="wfe-banner-slot">
-            <ProvenanceBanner
-              provenance={{ dataset_name: dataset?.name ?? datasetId }}
-              label="Feature analysis describes the active dataset — switch it from the dataset chip above."
-            />
-          </div>
+          <section className="section pb-8">
+            <div className="metrics grid-3">
+              <div className="metric">
+                <span className="metric-value">{formatNumber(raw.length, 0)}</span>
+                <span className="metric-label">Fields per record</span>
+              </div>
+              <div className="metric">
+                <span className="metric-value">{formatNumber(numericCount, 0)}</span>
+                <span className="metric-label">Numeric</span>
+              </div>
+              <div className="metric">
+                <span className="metric-value">{formatNumber(categoricalCount, 0)}</span>
+                <span className="metric-label">Categorical</span>
+              </div>
+            </div>
+          </section>
 
-          <div className="section">
+          <section className="section pt-12 pb-8">
             <div className="section-head">
-              <span className="section-title">Prediction objectives</span>
+              <h2 className="section-title">Prediction objectives</h2>
               <span className="section-note">objective is chosen at stage 07</span>
             </div>
             <TargetCards targets={data?.targets} />
-          </div>
+          </section>
 
-          <hr className="divider" />
-
-          <div className="section">
-            <div className="section-head">
-              <span className="section-title">Raw features</span>
-              {rawCount !== null && (
-                <span className="section-note">{formatNumber(rawCount, 0)} columns</span>
-              )}
-            </div>
-            {rawCount === 0 ? (
+          <section className="section pt-12">
+            {raw.length === 0 ? (
               <EmptyState
                 kicker="No features"
                 title="This dataset reported no columns"
-                detail="A validated dataset always carries the 81 Ames columns — if you see this, the features endpoint returned an unexpected payload."
-              />
+                detail="A validated dataset always carries the 81 Ames columns — if you see this, the features endpoint returned an unexpected response."
+              >
+                <button type="button" className="btn btn-secondary btn-sm" onClick={reload}>
+                  Reload analysis
+                </button>
+              </EmptyState>
             ) : (
-              <FeatureTable features={data?.raw_features ?? []} />
+              <FeatureTable features={raw} pipelineFeatures={data?.pipeline_features ?? []} />
             )}
-          </div>
-
-          <hr className="divider" />
-
-          <div className="section">
-            <div className="section-head">
-              <span className="section-title">Pipeline-derived features</span>
-              <span className="section-note">computed-not-raw</span>
-            </div>
-            <PipelineFeatures features={data?.pipeline_features} />
-          </div>
+          </section>
         </>
       )}
     </div>

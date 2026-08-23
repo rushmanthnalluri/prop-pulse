@@ -1,14 +1,17 @@
 /**
- * EvaluateStage — stage 08 of the guided workbench (WORKFLOW §6.3-08). The
- * shell locks this route until state.can_evaluate (at least one completed
- * job on the active dataset); this page renders the job/candidate picker
- * (done jobs from listJobs, grouped by objective; the ?job= deep link from
- * stage 07 is honored), the per-objective ComparisonTable (best row from the
- * server's selection rule + the regression bootstrap honesty banner), the
- * ProvenanceBanner, and the EvaluationWorkspace for the selected candidate.
- * Every number is validation-only and carries its provenance; every
- * classification number carries the SimulatedBadge (§7 — component-enforced
- * inside the shared components).
+ * EvaluateStage — stage 08 of the guided workbench (WORKFLOW §6.3-08,
+ * blueprint §8.9). The shell locks this route until state.can_evaluate (at
+ * least one completed job on the active dataset); this page renders the
+ * job/candidate picker (done jobs from listJobs, grouped by objective; the
+ * ?job= deep link from stage 07 is honored), then the reference's evaluation
+ * rhythm: "The verdict" per-objective ComparisonTable (selection metric as
+ * the accent column, ↓ on lower-better headers, 4dp per §12, champion row
+ * tinted, best row from the server's selection rule + the regression
+ * bootstrap honesty banner), the ProvenanceBanner, and the
+ * EvaluationWorkspace for the selected candidate (wide curve cards +
+ * the .eval-duo). Every number is validation-only and carries its
+ * provenance; every classification number carries the SimulatedBadge (§7 —
+ * component-enforced inside the shared components).
  */
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
@@ -20,7 +23,10 @@ import ComparisonTable from '../../components/workflow/ComparisonTable'
 import EvaluationWorkspace from '../../components/workflow/EvaluationWorkspace'
 import ProvenanceBanner from '../../components/workflow/ProvenanceBanner'
 import { formatDateTime } from '../../format'
-import '../../styles/workflow-train.css'
+import '../../styles/confusion-matrix.css'
+import '../../styles/wf-cluster.css'
+import '../../styles/wf-comparison.css'
+import '../../styles/workflow-evaluate.css'
 
 /** Done jobs that have at least one successfully trained candidate. */
 function evaluableJobs(jobs) {
@@ -89,7 +95,7 @@ export default function EvaluateStage() {
     return (
       <>
         <div className="page-head">
-          <span className="kicker">Stage 08 · Model Evaluation</span>
+          <span className="kicker">Stage 08 · Modelling</span>
           <h1 className="page-title">Model Evaluation</h1>
         </div>
         <div className="section">
@@ -111,7 +117,7 @@ export default function EvaluateStage() {
     return (
       <div className="section">
         <EmptyState
-          kicker="Stage 08 · Model Evaluation"
+          kicker="Stage 08 · Modelling"
           title="No completed training jobs on this dataset"
           detail="Evaluation reads the persisted validation predictions of a finished job — train at least one candidate in stage 07 first."
         >
@@ -133,12 +139,13 @@ export default function EvaluateStage() {
   return (
     <>
       <div className="page-head">
-        <span className="kicker">Stage 08 · Model Evaluation</span>
+        <span className="kicker">Stage 08 · Modelling</span>
         <h1 className="page-title">Model Evaluation</h1>
         <p className="page-desc">
-          Validation-split evidence for your sandbox candidates — metrics, curves, and cluster
-          assignments derived from the predictions persisted at train time. The sandbox test
-          split stays sealed; no test numbers exist in the workbench.
+          One honest look at the validation split for each sandbox candidate — metrics,
+          curves, confusion matrix, and feature importance from the predictions persisted
+          at train time. The sandbox test split stays sealed; no test numbers exist in the
+          workbench.
         </p>
         <p className="page-meta">
           {[
@@ -149,6 +156,8 @@ export default function EvaluateStage() {
             .join(' · ')}
         </p>
       </div>
+
+      <hr className="divider" />
 
       <div className="section">
         <div className="section-head">
@@ -208,7 +217,7 @@ export default function EvaluateStage() {
       {objective && (
         <div className="section">
           <div className="section-head">
-            <span className="section-title">Comparison — {objective}</span>
+            <span className="section-title">The verdict — {objective} validation split</span>
             <span className="section-note">latest successful result per candidate</span>
           </div>
           <ComparisonTable
@@ -217,6 +226,7 @@ export default function EvaluateStage() {
             loading={modelsLoading}
             error={modelsError}
             onRetry={reloadModels}
+            metricDigits={4}
           />
         </div>
       )}
@@ -229,7 +239,7 @@ export default function EvaluateStage() {
           <span className="section-note mono">{selectedJobId}</span>
         </div>
         {models?.provenance && (
-          <div style={{ marginBottom: 16 }}>
+          <div className="mb-16">
             <ProvenanceBanner
               provenance={models.provenance}
               label="Sandbox evaluation — validation metrics only; the test split stays sealed."

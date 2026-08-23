@@ -1,290 +1,191 @@
 /**
- * FeatureTable (WORKFLOW §6.3-02) — the sortable, filterable inventory of a
- * dataset's raw features (`GET …/features` → `raw_features`). One row per
- * column: name, dtype, pipeline role, unique count, missing n/%, and a
- * summary cell (mean for numeric, top value for categorical). Sorting uses
- * useSortable + SortHeader (asc → desc → natural=API order, UX §7.6); the
- * toolbar filters by name substring and role.
+ * FeatureTable (WORKFLOW §6.3-02, blueprint §8.3) — the field registry of the
+ * active dataset over `GET …/features`: one `.registry-group` per family,
+ * each a `Field | Type | Role | Coverage | Unique | Notes` table. No
+ * client-side sorting/filtering (blueprint §5) — the registry reads top to
+ * bottom like the reference.
  *
- * Each row expands into an inspect panel with the rest of the payload:
- * numeric min/mean/max, categorical top values (≤ 8, with counts), and the
- * role's meaning. Nothing is computed client-side beyond bar widths relative
- * to the largest top-value count.
+ * Groups derive from the payload's own facets (role + dtype): Identifier,
+ * Numeric inputs, Categorical inputs, Targets, Excluded (families present in
+ * the data only), then Pipeline-derived (the computed columns, with dashes
+ * where a raw-only fact doesn't exist). The API carries no curated domain
+ * taxonomy, so none is invented — that and the Notes column are documented
+ * deviations: the reference's hand-written notes don't exist server-side, so
+ * Notes show payload facts instead (categorical top values "e.g. …", numeric
+ * observed range + mean).
+ *
+ * Every cell is a real payload field: Coverage = 100 − missing_pct (4px bar,
+ * danger fill under 95%), Unique = n_unique, the target row carries the amber
+ * `.role-tag.role-target`.
  */
-import { useMemo, useState } from 'react'
 import { formatNumber } from '../../format'
-import useSortable from '../shared/useSortable'
-import SortHeader from '../shared/SortHeader'
 
-/** Role → badge class + plain meaning (roles per §3.4 / ml/features/pipeline lists). */
-const ROLES = {
-  raw_input: { label: 'input', badge: 'badge-accent', note: 'Model input — raw column' },
-  target: { label: 'target', badge: 'badge-warn', note: 'Prediction target — never an input' },
-  identifier: { label: 'id', badge: 'badge-muted', note: 'Row identifier — never a model input' },
-  excluded: { label: 'excluded', badge: 'badge-muted', note: 'Excluded from the feature pipeline' },
+/** role → tag label (roles per §3.4 / ml/features/pipeline lists). */
+const ROLE_TAGS = {
+  raw_input: 'input',
+  identifier: 'identifier',
+  target: 'target',
+  excluded: 'excluded',
+  engineered: 'engineered',
+  neighborhood_stat: 'neighborhood stat',
 }
 
-const roleMeta = (role) => ROLES[role] ?? { label: role ?? '—', badge: 'badge-muted', note: null }
+/** Registry families in display order, matched on the payload's role + dtype. */
+const GROUPS = [
+  { id: 'identifier', title: 'Identifier', match: (f) => f?.role === 'identifier' },
+  {
+    id: 'numeric-inputs',
+    title: 'Numeric inputs',
+    match: (f) => f?.role === 'raw_input' && f?.dtype === 'numeric',
+  },
+  {
+    id: 'categorical-inputs',
+    title: 'Categorical inputs',
+    match: (f) => f?.role === 'raw_input' && f?.dtype === 'categorical',
+  },
+  { id: 'targets', title: 'Targets', match: (f) => f?.role === 'target' },
+  { id: 'excluded', title: 'Excluded', match: (f) => f?.role === 'excluded' },
+]
 
-/** Mean display: grouped thousands, one decimal below 1000. */
-const fmtMean = (value) => {
+/** ≥1000 grouped with no decimals, below that one decimal (range/mean in Notes). */
+const fmtStat = (value) => {
   if (value === null || value === undefined || !Number.isFinite(Number(value))) return null
   const n = Number(value)
   return Math.abs(n) >= 1000 ? formatNumber(n, 0) : formatNumber(n, 1)
 }
 
-function Chevron({ open }) {
+/** Notes cell: payload facts only — samples for categoricals, range for numerics. */
+function noteFor(feature) {
+  if (feature?.dtype === 'categorical') {
+    const samples = (Array.isArray(feature?.top_values) ? feature.top_values : [])
+      .slice(0, 3)
+      .map((tv) => String(tv?.value))
+    return samples.length > 0 ? `e.g. ${samples.join(' · ')}` : null
+  }
+  const min = fmtStat(feature?.min)
+  const max = fmtStat(feature?.max)
+  const mean = fmtStat(feature?.mean)
+  if (min === null || max === null) return null
+  return `range ${min}–${max}${mean !== null ? ` · mean ${mean}` : ''}`
+}
+
+/** 4px coverage bar + 1dp percent; danger fill under 95% (reference threshold). */
+function CoverageCell({ feature }) {
+  const coverage = Math.round((100 - (feature?.missing_pct ?? 0)) * 10) / 10
   return (
-    <svg
-      width="10"
-      height="10"
-      viewBox="0 0 10 10"
-      aria-hidden="true"
-      style={{ transform: open ? 'rotate(90deg)' : undefined }}
-    >
-      <path
-        d="M3.5 2 6.5 5 3.5 8"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
+    <span className="coverage">
+      <span className="coverage-track">
+        <span
+          className={`coverage-fill${coverage < 95 ? ' coverage-low' : ''}`}
+          style={{ '--w': `${coverage}%` }}
+        />
+      </span>
+      <span className="coverage-pct">{coverage.toFixed(1)}%</span>
+    </span>
   )
 }
 
-/** Expanded per-feature inspect panel (payload facts only). */
-function FeatureDetail({ feature }) {
-  const meta = roleMeta(feature.role)
-  const topValues = Array.isArray(feature.top_values) ? feature.top_values : []
-  const maxCount = topValues.reduce((max, tv) => Math.max(max, tv?.count ?? 0), 0) || 1
+function RawRow({ feature }) {
+  const note = noteFor(feature)
   return (
-    <div className="wfe-feat-detail">
-      <div className="wfe-feat-facts">
-        <span>
-          <span className="wfe-fact-label">Type</span> {feature.dtype}
+    <tr>
+      <td className="mono strong">{feature.name}</td>
+      <td className="mono num dim">{feature.dtype}</td>
+      <td>
+        <span className={`role-tag${feature.role === 'target' ? ' role-target' : ''}`}>
+          {ROLE_TAGS[feature.role] ?? feature.role ?? '—'}
         </span>
-        <span>
-          <span className="wfe-fact-label">Unique</span> {formatNumber(feature.n_unique, 0)}
+      </td>
+      <td>
+        <CoverageCell feature={feature} />
+      </td>
+      <td className="num dim">{formatNumber(feature.n_unique, 0)}</td>
+      <td className="registry-optional dim cell-note">{note ?? '—'}</td>
+    </tr>
+  )
+}
+
+/** Pipeline-derived columns are computed, not raw — raw-only facts dash out. */
+function PipelineRow({ feature }) {
+  return (
+    <tr>
+      <td className="mono strong">{feature?.name}</td>
+      <td className="num dim">—</td>
+      <td>
+        <span className="role-tag">{ROLE_TAGS[feature?.role] ?? feature?.role ?? '—'}</span>
+      </td>
+      <td className="dim">—</td>
+      <td className="num dim">—</td>
+      <td className="registry-optional dim cell-note">
+        {feature?.note ?? 'computed in the pipeline — not a raw column'}
+      </td>
+    </tr>
+  )
+}
+
+function RegistryGroup({ id, title, rows, children }) {
+  return (
+    <div className="registry-group" id={`group-${id}`}>
+      <div className="registry-group-head">
+        <h2>{title}</h2>
+        <span className="registry-count">
+          {rows} {rows === 1 ? 'field' : 'fields'}
         </span>
-        <span>
-          <span className="wfe-fact-label">Missing</span> {formatNumber(feature.n_missing, 0)} (
-          {formatNumber(feature.missing_pct, 1)}%)
-        </span>
-        {feature.dtype === 'numeric' && (
-          <>
-            <span>
-              <span className="wfe-fact-label">Mean</span> {fmtMean(feature.mean) ?? '—'}
-            </span>
-            <span>
-              <span className="wfe-fact-label">Min</span> {fmtMean(feature.min) ?? '—'}
-            </span>
-            <span>
-              <span className="wfe-fact-label">Max</span> {fmtMean(feature.max) ?? '—'}
-            </span>
-          </>
-        )}
       </div>
-      {meta.note && <p className="note">{meta.note}.</p>}
-      {feature.dtype === 'categorical' && topValues.length > 0 && (
-        <div className="wfe-topvals">
-          <span className="wfe-fact-label">Top values</span>
-          {topValues.map((tv) => (
-            <div className="wfe-topval" key={String(tv?.value)}>
-              <span className="wfe-topval-value mono" title={String(tv?.value)}>
-                {String(tv?.value)}
-              </span>
-              <span className="wfe-topval-track">
-                <span
-                  className="wfe-topval-fill"
-                  style={{ width: `${Math.max(2, ((tv?.count ?? 0) / maxCount) * 100)}%` }}
-                />
-              </span>
-              <span className="wfe-topval-count mono">{formatNumber(tv?.count, 0)}</span>
-            </div>
-          ))}
-        </div>
-      )}
+      <div className="table-scroll borderless">
+        <table className="table">
+          <thead>
+            <tr>
+              <th scope="col">Field</th>
+              <th scope="col">Type</th>
+              <th scope="col">Role</th>
+              <th scope="col">Coverage</th>
+              <th scope="col">Unique</th>
+              <th scope="col" className="registry-optional">
+                Notes
+              </th>
+            </tr>
+          </thead>
+          <tbody>{children}</tbody>
+        </table>
+      </div>
     </div>
   )
 }
 
-export default function FeatureTable({ features }) {
-  const [query, setQuery] = useState('')
-  const [role, setRole] = useState('all')
-  const [openName, setOpenName] = useState(null)
+export default function FeatureTable({ features = [], pipelineFeatures = [] }) {
+  const raw = Array.isArray(features) ? features.filter(Boolean) : []
+  const pipeline = Array.isArray(pipelineFeatures) ? pipelineFeatures.filter(Boolean) : []
 
-  const roles = useMemo(
-    () => [...new Set((features ?? []).map((f) => f?.role).filter(Boolean))],
-    [features],
-  )
-
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLowerCase()
-    return (features ?? []).filter((f) => {
-      if (!f) return false
-      if (role !== 'all' && f.role !== role) return false
-      if (needle && !String(f.name).toLowerCase().includes(needle)) return false
-      return true
-    })
-  }, [features, query, role])
-
-  const { sorted, sort, toggleSort } = useSortable(filtered)
-  const total = features?.length ?? 0
+  const groups = []
+  for (const def of GROUPS) {
+    const rows = raw.filter((f) => def.match(f))
+    if (rows.length > 0) groups.push({ ...def, rows })
+  }
+  // Forward-compat: any role/dtype the families don't know lands in "Other".
+  const matched = new Set(groups.flatMap((group) => group.rows.map((f) => f.name)))
+  const rest = raw.filter((f) => !matched.has(f.name))
+  if (rest.length > 0) groups.push({ id: 'other', title: 'Other columns', rows: rest })
 
   return (
     <div>
-      <div className="wfe-toolbar">
-        <div className="field wfe-toolbar-search">
-          <label className="field-label" htmlFor="wfe-feat-search">
-            Filter by name
-          </label>
-          <input
-            id="wfe-feat-search"
-            type="search"
-            className="field-input"
-            placeholder="e.g. GrLivArea"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </div>
-        <div className="field">
-          <label className="field-label" htmlFor="wfe-feat-role">
-            Role
-          </label>
-          <select
-            id="wfe-feat-role"
-            className="select"
-            value={role}
-            onChange={(event) => setRole(event.target.value)}
-          >
-            <option value="all">All roles</option>
-            {roles.map((r) => (
-              <option key={r} value={r}>
-                {roleMeta(r).label} ({r})
-              </option>
-            ))}
-          </select>
-        </div>
-        <span className="wfe-toolbar-count mono" aria-live="polite">
-          {filtered.length === total
-            ? `${formatNumber(total, 0)} columns`
-            : `${formatNumber(filtered.length, 0)} of ${formatNumber(total, 0)} columns`}
-        </span>
-      </div>
-
-      {sorted.length === 0 ? (
-        <p className="note">
-          No columns match “{query}” — clear the filter to see all {formatNumber(total, 0)}.
-        </p>
-      ) : (
-        <div className="table-scroll table-scroll--tall" tabIndex={0}>
-          <table className="table table-sticky">
-            <thead>
-              <tr>
-                <th scope="col" className="wfe-chev-col" aria-label="Inspect" />
-                <SortHeader label="Feature" sortKey="name" sort={sort} onToggle={toggleSort} />
-                <SortHeader label="Type" sortKey="dtype" sort={sort} onToggle={toggleSort} />
-                <SortHeader label="Role" sortKey="role" sort={sort} onToggle={toggleSort} />
-                <SortHeader
-                  label="Unique"
-                  sortKey="n_unique"
-                  numeric
-                  sort={sort}
-                  onToggle={toggleSort}
-                />
-                <SortHeader
-                  label="Missing"
-                  sortKey="n_missing"
-                  numeric
-                  sort={sort}
-                  onToggle={toggleSort}
-                />
-                <SortHeader
-                  label="Missing %"
-                  sortKey="missing_pct"
-                  numeric
-                  sort={sort}
-                  onToggle={toggleSort}
-                />
-                <SortHeader
-                  label="Mean / top value"
-                  sortKey="mean"
-                  numeric
-                  sort={sort}
-                  onToggle={toggleSort}
-                />
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((feature) => {
-                const open = openName === feature.name
-                const meta = roleMeta(feature.role)
-                const top =
-                  Array.isArray(feature.top_values) && feature.top_values.length > 0
-                    ? feature.top_values[0]
-                    : null
-                return [
-                  <tr key={feature.name} className={open ? 'wfe-row-open' : undefined}>
-                    <td className="wfe-chev-col">
-                      <button
-                        type="button"
-                        className="wfe-chev"
-                        aria-expanded={open}
-                        aria-label={`Inspect ${feature.name}`}
-                        onClick={() => setOpenName(open ? null : feature.name)}
-                      >
-                        <Chevron open={open} />
-                      </button>
-                    </td>
-                    <td>
-                      <span className="mono wfe-feat-name">{feature.name}</span>
-                    </td>
-                    <td className="dim">{feature.dtype}</td>
-                    <td>
-                      <span className={`badge ${meta.badge}`}>{meta.label}</span>
-                    </td>
-                    <td className="num">{formatNumber(feature.n_unique, 0)}</td>
-                    <td className="num">
-                      {feature.n_missing > 0 ? (
-                        formatNumber(feature.n_missing, 0)
-                      ) : (
-                        <span className="dim">0</span>
-                      )}
-                    </td>
-                    <td className="num">
-                      {feature.missing_pct > 0 ? (
-                        `${formatNumber(feature.missing_pct, 1)}%`
-                      ) : (
-                        <span className="dim">0%</span>
-                      )}
-                    </td>
-                    <td className="num">
-                      {feature.dtype === 'numeric' ? (
-                        (fmtMean(feature.mean) ?? <span className="dim">—</span>)
-                      ) : top ? (
-                        <span>
-                          <span className="mono">{String(top.value)}</span>{' '}
-                          <span className="dim">· {formatNumber(top.count, 0)}</span>
-                        </span>
-                      ) : (
-                        <span className="dim">—</span>
-                      )}
-                    </td>
-                  </tr>,
-                  open && (
-                    <tr key={`${feature.name}__detail`} className="wfe-detail-row">
-                      <td colSpan={8}>
-                        <FeatureDetail feature={feature} />
-                      </td>
-                    </tr>
-                  ),
-                ]
-              })}
-            </tbody>
-          </table>
-        </div>
+      {groups.map((group) => (
+        <RegistryGroup key={group.id} id={group.id} title={group.title} rows={group.rows.length}>
+          {group.rows.map((feature) => (
+            <RawRow key={feature.name} feature={feature} />
+          ))}
+        </RegistryGroup>
+      ))}
+      {pipeline.length > 0 && (
+        <RegistryGroup
+          id="pipeline-derived"
+          title="Pipeline-derived"
+          rows={pipeline.length}
+        >
+          {pipeline.map((feature) => (
+            <PipelineRow key={feature?.name} feature={feature} />
+          ))}
+        </RegistryGroup>
       )}
     </div>
   )

@@ -1,21 +1,22 @@
 /**
- * ValidationReport (WORKFLOW §6.3-01) — renders the upload-validation result
- * as a per-check checklist, for both outcomes of `POST /workflow/datasets`:
+ * ValidationReport (WORKFLOW §6.3-01, blueprint §8.2) — renders the
+ * upload-validation result for both outcomes of `POST /workflow/datasets`:
  *
- *   success — the 201 payload's `validation: {ok, checks}` (pass/warn rows;
- *             cardinality warnings are non-fatal, §2.3)
- *   failure — the dict-shaped 422, read uniformly via `uploadReportOf(error)`:
+ *   failure — `.alert-error` with the reference's "Upload failed" lead, then
+ *             the dict-shaped 422 read uniformly via `uploadReportOf(error)`:
  *             the failing check plus the report's NAMED details
  *             (`missing_columns`, `n_duplicate_ids` + sample, per-column
  *             category/range `violations`, `parse_error`) — never raw JSON
  *             (§6.3-01 error matrix: corrupt / empty / schema / duplicate /
  *             unsupported all land here in plain language)
+ *   success — the 201 payload's `validation: {ok, checks}` as per-check rows
+ *             (pass/warn; cardinality warnings are non-fatal, §2.3)
  *
  * Non-validation errors (413 too large, 415 wrong type, offline, …) degrade
- * to a plain inline alert carrying the client's already-plain message.
+ * to the plain alert carrying the client's already-plain message.
  *
- *   <ValidationReport validation={payload.validation} fileName={file.name} />
  *   <ValidationReport error={apiError} fileName={file.name} />
+ *   <ValidationReport validation={payload.validation} fileName={file.name} />
  */
 import { uploadReportOf } from '../../api/workflow'
 import { formatNumber } from '../../format'
@@ -34,28 +35,30 @@ const CHECK_LABELS = {
   cardinality: 'Cardinality',
 }
 
-const STATUS_ICON = { pass: '✓', warn: '!', fail: '✕' }
+const STATUS_TEXT = { pass: 'PASS', warn: 'WARN', fail: 'FAIL' }
+const STATUS_BADGE = { pass: 'badge-accent', warn: 'badge-warn', fail: 'badge-danger' }
 const STATUS_LABEL = { pass: 'passed', warn: 'warning', fail: 'failed' }
 
 function CheckRows({ checks }) {
   if (!Array.isArray(checks) || checks.length === 0) return null
   return (
-    <ul className="wfe-checks">
+    <ul className="wfu-checks">
       {checks.map((check, index) => {
-        const status = STATUS_ICON[check?.status] ? check.status : 'fail'
+        const status = STATUS_TEXT[check?.status] ? check.status : 'fail'
         return (
-          <li key={`${check?.code ?? 'check'}-${index}`} className={`wfe-check wfe-check--${status}`}>
+          <li key={`${check?.code ?? 'check'}-${index}`} className={`wfu-check wfu-check--${status}`}>
+            {/* Mono status text badge — the reference's status idiom (PASS/WARN/FAIL),
+                not an off-palette icon glyph. */}
             <span
-              className="wfe-check-icon"
-              role="img"
+              className={`badge ${STATUS_BADGE[status]} wfu-check-status`}
               aria-label={`check ${STATUS_LABEL[status]}`}
             >
-              {STATUS_ICON[status]}
+              {STATUS_TEXT[status]}
             </span>
-            <span className="wfe-check-code mono">
+            <span className="wfu-check-code mono">
               {CHECK_LABELS[check?.code] ?? check?.code ?? 'check'}
             </span>
-            <span className="wfe-check-detail">{check?.detail}</span>
+            <span className="wfu-check-detail">{check?.detail}</span>
           </li>
         )
       })}
@@ -108,7 +111,7 @@ function FailureDetails({ report }) {
   const blocks = []
   if (report.parse_error) {
     blocks.push(
-      <p key="parse" className="wfe-report-line">
+      <p key="parse" className="wfu-report-line">
         Parser message: <span className="mono">{report.parse_error}</span>
       </p>,
     )
@@ -117,8 +120,8 @@ function FailureDetails({ report }) {
     const cols = report.missing_columns
     const shown = cols.slice(0, 8) // QA p2: truncate, never dump the raw repr
     blocks.push(
-      <div key="missing" className="wfe-report-block">
-        <span className="wfe-report-lead">
+      <div key="missing" className="wfu-report-block">
+        <span className="wfu-report-lead">
           {cols.length} required {cols.length === 1 ? 'column is' : 'columns are'} missing:
         </span>
         <span className="mono">
@@ -133,7 +136,7 @@ function FailureDetails({ report }) {
       ? report.duplicate_id_sample.slice(0, 5)
       : []
     blocks.push(
-      <p key="dupes" className="wfe-report-line">
+      <p key="dupes" className="wfu-report-line">
         {formatNumber(report.n_duplicate_ids, 0)} rows repeat an already-seen Id
         {sample.length > 0 && (
           <>
@@ -148,7 +151,7 @@ function FailureDetails({ report }) {
   if (Array.isArray(report.violations) && report.violations.length > 0) {
     const shown = report.violations.slice(0, 6)
     blocks.push(
-      <ul key="violations" className="wfe-report-list">
+      <ul key="violations" className="wfu-report-list">
         {shown.map((violation, index) => (
           <ViolationLine key={`${violation?.column ?? 'rule'}-${index}`} violation={violation} />
         ))}
@@ -159,7 +162,7 @@ function FailureDetails({ report }) {
     )
   }
   if (blocks.length === 0) return null
-  return <div className="wfe-report-details">{blocks}</div>
+  return <div className="wfu-report-details">{blocks}</div>
 }
 
 export default function ValidationReport({ validation = null, error = null, fileName = null }) {
@@ -186,14 +189,12 @@ export default function ValidationReport({ validation = null, error = null, file
         ? 'The file is missing required Ames columns — the full 81-column schema is required before the pipeline can use it.'
         : failure.message
     return (
-      <div className="alert alert-error wfe-report" role="alert">
-        <span className="alert-title">
-          {fileName ? `"${fileName}" was rejected` : 'The upload was rejected'}
-        </span>
-        <p className="wfe-report-line">{message}</p>
+      <div className="alert alert-error" role="alert">
+        <span className="alert-title">Upload failed{fileName ? ` — ${fileName}` : ''}</span>
+        <p className="wfu-report-line">{message}</p>
         <CheckRows checks={failure.report?.checks} />
         <FailureDetails report={failure.report} />
-        <p className="wfe-report-line dim">
+        <p className="wfu-report-line dim">
           Fix the file and upload it again — rejected uploads are not stored.
         </p>
       </div>
@@ -204,7 +205,7 @@ export default function ValidationReport({ validation = null, error = null, file
   const checks = Array.isArray(validation?.checks) ? validation.checks : []
   const warnings = checks.filter((check) => check?.status === 'warn').length
   return (
-    <div className="alert wfe-report wfe-report--ok" role="status">
+    <div className="alert wfu-report--ok" role="status">
       <span className="alert-title">
         {warnings > 0
           ? `Validation passed with ${warnings} ${warnings === 1 ? 'warning' : 'warnings'}`
@@ -213,7 +214,7 @@ export default function ValidationReport({ validation = null, error = null, file
       </span>
       <CheckRows checks={checks} />
       {warnings > 0 && (
-        <p className="wfe-report-line dim">
+        <p className="wfu-report-line dim">
           Warnings are non-fatal — the dataset was stored and is ready for analysis.
         </p>
       )}

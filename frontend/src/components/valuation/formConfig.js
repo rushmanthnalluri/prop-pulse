@@ -11,6 +11,7 @@ import {
   BLDG_TYPES,
   DEFAULT_FORM,
   ENUM_LABELS,
+  FEATURE_DEFAULTS,
   HOUSE_STYLES,
   MS_ZONING,
   NEIGHBORHOODS,
@@ -37,41 +38,52 @@ function trainRangeHint(name) {
   return `train range ${formatBound(name, range.min)}–${formatBound(name, range.max)}`
 }
 
-/** Core fieldsets — always visible, SPEC §5.2.1 order, bounds, and hints. */
+/**
+ * Reference-style hint prefix (blueprint §8.10): every numeric input states
+ * its schema range ("500–200,000 · …"), composed from the descriptor's own
+ * min/max so the hint can never drift from validation. The existing hint
+ * (train-observed range, blank-fallback rule, scale semantics) follows.
+ */
+const withRangeHint = (field) =>
+  field.kind === 'number' && field.min !== undefined && field.max !== undefined
+    ? {
+        ...field,
+        hint: [
+          `${formatBound(field.name, field.min)}–${formatBound(field.name, field.max)}`,
+          field.hint,
+        ]
+          .filter(Boolean)
+          .join(' · '),
+      }
+    : field
+
+/**
+ * Core fieldsets — always visible, grouped per the reference predict form's
+ * mission mapping (§23–25: Property / Location / Size / Quality & Condition /
+ * Rooms / Amenities / Garage & Basement / Age) over the real PropertyInput
+ * fields. Bounds mirror backend/app/schemas/property.py exactly.
+ */
 export const CORE_GROUPS = [
-  {
-    legend: 'Location & lot',
-    fields: [
-      { name: 'neighborhood', label: 'Neighborhood', kind: 'select', options: neighborhoodOptions, labels: neighborhoodLabels, required: true },
-      { name: 'lot_area', label: 'Lot area', unit: 'sq ft', kind: 'number', min: 500, max: 200000, integer: true, required: true, hint: trainRangeHint('lot_area') },
-      { name: 'lot_frontage', label: 'Lot frontage', unit: 'ft', kind: 'number', min: 1, max: 500, required: false, hint: 'blank → training median' },
-    ],
-  },
   {
     legend: 'Property',
     fields: [
       { name: 'house_style', label: 'House style', kind: 'select', options: HOUSE_STYLES, labels: ENUM_LABELS.house_style },
       { name: 'bldg_type', label: 'Building type', kind: 'select', options: BLDG_TYPES, labels: ENUM_LABELS.bldg_type },
-      { name: 'ms_zoning', label: 'Zoning (MS)', kind: 'select', options: MS_ZONING, labels: ENUM_LABELS.ms_zoning },
-      { name: 'year_built', label: 'Year built', kind: 'number', min: 1870, max: 2026, integer: true, required: true, hint: trainRangeHint('year_built') },
-      { name: 'year_remod_add', label: 'Remodel year', kind: 'number', min: 1870, max: 2026, integer: true, required: false, hint: `blank → year built · train window ${TRAIN_RANGES.year_remod_add.min}–${TRAIN_RANGES.year_remod_add.max}` },
     ],
   },
   {
-    legend: 'Living space',
+    legend: 'Location',
+    fields: [
+      { name: 'neighborhood', label: 'Neighborhood', kind: 'select', options: neighborhoodOptions, labels: neighborhoodLabels, required: true, hint: `${NEIGHBORHOODS.length} training neighborhoods` },
+      { name: 'ms_zoning', label: 'Zoning (MS)', kind: 'select', options: MS_ZONING, labels: ENUM_LABELS.ms_zoning },
+    ],
+  },
+  {
+    legend: 'Size',
     fields: [
       { name: 'gr_liv_area', label: 'Living area', unit: 'sq ft', kind: 'number', min: 300, max: 6000, integer: true, required: true, hint: trainRangeHint('gr_liv_area') },
-      { name: 'total_bsmt_sf', label: 'Basement area', unit: 'sq ft', kind: 'number', min: 0, max: 4000, integer: true, required: true, hint: `train max ${formatNumber(TRAIN_RANGES.total_bsmt_sf.max, 0)}` },
-    ],
-  },
-  {
-    legend: 'Rooms & baths',
-    fields: [
-      { name: 'bedrooms', label: 'Bedrooms', kind: 'number', min: 0, max: 8, integer: true, required: true, hint: 'Above grade — basement bedrooms excluded' },
-      { name: 'full_bath', label: 'Full baths', kind: 'number', min: 0, max: 4, integer: true, required: true, hint: 'Above grade' },
-      { name: 'half_bath', label: 'Half baths', kind: 'number', min: 0, max: 2, integer: true, required: true, hint: 'Above grade' },
-      { name: 'bsmt_full_bath', label: 'Basement full baths', kind: 'number', min: 0, max: 3, integer: true, required: true },
-      { name: 'bsmt_half_bath', label: 'Basement half baths', kind: 'number', min: 0, max: 2, integer: true, required: true },
+      { name: 'lot_area', label: 'Lot area', unit: 'sq ft', kind: 'number', min: 500, max: 200000, integer: true, required: true, hint: trainRangeHint('lot_area') },
+      { name: 'lot_frontage', label: 'Lot frontage', unit: 'ft', kind: 'number', min: 1, max: 500, required: false, hint: `blank → training median ${formatNumber(FEATURE_DEFAULTS.lot_frontage, 0)}` },
     ],
   },
   {
@@ -82,10 +94,16 @@ export const CORE_GROUPS = [
     ],
   },
   {
-    legend: 'Garage & amenities',
+    legend: 'Rooms',
     fields: [
-      { name: 'garage_cars', label: 'Garage', unit: 'cars', kind: 'number', min: 0, max: 5, integer: true, required: true },
-      { name: 'garage_area', label: 'Garage area', unit: 'sq ft', kind: 'number', min: 0, max: 2000, required: false, hint: 'blank → training median' },
+      { name: 'bedrooms', label: 'Bedrooms', kind: 'number', min: 0, max: 8, integer: true, required: true, hint: 'above grade — basement bedrooms excluded' },
+      { name: 'full_bath', label: 'Full baths', kind: 'number', min: 0, max: 4, integer: true, required: true, hint: 'above grade' },
+      { name: 'half_bath', label: 'Half baths', kind: 'number', min: 0, max: 2, integer: true, required: true, hint: 'above grade' },
+    ],
+  },
+  {
+    legend: 'Amenities',
+    fields: [
       { name: 'fireplaces', label: 'Fireplaces', kind: 'number', min: 0, max: 4, integer: true, required: true },
       { name: 'central_air', label: 'Central air', kind: 'checkbox', required: true },
       { name: 'pool_area', label: 'Pool area', unit: 'sq ft', kind: 'number', min: 0, max: 1000, integer: true, required: true },
@@ -94,7 +112,24 @@ export const CORE_GROUPS = [
       { name: 'screen_porch', label: 'Screen porch', unit: 'sq ft', kind: 'number', min: 0, max: 800, integer: true, required: true },
     ],
   },
-]
+  {
+    legend: 'Garage & basement',
+    fields: [
+      { name: 'garage_cars', label: 'Garage', unit: 'cars', kind: 'number', min: 0, max: 5, integer: true, required: true },
+      { name: 'garage_area', label: 'Garage area', unit: 'sq ft', kind: 'number', min: 0, max: 2000, required: false, hint: `blank → training median ${formatNumber(FEATURE_DEFAULTS.garage_area, 0)}` },
+      { name: 'total_bsmt_sf', label: 'Basement area', unit: 'sq ft', kind: 'number', min: 0, max: 4000, integer: true, required: true, hint: `train max ${formatNumber(TRAIN_RANGES.total_bsmt_sf.max, 0)}` },
+      { name: 'bsmt_full_bath', label: 'Basement full baths', kind: 'number', min: 0, max: 3, integer: true, required: true },
+      { name: 'bsmt_half_bath', label: 'Basement half baths', kind: 'number', min: 0, max: 2, integer: true, required: true },
+    ],
+  },
+  {
+    legend: 'Age',
+    fields: [
+      { name: 'year_built', label: 'Year built', kind: 'number', min: 1870, max: 2026, integer: true, required: true, hint: trainRangeHint('year_built') },
+      { name: 'year_remod_add', label: 'Remodel year', kind: 'number', min: 1870, max: 2026, integer: true, required: false, hint: `blank → year built · train window ${TRAIN_RANGES.year_remod_add.min}–${TRAIN_RANGES.year_remod_add.max}` },
+    ],
+  },
+].map((group) => ({ ...group, fields: group.fields.map(withRangeHint) }))
 
 /**
  * Fields promoted out of ADVANCED_FIELDS into the core fieldsets above — the

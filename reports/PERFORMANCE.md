@@ -274,10 +274,13 @@ warm.
 
 ### After-fix stage profile (in-process, champion pinned to `n_jobs=1`, 50 iterations)
 
-NOTE: `scripts/load_test.py --profile` loads the champion itself and does **not** apply the
-lifespan's `n_jobs=1` pin, so it still shows the pre-fix path (rf p50 776.7 ms). This
-equivalent profile applies the pin exactly like the lifespan does (ambient CPU ~65% during
-this run — the absolute numbers are contention-inflated, the *shape* is the point):
+NOTE (superseded 2026-08-19): at the time of this run, `scripts/load_test.py --profile`
+loaded the champion itself and did **not** apply the lifespan's `n_jobs=1` pin, so it still
+showed the pre-fix path (rf p50 776.7 ms); the equivalent profile below applied the pin
+manually (ambient CPU ~65% during that run — the absolute numbers are contention-inflated,
+the *shape* is the point). `--profile` has since been fixed to apply
+`force_single_threaded` exactly like the lifespan, so it now measures the served path
+directly:
 
 ```
 build_features           mean=  33.843 ms  p50=  31.515 ms

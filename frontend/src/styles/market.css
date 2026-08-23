@@ -1,10 +1,16 @@
 /* ==========================================================================
-   Market Intelligence page (SPEC §5.3) — page-scoped styles.
-   Imported by pages/Market.jsx. Tokens from styles.css only; the single
-   allowed elevation shadow (--shadow-pop) stays reserved for Leaflet popups.
+   Market Intelligence page — page-scoped styles.
+   Imported by pages/Market.jsx AFTER styles.css, so equal-specificity rules
+   here win. Tokens from styles.css only; hairlines over boxes; no shadows —
+   the single elevation shadow (--shadow-pop) stays reserved for the Leaflet
+   popup floating layer (themed globally in styles.css).
    ========================================================================== */
 
-/* Map + rail grid: 1.4fr map / 0.6fr rail at desktop (SPEC §8). */
+/* Map + micro-market rail: 1.4fr / 0.6fr at desktop; stacks at ≤900px, the
+   same breakpoint where the app shell collapses (blueprint §10). The rail's
+   two-up (≤900px) and single-column (≤820px) card layouts, and the canvas
+   heights (460 / 380 / 320), come from the global .cluster-rail / .map-canvas
+   rules in styles.css — nothing to repeat here. */
 .market-map-grid {
   display: grid;
   grid-template-columns: 1.4fr 0.6fr;
@@ -12,30 +18,12 @@
   align-items: start;
 }
 
-/* Map heights per SPEC §8 (override styles.css .map-canvas by specificity):
-   460 desktop · 440 @1280 · 380 @1024 · 340 @900 (≈768) · 300 @420 (≈390). */
-.market-map-grid .map-canvas { height: 460px; }
-@media (max-width: 1280px) {
-  .market-map-grid .map-canvas { height: 440px; }
-}
-@media (max-width: 1024px) {
-  .market-map-grid { grid-template-columns: 1fr; }
-  .market-map-grid .map-canvas { height: 380px; }
-  .market-map-grid .cluster-rail { display: grid; grid-template-columns: 1fr 1fr; }
-}
 @media (max-width: 900px) {
-  .market-map-grid .map-canvas { height: 340px; }
-}
-@media (max-width: 640px) {
-  .market-map-grid .cluster-rail { grid-template-columns: 1fr; }
-}
-@media (max-width: 420px) {
-  .market-map-grid .map-canvas { height: 300px; }
-  /* Popups stay readable on phones (SPEC §8: max-width 260px @390). */
-  .market-map-grid .leaflet-popup-content-wrapper { max-width: 260px !important; }
+  .market-map-grid { grid-template-columns: 1fr; }
 }
 
-/* Keyboard / touch access bar above the map (AUDIT §5.4 fix). */
+/* Keyboard / touch access bar above the map — quiet mono chrome; the select
+   reuses the global compact .chart-select (blueprint §5). */
 .map-toolbar {
   display: flex;
   align-items: center;
@@ -46,25 +34,19 @@
 }
 .map-toolbar-label {
   font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  font-size: 10px;
+  letter-spacing: 0.09em;
   text-transform: uppercase;
   color: var(--text-3);
   white-space: nowrap;
 }
-.map-toolbar-select {
-  font-family: var(--font-ui);
-  font-size: 12.5px;
-  color: var(--text);
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius);
-  padding: 5px 8px;
-  max-width: 100%;
+.map-toolbar .chart-select {
   min-width: 0;
+  max-width: 100%;
 }
 
-/* divIcon neighborhood markers: 28px tap target, 14px cluster-colored dot. */
+/* divIcon neighborhood markers: 28px tap target, 14px cluster-colored dot
+   with a light ring so every cluster color stays readable on the dark tiles. */
 .map-marker { background: none; border: none; }
 .map-marker-dot {
   display: block;
@@ -73,13 +55,30 @@
   height: 14px;
   margin: 7px;
   border-radius: 50%;
-  border: 2px solid #ffffff;
+  border: 2px solid var(--text);
 }
 .market-map-grid .map-marker:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
   border-radius: 50%;
 }
+
+/* Leaflet hover tooltips — dark tooltip chrome to match the popup overrides
+   in styles.css (raised panel, hairline border, no shadow). */
+.map-shell .leaflet-tooltip {
+  background: var(--raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: none;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 9px;
+}
+.map-shell .leaflet-tooltip-top::before { border-top-color: var(--border-strong); }
+.map-shell .leaflet-tooltip-bottom::before { border-bottom-color: var(--border-strong); }
+.map-shell .leaflet-tooltip-left::before { border-left-color: var(--border-strong); }
+.map-shell .leaflet-tooltip-right::before { border-right-color: var(--border-strong); }
 
 /* Legend ring swatch matching the dashed centroid rings on the map. */
 .legend-ring {
@@ -92,110 +91,81 @@
   flex-shrink: 0;
 }
 
-/* Dropped map points disclosure (AUDIT §2.3 fix). */
-.market-skip-note { margin-top: 12px; }
-
-/* Selected-market profile panel. */
-.market-profile {
-  margin-top: 20px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 14px 16px;
+/* Dropped map points disclosure (coordinates guard) — the alert sits under
+   the full-width map grid, so lift the .alert max-width cap. */
+.market-skip-note {
+  margin-top: 12px;
+  max-width: none;
 }
-.market-profile--empty {
+
+/* Selected-market profile — the .panel language from styles.css; this file
+   only adds the market-specific internals. */
+.market-profile { margin-top: 20px; }
+.market-profile--idle {
   background: transparent;
   border-style: dashed;
 }
-.market-profile-head {
-  display: flex;
+.market-profile-title {
+  display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 14px;
-}
-.market-profile-name {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--navy);
   text-transform: capitalize;
-  margin-right: auto;
 }
-.market-profile .market-profile-stats {
-  border: none;
-  padding: 0 0 4px;
-}
-.market-profile-members { margin-top: 10px; }
+.market-profile-stats { padding-bottom: 4px; }
+.market-profile-members { margin-top: 14px; }
 .market-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 6px;
+  margin-top: 8px;
 }
 .market-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
   color: var(--text-2);
-  background: var(--raised);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   padding: 3px 8px;
 }
-.market-profile-note { margin-top: 10px; }
+.market-profile-note { margin-top: 12px; }
 .market-profile-cta {
-  display: inline-block;
-  margin-top: 12px;
-  font-size: 13px;
+  color: var(--accent);
+  font-size: 12.5px;
+  transition: color var(--dur-hover);
 }
+.market-profile-cta:hover { color: var(--accent-hover); }
 
-/* Sortable directory. */
+/* Sortable directory — mono caption microcopy above the sticky header; the
+   wrapper scrolls horizontally (reference wide tables scroll, never reflow)
+   and the first column stays pinned via the global .sticky-col classes. */
 .table-caption {
   caption-side: top;
   text-align: left;
-  font-size: 12.5px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
   color: var(--text-3);
-  padding: 10px 14px 0;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
 }
 .market-table-skeleton { padding: 8px 16px 12px; }
 
-/* The directory's min-content (~1,090px) can exceed the 1080px content
-   column even at desktop widths: keep the horizontal scroll inside the
-   wrapper (never the page) and let the row-CTA cell wrap so "Value a home
-   here →" is fully visible instead of clipped mid-word inside the scroll
-   region (WP-7c). */
-.market-directory .table-scroll {
-  overflow-x: auto;
+/* Trends chart height at small widths (the card is 320px tall on desktop);
+   the card head wraps so the title never squeezes beside the tag. */
+@media (max-width: 820px) {
+  .market-trends .chart-wrap-tall { height: 220px; }
 }
-.market-directory .table td:last-child {
-  white-space: normal;
-}
-
-/* Phone: horizontal scroll with a sticky first column (SPEC §8). */
-@media (max-width: 640px) {
-  .market-directory .table th:first-child,
-  .market-directory .table td:first-child {
-    position: sticky;
-    left: 0;
-    z-index: 1;
-    background: var(--surface);
-  }
-  .market-directory .table thead th:first-child {
-    z-index: 3;
-    background: var(--raised);
-  }
-}
-
-/* Trends chart heights at small widths (SPEC §8: 220 @768, 200 @390). */
-@media (max-width: 900px) {
-  .market-trends .chart-wrap--tall { height: 220px; }
-}
-@media (max-width: 420px) {
-  .market-trends .chart-wrap--tall { height: 200px; }
+@media (max-width: 520px) {
+  .market-trends .chart-wrap-tall { height: 200px; }
+  .market-trends .chart-card-head { flex-wrap: wrap; row-gap: 4px; }
 }
 
 /* Honesty notes. */
 .market-notes-body {
   display: grid;
   gap: 8px;
-  max-width: 720px;
+  max-width: 640px;
 }

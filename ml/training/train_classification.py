@@ -96,18 +96,6 @@ THRESHOLD = 0.5
 #: Model names, matching the SPEC §6 artifact contract.
 MODEL_NAMES = ("logistic", "decision_tree", "random_forest", "xgboost")
 
-#: Metric keys stored per variant (val / val_calibrated) in metrics.json.
-METRIC_KEYS = (
-    "roc_auc",
-    "pr_auc",
-    "precision",
-    "recall",
-    "f1",
-    "brier",
-    "threshold",
-    "confusion_matrix",
-)
-
 _CALIBRATION_FIG = "classification_calibration.png"
 _CURVES_FIG = "classification_curves.png"
 

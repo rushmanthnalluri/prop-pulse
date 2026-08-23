@@ -561,9 +561,14 @@ def category_aggregate(
 
     ``agg`` ∈ ``median | mean | count``; groups carry ``{value, n, agg_value}``
     sorted by ``agg_value`` descending. For ``count`` the target is unused
-    (``agg_value`` equals the group size ``n``).
+    (``agg_value`` equals the group size ``n``). ``column`` must be
+    categorical — grouping a numeric column would yield one group per distinct
+    value (the same mistyped-column case ``box_by`` rejects for ``by``).
     """
     _require_column(df, column)
+    if pd.api.types.is_numeric_dtype(df[column]):
+        raise ValueError(f"column {column!r} is numeric — a categorical column is required")
+    _require_column(df, target)  # also for count: the frame selection below touches it
     if agg not in ("median", "mean", "count"):
         raise ValueError(f"unknown agg {agg!r}; expected one of ('median', 'mean', 'count')")
     if agg != "count":

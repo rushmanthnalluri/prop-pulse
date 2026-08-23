@@ -1,35 +1,38 @@
 /**
- * UploadStage (WORKFLOW §6.3-01) — stage 01 of the guided workbench:
- * upload + validate a CSV against the full Ames schema, inspect the active
- * dataset's profile, and manage the server's datasets.
+ * UploadStage (WORKFLOW §6.3-01, blueprint §8.2) — stage 01 of the guided
+ * workbench: ingest a CSV or keep exploring the bundled Ames cohort.
  *
- * Sections (per-section skeleton → error+retry → content, §6.4):
- *   1. Active dataset — the real profile of whatever dataset is active
- *      (bundled ames out of the box): shape metrics + the 8-row head table.
- *   2. Upload a CSV — UploadDropzone (client-side .csv / ≤10 MiB pre-checks)
- *      → raw-body POST → ValidationReport (per-check rows from the 201, or the
- *      named violations of the dict-shaped 422 — never raw JSON). Success:
- *      toast + the upload becomes the active dataset + "Continue" CTA.
- *   3. Datasets on this server — the registry list with select + inline-confirm
- *      delete (never window.confirm); the bundled ames is non-deletable.
+ * Structure (reference §8.2, in order): page-head (kicker / h1 / desc, no
+ * page-meta) → divider → upload form (dropzone + left-aligned primary
+ * submit) → validation report slot → loaded panel for the ACTIVE dataset
+ * (badge + filename + "Remove file" → Rows/Columns/Missing metrics → Columns
+ * table → 8-row preview) → bottom "Continue to Analyze Features →" CTA.
  *
- * Upload progress is an honest indeterminate state — fetch reports no bytes.
+ * The flow mirrors the reference form: the dropzone only chooses a file;
+ * "Upload dataset" fires the raw-body POST (§3.1). The 201's per-check rows
+ * and the dict-shaped 422's named violations both render through
+ * ValidationReport — never raw JSON. Success: toast + the upload becomes the
+ * active dataset, so the loaded panel refetches and profiles it in place.
+ *
+ * Dataset registry management (list/switch/delete arbitrary uploads) lives in
+ * the shell's DatasetPicker; this page keeps only the reference's quiet
+ * "Remove file" for the active upload, wired to the real DELETE endpoint
+ * behind an inline confirm (never window.confirm).
  */
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { deleteDataset, getProfile, uploadDataset } from '../../api/workflow'
 import { useApi } from '../../api/useApi'
-import { formatDateTime, formatNumber } from '../../format'
+import { formatNumber } from '../../format'
 import { useToast } from '../../components/Toast'
-import { EmptyState, ErrorState, PanelSkeleton } from '../../components/StateView'
+import { ErrorState, PanelSkeleton } from '../../components/StateView'
 import BusyButton from '../../components/shared/BusyButton'
-import ProvenanceBanner from '../../components/workflow/ProvenanceBanner'
 import UploadDropzone from '../../components/workflow/UploadDropzone'
 import ValidationReport from '../../components/workflow/ValidationReport'
 import { useWorkflow } from './WorkflowShell'
-import '../../styles/workflow-eda.css'
+import '../../styles/workflow-upload.css'
 
-/** Head-table cell: numbers grouped, nulls dashed, strings verbatim. */
-function headCell(value) {
+/** Preview cell: numbers grouped, nulls dashed, strings verbatim. */
+function previewCell(value) {
   if (value === null || value === undefined) return <span className="dim">—</span>
   if (typeof value === 'number') {
     return Number.isInteger(value) ? formatNumber(value, 0) : formatNumber(value, 2)
@@ -37,354 +40,286 @@ function headCell(value) {
   return String(value)
 }
 
-/** The active dataset's profile: shape metrics + 8-row preview (§3.3). */
-function ActiveDatasetCard({ profile }) {
-  const numeric = new Set(
-    (profile.columns ?? [])
-      .filter((col) => col.dtype !== 'object')
-      .map((col) => col.name),
-  )
-  return (
-    <>
-      <div className="metrics metrics--auto">
-        <div className="metric">
-          <div className="metric-label">Rows</div>
-          <div className="metric-value">{formatNumber(profile.n_rows, 0)}</div>
-        </div>
-        <div className="metric">
-          <div className="metric-label">Columns</div>
-          <div className="metric-value">{formatNumber(profile.n_cols, 0)}</div>
-        </div>
-        <div className="metric">
-          <div className="metric-label">Numeric</div>
-          <div className="metric-value">{formatNumber(profile.n_numeric, 0)}</div>
-        </div>
-        <div className="metric">
-          <div className="metric-label">Categorical</div>
-          <div className="metric-value">{formatNumber(profile.n_categorical, 0)}</div>
-        </div>
-        <div className="metric">
-          <div className="metric-label">Missing cells</div>
-          <div className="metric-value">{formatNumber(profile.total_missing_cells, 0)}</div>
-          <div className="metric-hint">stage 04 breaks this down</div>
-        </div>
-        <div className="metric">
-          <div className="metric-label">Duplicate Ids</div>
-          <div className="metric-value">{formatNumber(profile.n_duplicate_ids, 0)}</div>
-        </div>
-      </div>
-
-      <h3 className="wfe-sub-title">First {profile.head?.length ?? 0} rows</h3>
-      <div className="table-scroll wfe-head-scroll" tabIndex={0}>
-        <table className="table">
-          <thead>
-            <tr>
-              {(profile.columns ?? []).map((col) => (
-                <th key={col.name} className="wfe-th-raw" scope="col">
-                  {col.name}
-                  <span className="wfe-th-dtype">{col.dtype}</span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {(profile.head ?? []).map((row, rowIndex) => (
-              <tr key={rowIndex}>
-                {(profile.columns ?? []).map((col) => (
-                  <td key={col.name} className={numeric.has(col.name) ? 'num' : undefined}>
-                    {headCell(row?.[col.name])}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <p className="note">Preview of the raw CSV exactly as stored — no cleaning applied yet.</p>
-    </>
-  )
-}
-
-/** The registry list with select + inline-confirm delete (§6.3-01). */
-function DatasetManager() {
-  const { datasetId, datasets, datasetsLoading, datasetsError, reloadDatasets, selectDataset } =
-    useWorkflow()
+/**
+ * The active dataset's profile (§3.3): loaded-header (badge + filename +
+ * Remove file for uploads), the Rows/Columns/Missing metric trio (missing in
+ * danger red when >0), the full column registry, and the raw 8-row head.
+ */
+function LoadedPanel() {
+  const { datasetId, dataset, reloadDatasets, selectDataset, goToStage } = useWorkflow()
   const toast = useToast()
-  const [confirmId, setConfirmId] = useState(null)
-  const [deleteError, setDeleteError] = useState(null)
+  const [confirming, setConfirming] = useState(false)
+  const [removeError, setRemoveError] = useState(null)
 
-  const remove = async (record) => {
-    setDeleteError(null)
+  const fetchProfile = useCallback((signal) => getProfile(datasetId, signal), [datasetId])
+  const profile = useApi(fetchProfile)
+
+  const bundled = !dataset || dataset.source === 'bundled'
+  const removable = Boolean(dataset && dataset.source !== 'bundled' && dataset.deletable)
+
+  const remove = async () => {
+    setRemoveError(null)
     try {
-      await deleteDataset(record.dataset_id)
-      setConfirmId(null)
-      // QA p3: deleting the ACTIVE dataset switches to the bundled data
-      // immediately — and the toast says so, so the switch never depends on
-      // noticing the shell's 6 s fallback toast.
-      if (record.dataset_id === datasetId) {
-        selectDataset('ames')
-        toast.success(
-          `Deleted ${record.name}`,
-          'It was the active dataset — the workbench switched to the bundled Ames data.',
-        )
-      } else {
-        toast.success(`Deleted ${record.name}`)
-      }
+      await deleteDataset(datasetId)
+      setConfirming(false)
+      // Deleting the ACTIVE dataset switches to the bundled data immediately —
+      // and the toast says so, so the switch never depends on noticing the
+      // shell's 404 fallback.
+      selectDataset('ames')
       reloadDatasets()
+      toast.success(
+        `Removed ${dataset?.name ?? 'file'}`,
+        'The workbench switched back to the bundled Ames data.',
+      )
     } catch (error) {
       if (error?.name === 'AbortError') return
       // 400 (bundled) / 409 (job running) arrive as plain-language ApiErrors.
-      setDeleteError(error?.message ?? 'Could not delete the dataset.')
+      setRemoveError(error?.message ?? 'Could not remove the file.')
     }
   }
 
-  if (datasetsLoading && !datasets) return <PanelSkeleton height={180} />
-  if (datasetsError && !datasets) {
-    return (
-      <ErrorState error={datasetsError} onRetry={reloadDatasets} title="Couldn't load datasets" />
-    )
-  }
-  if (!datasets || datasets.length === 0) {
-    return (
-      <EmptyState
-        kicker="No datasets"
-        title="No datasets registered"
-        detail="Upload a CSV above — the bundled Ames dataset is normally always present."
-      />
-    )
-  }
+  const columns = profile.data?.columns ?? []
+  const head = profile.data?.head ?? []
 
   return (
-    <div className="table-scroll" tabIndex={0}>
-      <table className="table">
-        <thead>
-          <tr>
-            <th scope="col">Dataset</th>
-            <th scope="col">Source</th>
-            <th scope="col" className="num">
-              Rows
-            </th>
-            <th scope="col" className="num">
-              Columns
-            </th>
-            <th scope="col">Added</th>
-            <th scope="col">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {datasets.map((record) => {
-            const active = record.dataset_id === datasetId
-            const confirming = confirmId === record.dataset_id
-            return [
-              <tr key={record.dataset_id} className={active ? 'wfe-row-active' : undefined}>
-                <td>
-                  <span className="strong">{record.name}</span>
-                  <span className="dim wfe-cell-sub mono">{record.dataset_id}</span>
-                </td>
-                <td>
-                  <span
-                    className={`badge ${record.source === 'bundled' ? 'badge-accent' : 'badge-muted'}`}
-                  >
-                    {record.source}
-                  </span>
-                </td>
-                <td className="num">{formatNumber(record.n_rows, 0)}</td>
-                <td className="num">{formatNumber(record.n_cols, 0)}</td>
-                <td className="dim">{formatDateTime(record.created_at)}</td>
-                <td className="wfe-actions-cell">
-                  {!confirming && (
-                    <span className="wfe-actions">
-                      {active ? (
-                        <span className="badge badge-accent">Active</span>
-                      ) : (
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-secondary"
-                          onClick={() => selectDataset(record.dataset_id)}
-                        >
-                          Make active
-                        </button>
-                      )}
-                      {record.deletable ? (
-                        <button
-                          type="button"
-                          className="wfe-delete-btn"
-                          onClick={() => {
-                            setConfirmId(record.dataset_id)
-                            setDeleteError(null)
-                          }}
-                        >
-                          Delete
-                        </button>
-                      ) : (
-                        <span
-                          className="dim wfe-nuke-note"
-                          title="The bundled dataset is the workbench's built-in demo data and can never be deleted."
-                        >
-                          non-deletable
-                        </span>
-                      )}
-                    </span>
-                  )}
-                </td>
-              </tr>,
-              confirming && (
-                <tr key={`${record.dataset_id}__confirm`} className="wfe-confirm-row">
-                  <td colSpan={6}>
-                    <span className="wfe-confirm" role="alert">
-                      <span className="wfe-confirm-text">
-                        Delete <strong>{record.name}</strong>? Its sandbox models and any
-                        running-or-finished jobs go with it.
-                        {deleteError && (
-                          <span className="wfe-confirm-error">{deleteError}</span>
-                        )}
-                      </span>
-                      <span className="wfe-confirm-actions">
-                        <BusyButton
-                          className="btn btn-sm btn-secondary"
-                          busyLabel="Deleting…"
-                          onClick={() => remove(record)}
-                        >
-                          Confirm delete
-                        </BusyButton>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-secondary"
-                          onClick={() => {
-                            setConfirmId(null)
-                            setDeleteError(null)
-                          }}
-                        >
-                          Cancel
-                        </button>
-                      </span>
-                    </span>
-                  </td>
+    <div className="loaded-panel">
+      <div className="loaded-header">
+        {dataset ? (
+          <>
+            <span className={`badge${bundled ? '' : ' badge-accent'}`}>
+              {bundled ? 'Bundled' : 'Uploaded'}
+            </span>
+            {/* The "Bundled" badge already carries the provenance — strip the
+                redundant " (bundled)" suffix from the registry name. */}
+            <span className="loaded-name">
+              {bundled ? dataset.name.replace(/ \(bundled\)$/, '') : dataset.name}
+            </span>
+            {removable && !confirming && (
+              <button
+                type="button"
+                className="link-quiet"
+                onClick={() => {
+                  setConfirming(true)
+                  setRemoveError(null)
+                }}
+              >
+                Remove file
+              </button>
+            )}
+          </>
+        ) : (
+          <span className="loaded-name dim">{datasetId}</span>
+        )}
+      </div>
+
+      {confirming && removable && (
+        <div className="alert alert-error wfu-remove-confirm" role="alert">
+          <span className="alert-title">Remove {dataset.name}?</span>
+          The file is deleted from the server — its sandbox models and jobs go with it, and the
+          workbench switches back to the bundled Ames data.
+          {removeError && <p className="wfu-remove-error">{removeError}</p>}
+          <div className="alert-actions">
+            <BusyButton
+              className="btn btn-sm btn-secondary"
+              busyLabel="Removing…"
+              onClick={remove}
+            >
+              Confirm remove
+            </BusyButton>
+            <button
+              type="button"
+              className="link-quiet"
+              onClick={() => {
+                setConfirming(false)
+                setRemoveError(null)
+              }}
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {profile.loading && !profile.data && <PanelSkeleton height={320} />}
+      {profile.error && !profile.data && (
+        <ErrorState
+          error={profile.error}
+          onRetry={profile.reload}
+          title="Couldn't load the dataset profile"
+        />
+      )}
+
+      {profile.data && (
+        <>
+          <div className="metrics grid-3 mb-32">
+            <div className="metric">
+              <span className="metric-value">{formatNumber(profile.data.n_rows, 0)}</span>
+              <span className="metric-label">Rows</span>
+            </div>
+            <div className="metric">
+              <span className="metric-value">{formatNumber(profile.data.n_cols, 0)}</span>
+              <span className="metric-label">Columns</span>
+            </div>
+            <div className="metric">
+              <span
+                className={`metric-value${profile.data.total_missing_cells > 0 ? ' text-danger' : ''}`}
+              >
+                {formatNumber(profile.data.total_missing_cells, 0)}
+              </span>
+              <span className="metric-label">Missing values</span>
+            </div>
+          </div>
+          {bundled && (
+            <p className="note note-offset">
+              Raw file counts — the bundled Ames CSV exactly as stored; cleaning begins at
+              stage 06.
+            </p>
+          )}
+
+          <div className="section-head">
+            <h2 className="section-title">Columns</h2>
+          </div>
+          <div className="table-scroll scroll-60 mb-32" tabIndex={0}>
+            <table className="table table-sticky">
+              <thead>
+                <tr>
+                  <th scope="col">Field</th>
+                  <th scope="col">Type</th>
                 </tr>
-              ),
-            ]
-          })}
-        </tbody>
-      </table>
+              </thead>
+              <tbody>
+                {columns.map((col) => (
+                  <tr key={col.name}>
+                    <td className="mono strong">{col.name}</td>
+                    <td className="num dim">{col.dtype}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="section-head">
+            <h2 className="section-title">Preview — first {head.length} rows</h2>
+            <span className="mono dim mono-sm">{columns.length} columns · scroll →</span>
+          </div>
+          <div className="table-scroll" tabIndex={0}>
+            <table className="table">
+              <thead>
+                <tr>
+                  {columns.map((col) => (
+                    <th key={col.name} scope="col" className="wfu-th-raw">
+                      {col.name}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {head.map((row, rowIndex) => (
+                  <tr key={rowIndex}>
+                    {columns.map((col) => (
+                      <td key={col.name} className="num dim">
+                        {previewCell(row?.[col.name])}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <button
+            type="button"
+            className="btn btn-primary mt-28"
+            onClick={() => goToStage('02-features')}
+          >
+            Continue to Analyze Features →
+          </button>
+        </>
+      )}
     </div>
   )
 }
 
 export default function UploadStage() {
-  const { datasetId, dataset, reloadDatasets, selectDataset, goToStage } = useWorkflow()
+  const { reloadDatasets, selectDataset } = useWorkflow()
   const toast = useToast()
+  const [selected, setSelected] = useState(null) // File chosen in the dropzone
   const [upload, setUpload] = useState(null) // {fileName, status, payload?|error?}
+  const uploading = upload?.status === 'uploading'
+  // Synchronous interlock: `uploading` is React state and lags one render, so a
+  // double requestSubmit() in the same tick would fire two POSTs (audit m2).
+  const uploadLock = useRef(false)
 
-  const fetchProfile = useCallback((signal) => getProfile(datasetId, signal), [datasetId])
-  const profile = useApi(fetchProfile)
-
-  const handleFile = async (file) => {
-    setUpload({ fileName: file.name, status: 'uploading' })
+  const handleUpload = async () => {
+    if (!selected || uploadLock.current) return
+    uploadLock.current = true
+    setUpload({ fileName: selected.name, status: 'uploading' })
     try {
-      const payload = await uploadDataset(file, file.name)
-      setUpload({ fileName: file.name, status: 'success', payload })
+      const payload = await uploadDataset(selected, selected.name)
+      setUpload({ fileName: selected.name, status: 'success', payload })
+      setSelected(null)
       toast.success(
         `Uploaded ${payload.name}`,
         `${formatNumber(payload.n_rows, 0)} rows × ${formatNumber(payload.n_cols, 0)} columns — now the active dataset.`,
       )
       // Order matters: refresh the registry, then point every stage at the
-      // new dataset (the profile card above refetches via datasetId).
+      // new dataset (the loaded panel refetches its profile via datasetId).
       reloadDatasets()
       selectDataset(payload.dataset_id)
     } catch (error) {
       if (error?.name === 'AbortError') return
-      setUpload({ fileName: file.name, status: 'failed', error })
+      setUpload({ fileName: selected.name, status: 'failed', error })
+    } finally {
+      uploadLock.current = false
     }
   }
-
-  const metaParts = dataset
-    ? [
-        dataset.name,
-        `${formatNumber(dataset.n_rows, 0)} × ${formatNumber(dataset.n_cols, 0)}`,
-        dataset.source,
-      ]
-    : ['Loading dataset record…']
 
   return (
     <div>
       <div className="page-head">
-        <span className="kicker">Stage 01 · Upload Dataset</span>
-        <h1 className="page-title">Upload &amp; validate</h1>
+        <span className="kicker">Stage 01 · Intake</span>
+        <h1 className="page-title">Upload Dataset</h1>
         <p className="page-desc">
-          Every workflow stage runs on the bundled Ames dataset out of the box. To work with your
-          own data, upload a CSV here — it is validated against the full 81-column Ames schema
-          before it is stored.
+          Bring in raw property records as a CSV — or explore the bundled Ames housing cohort.
+          Uploads are validated against the full 81-column Ames schema before they are stored.
         </p>
-        <p className="page-meta">{metaParts.join(' · ')}</p>
-      </div>
-
-      <div className="wfe-banner-slot">
-        <ProvenanceBanner
-          provenance={{ dataset_name: dataset?.name ?? datasetId }}
-          label="Profiling the active dataset — switch it from the dataset chip above."
-        />
-      </div>
-
-      <div className="section">
-        <div className="section-head">
-          <span className="section-title">Active dataset</span>
-          <span className="section-note">GET /workflow/datasets/{datasetId}/profile</span>
-        </div>
-        {profile.loading && !profile.data && <PanelSkeleton height={300} />}
-        {profile.error && !profile.data && (
-          <ErrorState
-            error={profile.error}
-            onRetry={profile.reload}
-            title="Couldn't load the dataset profile"
-          />
-        )}
-        {profile.data && <ActiveDatasetCard profile={profile.data} />}
       </div>
 
       <hr className="divider" />
 
-      <div className="section">
-        <div className="section-head">
-          <span className="section-title">Upload a CSV</span>
-          <span className="section-note">raw body · 10 MiB cap</span>
-        </div>
-        <UploadDropzone uploading={upload?.status === 'uploading'} onFile={handleFile} />
+      <section className="section">
+        <form
+          className="upload-form"
+          onSubmit={(event) => {
+            event.preventDefault()
+            handleUpload()
+          }}
+        >
+          <UploadDropzone file={selected} onSelect={setSelected} disabled={uploading} />
+          <BusyButton
+            type="submit"
+            className="btn btn-primary upload-submit"
+            busy={uploading}
+            busyLabel="Uploading…"
+            disabled={!selected}
+          >
+            Upload dataset
+          </BusyButton>
+        </form>
+
         {upload?.status === 'failed' && (
-          <div className="wfe-report-slot">
+          <div className="wfu-report-slot">
             <ValidationReport error={upload.error} fileName={upload.fileName} />
           </div>
         )}
         {upload?.status === 'success' && (
-          <div className="wfe-report-slot">
-            <ValidationReport
-              validation={upload.payload?.validation}
-              fileName={upload.fileName}
-            />
-            <div className="wfe-upload-next">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => goToStage('02-features')}
-              >
-                Continue to Analyse features →
-              </button>
-              <span className="note">
-                {upload.payload?.name} is now the active dataset — every stage reads it.
-              </span>
-            </div>
+          <div className="wfu-report-slot">
+            <ValidationReport validation={upload.payload?.validation} fileName={upload.fileName} />
           </div>
         )}
-      </div>
 
-      <hr className="divider" />
-
-      <div className="section">
-        <div className="section-head">
-          <span className="section-title">Datasets on this server</span>
-          <span className="section-note">uploads survive restarts</span>
-        </div>
-        <DatasetManager />
-      </div>
+        <LoadedPanel />
+      </section>
     </div>
   )
 }

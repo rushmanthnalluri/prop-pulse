@@ -358,7 +358,10 @@ def step_model_reproducibility() -> StepResult:
 
 #: Value expressions that anchor randomness to the project seed (42).
 _SEED_OK = re.compile(r"^(42|RANDOM_SEED|seed|random_state|self\.seed|\[self\.seed,.*\])$")
-_SEED_ASSIGN = re.compile(r"(?:random_state|seed)\s*=\s*([^,\)\n]+)")
+#: ``random_state=``/``seed=`` assignments. The value class excludes ``%{"'}``
+#: so printf/f-string log templates (e.g. ``"seed=%d -> train=%d"``) cannot
+#: match — they are log output, not randomness controls.
+_SEED_ASSIGN = re.compile(r"(?:random_state|seed)\s*=\s*([^,\)\n%{\"']+)")
 _RNG_CALL = re.compile(r"np\.random\.(default_rng|RandomState)\(([^)]*)\)")
 _RNG_BAD = re.compile(r"np\.random\.(rand|randn|random|randint|choice|shuffle|permutation)\(")
 _STDLIB_RANDOM = re.compile(r"^\s*(import\s+random|from\s+random\s+import)\b", re.M)

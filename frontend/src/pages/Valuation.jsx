@@ -1,14 +1,22 @@
 /**
- * Valuation page (SPEC §5.2 — the product): structured property form →
- * POST /predict → sticky result rail in strict hierarchy order (estimate →
- * ~80% range → sale likelihood → micro-market → price position → why this
- * value → comparable sales → what-if scenarios → provenance). GET /model/info
- * is fetched once for the page-meta line and the coverage/MAE captions —
- * additive only: when it fails, those figures are omitted, never hardcoded.
+ * Valuation page (SPEC §5.2 — the product; blueprint §8.10 predict): the
+ * structured property form left, the sticky result aside right in the
+ * reference's result hierarchy — verdict price → ~80% range → sale
+ * probability → facts → explanation, then supporting panels (why this value
+ * → micro-market → price position → comparable sales → what-if scenarios →
+ * provenance). GET /model/info is fetched once for the page-meta line and
+ * the panel's coverage/R²/MAE figures — additive only: when it fails, those
+ * figures are omitted, never hardcoded.
+ *
+ * Layout mirrors the reference `.predict-grid` (1.25fr/0.75fr, gap 36px,
+ * collapses ≤820px — styles.css) with the estimate result panel stuck at top
+ * 24px (the filled rail is too tall for an aside-level sticky to engage) and
+ * `aria-live=polite`. Submit errors surface above the grid (reference
+ * position) with a retry; field-level 422s map into the form itself.
  *
  * Submit pipeline (AUDIT §6.12 — all four behaviors kept): abort-supersede
  * on a new run, previous result kept dimmed while reloading, smooth
- * scroll-into-view on ≤1024px honoring reduced motion, and the scenario
+ * scroll-into-view on ≤820px honoring reduced motion, and the scenario
  * explorer remounts keyed by the payload. The error path is fixed
  * (AUDIT §2.2): a failed re-submit keeps the previous result dimmed with an
  * inline banner + toast — `result: null` only happens on Reset.
@@ -32,6 +40,7 @@ import useReducedMotion from '../components/shared/useReducedMotion'
 import { PanelSkeleton } from '../components/StateView'
 import PropertyForm from '../components/shared/PropertyForm'
 import ResultHero from '../components/valuation/ResultHero'
+import PinnedComparison from '../components/valuation/PinnedComparison'
 import MicroMarketCard from '../components/valuation/MicroMarketCard'
 import {
   FORM_DEFAULTS,
@@ -39,7 +48,6 @@ import {
   payloadToFormValues,
   payloadToParams,
 } from '../components/valuation/formConfig'
-import ProbabilityGauge from '../components/ProbabilityGauge'
 import FactorBars from '../components/FactorBars'
 import MarketPosition from '../components/MarketPosition'
 import CompsTable from '../components/CompsTable'
@@ -69,12 +77,13 @@ export default function ValuationPage() {
   // them, which also keeps the ?neighborhood= handshake re-applying.
   const prefill = useMemo(() => parseUrlValues(searchParams), [searchParams])
 
-  // Page-meta line + the hero/gauge captions (SPEC §5.2: fetched once,
-  // additive — omitted when unavailable, never hardcoded).
+  // Page-meta line + the panel's coverage/R²/MAE figures (SPEC §5.2: fetched
+  // once, additive — omitted when unavailable, never hardcoded).
   const fetchModelInfo = useCallback((signal) => api.modelInfo(signal), [])
   const { data: modelInfo } = useApi(fetchModelInfo)
   const testMae = Number(modelInfo?.regression?.test_metrics?.mae)
   const intervalCoverage = Number(modelInfo?.regression?.test_metrics?.interval_coverage)
+  const testR2 = Number(modelInfo?.regression?.test_metrics?.r2)
 
   const metaParts = useMemo(() => {
     if (!modelInfo) return []
@@ -114,7 +123,7 @@ export default function ValuationPage() {
         setResultAt(new Date())
         toast.success(hadResultRef.current ? 'Estimate updated' : 'Estimate ready')
         // Single-column layouts: bring the result rail into view after success.
-        if (window.matchMedia('(max-width: 1024px)').matches) {
+        if (window.matchMedia('(max-width: 820px)').matches) {
           railRef.current?.scrollIntoView({
             behavior: reducedMotion ? 'auto' : 'smooth',
             block: 'start',
@@ -210,7 +219,31 @@ export default function ValuationPage() {
         </div>
       )}
 
-      <div className="valuation-grid">
+      {state.error && (
+        <div className="alert alert-error mb-24" role="alert">
+          <span className="alert-title">Valuation failed</span>
+          {state.error?.status === 422
+            ? 'Check the highlighted inputs — the API rejected some fields.'
+            : state.error?.message || 'An unexpected error occurred.'}
+          {result && (
+            <span className="rail-error-note">
+              The previous estimate is kept below, dimmed.
+            </span>
+          )}
+          <div className="alert-actions">
+            <BusyButton
+              busy={state.loading}
+              busyLabel="Retrying…"
+              className="btn btn-secondary btn-sm"
+              onClick={() => submittedPayload && submit(submittedPayload)}
+            >
+              Try again
+            </BusyButton>
+          </div>
+        </div>
+      )}
+
+      <div className="predict-grid">
         <PropertyForm
           onSubmit={submit}
           onReset={handleReset}
@@ -221,7 +254,7 @@ export default function ValuationPage() {
           prefill={prefill}
         />
 
-        <div className="sticky-rail valuation-rail" ref={railRef} aria-live="polite">
+        <aside className="predict-result valuation-rail" ref={railRef} aria-live="polite">
           {state.loading && !result && (
             <>
               <PanelSkeleton height={190} />
@@ -230,50 +263,24 @@ export default function ValuationPage() {
             </>
           )}
 
-          {state.error && (
-            <div className="alert alert-error" role="alert">
-              <span className="alert-title">Valuation failed</span>
-              {state.error?.status === 422
-                ? 'The API rejected some fields — they are highlighted in the form.'
-                : state.error?.message || 'An unexpected error occurred.'}
-              {result && (
-                <span className="rail-error-note">
-                  The previous estimate is kept below, dimmed.
-                </span>
-              )}
-              <div className="alert-actions">
-                <BusyButton
-                  busy={state.loading}
-                  busyLabel="Retrying…"
+          {!state.loading && !result && (
+            <div className="result-panel">
+              <span className="result-kicker">Awaiting input</span>
+              <span className="result-verdict result-verdict-idle" aria-hidden="true">
+                —
+              </span>
+              <p className="note note-flush">
+                Submit the form to see the estimate, its ~80% range, sale likelihood, and
+                comparable sales — or load the example property to try the champion model.
+              </p>
+              <div className="rail-empty-actions">
+                <button
+                  type="button"
                   className="btn btn-secondary btn-sm"
-                  onClick={() => submittedPayload && submit(submittedPayload)}
+                  onClick={loadExample}
                 >
-                  Try again
-                </BusyButton>
-              </div>
-            </div>
-          )}
-
-          {!state.loading && !state.error && !result && (
-            <div className="panel panel--hero">
-              <div className="result-hero">
-                <span className="kicker">The estimate</span>
-                <p className="result-price result-price--empty" aria-hidden="true">
-                  —
-                </p>
-                <p className="result-caption">
-                  Submit the form to see the estimate, its ~80% range, sale likelihood, and
-                  comparable sales.
-                </p>
-                <div className="rail-empty-actions">
-                  <button
-                    type="button"
-                    className="btn btn-secondary btn-sm"
-                    onClick={loadExample}
-                  >
-                    Load example property
-                  </button>
-                </div>
+                  Load example property
+                </button>
               </div>
             </div>
           )}
@@ -283,18 +290,17 @@ export default function ValuationPage() {
               className={`rail-stack${state.loading || state.error ? ' rail-stack--dim' : ''}`}
               aria-busy={state.loading}
             >
-              <ResultHero result={result} coverage={intervalCoverage} mae={testMae} />
-              <ProbabilityGauge
-                probability={result.sale_probability?.probability}
-                threshold={result.sale_probability?.threshold}
-                sellsWithin30Days={result.sale_probability?.sells_within_30_days}
-              />
+              <ResultHero result={result} coverage={intervalCoverage} mae={testMae} r2={testR2} />
+              <PinnedComparison result={result} payload={resultPayload} />
+              <FactorBars factors={result.top_price_factors} />
               <MicroMarketCard
                 microMarket={result.micro_market}
                 neighborhood={resultPayload?.neighborhood}
               />
-              <MarketPosition marketPosition={result.market_position} />
-              <FactorBars factors={result.top_price_factors} />
+              <MarketPosition
+                marketPosition={result.market_position}
+                clusterId={result.micro_market?.cluster_id}
+              />
               <CompsTable payload={resultPayload} estimate={Number(result.estimated_price)} />
               {/* Keyed by payload so a new valuation drops all lever state. */}
               <ScenarioExplorer
@@ -307,7 +313,7 @@ export default function ValuationPage() {
               )}
             </div>
           )}
-        </div>
+        </aside>
       </div>
     </>
   )

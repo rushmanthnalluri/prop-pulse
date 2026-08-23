@@ -14,6 +14,22 @@ import ChartA11yTable from '../shared/ChartA11yTable'
 
 const TOP_N = 20
 
+/** The API's aggregation note is methodological shorthand ("…mean taken over
+    |aggregated shap| of the val sample"); render it as readable prose. The
+    real numbers (background/validation n, seed) render separately below. */
+function humanizeAggregation(aggregation) {
+  if (typeof aggregation !== 'string' || !aggregation) return 'Mean absolute SHAP values'
+  return aggregation
+    .replace(
+      /one-hot dummy SHAP values summed back to base MODEL_FEATURES names/i,
+      'one-hot dummy SHAP values summed back to base features',
+    )
+    .replace(
+      /mean taken over \|aggregated shap\| of the val sample/i,
+      'mean |SHAP| over the validation sample',
+    )
+}
+
 export default function GlobalDrivers({ payload }) {
   const rows = useMemo(() => {
     return Object.entries(payload?.importance ?? {})
@@ -48,7 +64,7 @@ export default function GlobalDrivers({ payload }) {
         rows={rows}
       />
       <p className="note insights-drivers-note">
-        {meta.aggregation || 'Mean absolute SHAP values'}
+        {humanizeAggregation(meta.aggregation)}
         {meta.units ? ` — units ${meta.units}` : ''}; background n ={' '}
         {formatNumber(meta.background_size, 0)}
         {meta.background_split ? ` (${meta.background_split})` : ''}, validation

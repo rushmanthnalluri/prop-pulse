@@ -7,11 +7,12 @@
  * median, never an over- or underpricing verdict.
  */
 import { formatNumber } from '../format'
+import { clusterColor } from '../constants'
 
 const MARKERS = [
-  { key: 'subject', label: 'This estimate', color: 'var(--accent)' },
-  { key: 'hood', label: 'Neighborhood median', color: 'var(--slate)' },
-  { key: 'cluster', label: 'Micro-market median', color: 'var(--ochre)' },
+  { key: 'subject', label: 'This estimate' },
+  { key: 'hood', label: 'Neighborhood median' },
+  { key: 'cluster', label: 'Micro-market median' },
 ]
 
 const LABEL_BADGES = {
@@ -20,7 +21,7 @@ const LABEL_BADGES = {
   below: 'Below the median',
 }
 
-export default function MarketPosition({ marketPosition }) {
+export default function MarketPosition({ marketPosition, clusterId }) {
   if (!marketPosition) return null
   const values = {
     subject: Number(marketPosition.subject_price_per_sqft),
@@ -28,6 +29,15 @@ export default function MarketPosition({ marketPosition }) {
     cluster: Number(marketPosition.cluster_median_price_per_sqft),
   }
   if (!Object.values(values).every(Number.isFinite)) return null
+
+  // The micro-market marker takes the cluster's own palette colour (matching
+  // the map/donut/cards) so it can't collide with the amber subject marker;
+  // falls back to a muted tone when no cluster id is served.
+  const clusterDot = Number.isFinite(Number(clusterId))
+    ? clusterColor(Number(clusterId))
+    : 'var(--text-3)'
+  const colorFor = (key) =>
+    key === 'subject' ? 'var(--accent)' : key === 'hood' ? 'var(--slate)' : clusterDot
 
   const low = Math.min(values.subject, values.hood, values.cluster)
   const high = Math.max(values.subject, values.hood, values.cluster)
@@ -58,7 +68,7 @@ export default function MarketPosition({ marketPosition }) {
             <span
               key={marker.key}
               className={`position-marker position-marker--${marker.key}`}
-              style={{ left: `${toPct(values[marker.key])}%` }}
+              style={{ left: `${toPct(values[marker.key])}%`, background: colorFor(marker.key) }}
               title={`${marker.label}: $${formatNumber(values[marker.key])}/sqft`}
             />
           ))}
@@ -67,22 +77,22 @@ export default function MarketPosition({ marketPosition }) {
           <span>${formatNumber(domainLow, 0)}/sqft</span>
           <span>${formatNumber(domainHigh, 0)}/sqft</span>
         </div>
-        <ul className="legend" style={{ marginTop: 12 }}>
+        <ul className="legend mt-12">
           {MARKERS.map((marker) => (
             <li key={marker.key} className="legend-item">
-              <span className="swatch" style={{ background: marker.color }} aria-hidden="true" />
+              <span className="swatch" style={{ background: colorFor(marker.key) }} aria-hidden="true" />
               {marker.label} · ${formatNumber(values[marker.key])}/sqft
             </li>
           ))}
         </ul>
         {Number.isFinite(vsPct) && (
-          <p className="note" style={{ marginTop: 10 }}>
+          <p className="note mt-10">
             {vsPct === 0
               ? 'In line with the neighborhood median ($/sqft)'
               : `${vsPct > 0 ? '+' : '−'}${formatNumber(Math.abs(vsPct))}% ${vsPct > 0 ? 'above' : 'below'} the neighborhood median ($/sqft)`}
           </p>
         )}
-        <p className="note" style={{ marginTop: 6 }}>
+        <p className="note mt-6">
           Position vs the training-sale median — not an over- or underpricing verdict.
         </p>
       </div>

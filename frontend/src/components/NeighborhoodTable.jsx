@@ -9,7 +9,9 @@
  *
  * Sorting (useSortable + SortHeader): click cycles asc → desc → natural
  * (natural = API order); `aria-sort` on the <th>; numeric columns sort
- * numerically and right-align.
+ * numerically and right-align. The wrapper scrolls horizontally (reference
+ * wide tables scroll, never reflow); the neighborhood column stays pinned
+ * via the global .table-sticky + .sticky-col mechanism.
  */
 import { useMemo } from 'react'
 import { Link } from 'react-router'
@@ -57,7 +59,13 @@ export default function NeighborhoodTable({ neighborhoods, clusterById }) {
         </caption>
         <thead>
           <tr>
-            <SortHeader label="Neighborhood" sortKey="name" sort={sort} onToggle={toggleSort} />
+            <SortHeader
+              label="Neighborhood"
+              sortKey="name"
+              sort={sort}
+              onToggle={toggleSort}
+              className="sticky-col"
+            />
             <SortHeader label="Code" sortKey="code" sort={sort} onToggle={toggleSort} />
             <SortHeader
               label="Micro-market"
@@ -88,7 +96,7 @@ export default function NeighborhoodTable({ neighborhoods, clusterById }) {
         <tbody>
           {sorted.map((row) => (
             <tr key={row.code}>
-              <td className="strong">{row.name}</td>
+              <td className="strong sticky-col">{row.name}</td>
               <td className="mono dim">{row.code}</td>
               <td>
                 <span className="legend-item">
@@ -97,7 +105,7 @@ export default function NeighborhoodTable({ neighborhoods, clusterById }) {
                     style={{ backgroundColor: clusterColor(row.clusterId) }}
                     aria-hidden="true"
                   />
-                  <span style={{ textTransform: 'capitalize' }}>{row.clusterLabel}</span>
+                  <span className="capitalize">{row.clusterLabel}</span>
                 </span>
               </td>
               <td className="num">{row.medianPrice !== null ? formatUsd(row.medianPrice) : '—'}</td>
@@ -116,7 +124,7 @@ export default function NeighborhoodTable({ neighborhoods, clusterById }) {
                   className="row-link"
                   to={`/valuation?neighborhood=${encodeURIComponent(row.code)}`}
                 >
-                  Value a home here →
+                  Estimate value →
                 </Link>
               </td>
             </tr>

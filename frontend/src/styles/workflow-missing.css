@@ -1,0 +1,44 @@
+/* ==========================================================================
+   ML Workbench — stage 04 Missing Values (blueprint §8.5)
+   Page-scoped styles for MissingStage.jsx + components/workflow/
+   MissingTable.jsx. Imported AFTER styles.css by the page so equal-
+   specificity rules win. Tokens come from styles.css only — never redefined
+   here. Metrics, the chart card, the repair table and the coverage bars are
+   all shared vocabulary (.metrics, .chart-card, .table, .coverage-*); this
+   file carries only what the shared system does not.
+   ========================================================================== */
+
+/* ProvenanceBanner directly under the page head — tighten the rhythm. */
+.wfm-banner-slot { margin-top: -14px; }
+.wfm-banner-slot + .section { padding-top: 22px; }
+
+/* Blocking alert: columns with gaps but no documented NA policy (the
+   pipeline would raise at stage 06). Mono per-column lines inside the
+   alert's error language. */
+.wfm-blocking-list {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+}
+.wfm-blocking-list li { margin: 4px 0; }
+.wfm-blocking-list .mono { font-size: 12px; }
+
+/* Repair table: the policy-table name sits under the treatment badge. */
+.wfm-policy {
+  display: block;
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 3px;
+}
+
+/* Closing notes under the repair table (complete-columns line, NA="absent"
+   semantics, policy-based honesty) — the reference's closing-note rhythm. */
+.wfm-notes {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  max-width: 720px;
+}
+
+/* CTA inside the no-missing-values empty state. */
+.wfm-empty-cta { margin-top: 16px; }

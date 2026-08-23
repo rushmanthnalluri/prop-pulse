@@ -65,32 +65,36 @@ export default function PredictionDrift({ metrics }) {
   }
 
   return (
-    <>
-      <div className="metrics metrics--auto">
-        <div className="metric">
-          <div className="metric-label">Estimated price PSI</div>
-          <div className={`metric-value${psiTone(pricePsi, warnThreshold, driftThreshold)}`}>
-            {formatMetric(predictionPsi.estimated_price)}
+    <div className="panel">
+      <div className="panel-head">
+        <h3 className="panel-title">Output PSI vs training reference</h3>
+        <span className="chart-tag">
+          warn ≥ {formatMetric(warnThreshold, 1)} · drift ≥ {formatMetric(driftThreshold, 1)}
+        </span>
+      </div>
+      <div className="panel-body">
+        <div className="metrics metrics--auto">
+          <div className="metric">
+            <div className={`metric-value${psiTone(pricePsi, warnThreshold, driftThreshold)}`}>
+              {formatMetric(predictionPsi.estimated_price)}
+            </div>
+            <div className="metric-label">Estimated price PSI</div>
+            <div className="metric-hint">distribution of scored prices</div>
           </div>
-          <div className="metric-hint">
-            warn ≥ {formatMetric(warnThreshold, 1)} · drift ≥ {formatMetric(driftThreshold, 1)}
-          </div>
-        </div>
-        <div className="metric">
-          <div className="metric-label">Sale probability PSI</div>
-          <div className={`metric-value${psiTone(probabilityPsi, warnThreshold, driftThreshold)}`}>
-            {formatMetric(predictionPsi.probability)}
-          </div>
-          <div className="metric-hint">
-            warn ≥ {formatMetric(warnThreshold, 1)} · drift ≥ {formatMetric(driftThreshold, 1)}
+          <div className="metric">
+            <div className={`metric-value${psiTone(probabilityPsi, warnThreshold, driftThreshold)}`}>
+              {formatMetric(predictionPsi.probability)}
+            </div>
+            <div className="metric-label">Sale probability PSI</div>
+            <div className="metric-hint">distribution of scored probabilities</div>
           </div>
         </div>
       </div>
-      <p className="note health-section-note">
-        PSI over the model's output distributions vs the training reference — output shift is
+      <div className="panel-foot">
+        PSI over the model&rsquo;s output distributions vs the training reference — output shift is
         often the first visible sign of input drift. Snapshot generated{' '}
         {formatDateTime(drift.timestamp)}.
-      </p>
-    </>
+      </div>
+    </div>
   )
 }

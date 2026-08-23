@@ -10,17 +10,18 @@ export default function MonitorNotes() {
       <div className="monitor-row">
         <span className="monitor-label">Service status</span>
         <p>
-          <code>GET /health</code> is live liveness. Startup fails hard if either champion artifact
-          is missing, so a running server should always report both models loaded — anything less
-          means the process is sick.
+          The API liveness endpoint reports live liveness. Startup fails hard if either champion
+          artifact is missing, so a running server should always report both models loaded —
+          anything less means the process is sick.
         </p>
       </div>
       <div className="monitor-row">
         <span className="monitor-label">Traffic counters</span>
         <p>
-          <code>GET /metrics</code> counters live in process memory and reset on every restart. The
-          error count covers HTTP 5xx responses only — validation 4xx rejections are not errors
-          here — and average latency is a plain mean since process start, not a percentile.
+          Counters from the metrics endpoint live in process memory and reset on every restart.
+          The error count covers HTTP 5xx responses only — validation 4xx rejections are not
+          errors here — and average latency is a plain mean since process start, not a
+          percentile.
         </p>
       </div>
       <div className="monitor-row">

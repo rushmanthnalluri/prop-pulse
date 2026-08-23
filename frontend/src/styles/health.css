@@ -1,7 +1,7 @@
 /* ==========================================================================
    Model Health page (SPEC §5.5) — page-specific styles.
-   Tokens and shared primitives come from styles.css; nothing here is below
-   the 11px readability floor (SPEC §2.2).
+   Tokens and shared primitives come from styles.css; text floor per the
+   canonical policy at .field-error there (≥10px; hints/errors ≥11px).
    ========================================================================== */
 
 /* Refresh row: per-fetch freshness stamps + manual refresh button. */
@@ -51,6 +51,11 @@
 .health-section-alert { margin-top: 14px; }
 .health-section-note { margin-top: 12px; }
 .health-block { margin-top: 16px; }
+.health-block-label {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-bottom: 8px;
+}
 .health-traffic-table { margin-top: 16px; }
 
 /* Unit suffix inside a large metric value ("38 ms"). */
@@ -115,7 +120,13 @@
   width: 5px;
   height: 5px;
   border-radius: 2px;
-  background: var(--accent-border);
+  background: rgba(217, 166, 63, 0.4);
+}
+.health-empty-cta {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
 }
 .health-empty-report { margin-top: 16px; }
 

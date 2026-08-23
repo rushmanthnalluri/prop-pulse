@@ -9,9 +9,15 @@
  *
  * Rebuilt-UI anchor changes vs the previous revision:
  *   - valuation lives at /valuation; the result is a .valuation-rail stack of
- *     panels (.result-price, .band/.band-scale, .gauge/.gauge-meta, .mm-label,
+ *     panels (.result-price, .band/.band-scale, .mm-label,
  *     .position-scale/.position-marker, .factor-row, .provenance)
- *   - factor magnitudes render as "↑ 21.4%" arrows (not "+21.4%" signs)
+ *   - design-system rebuild (2026-08-09): the standalone ProbabilityGauge is
+ *     gone — the result panel now carries the probability as an 8px
+ *     `.result-track` (role=meter, aria-valuenow = percent) with the mono
+ *     `.result-meta` pair "{p}% probability" / "threshold {t}%" (was
+ *     `.gauge`/`.gauge-meta` with "x% within 30 days")
+ *   - factor magnitudes render as signed "+21.4%" / "−12.2%" percents (the
+ *     blueprint's sanctioned glyph set has no up-arrow; signs are the idiom)
  *   - the nearest-cluster fallback badge reads "Nearest cluster"
  *   - the submit pipeline is abort-supersede: N rapid submits fire N requests
  *     but all but the last are cancelled client-side, so only ~1 response
@@ -31,6 +37,7 @@ import { execFile, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { ensureBackend } from '../helpers/backend.js'
 // Production formatting code — used here ONLY to compare the rendered DOM
 // against the intercepted API JSON with the exact same formatting rules.
 import { formatUsd, formatPct, formatNumber, prettyFeature, humanizeNote } from '../../frontend/src/format.js'
@@ -75,7 +82,7 @@ async function submitAndCapture(page) {
 /** Pin fixed/sticky chrome for stitched full-page captures (cosmetic only). */
 async function pinForShot(page) {
   await page.addStyleTag({
-    content: '.sidebar, .topbar, .sticky-rail { position: static !important; }',
+    content: '.pipeline-sidebar, .predict-result { position: static !important; }',
   })
 }
 
@@ -109,6 +116,13 @@ const REALISTIC = {
   garage_cars: 2, fireplaces: 1,
 }
 
+// Self-heal: this spec runs first in the suite and every test below needs the
+// live backend (a previous run's leftover kill can otherwise cascade the whole
+// suite — see e2e/helpers/backend.js).
+test.beforeAll(async () => {
+  await ensureBackend()
+})
+
 test('trace-truth: DOM renders exactly the intercepted /predict JSON', async ({ page }) => {
   await page.goto('/valuation')
   await fillCore(page, REALISTIC)
@@ -128,17 +142,17 @@ test('trace-truth: DOM renders exactly the intercepted /predict JSON', async ({ 
   await expect(scale.nth(1)).toHaveText(`estimate ${formatUsd(json.estimated_price)}`)
   await expect(scale.nth(2)).toHaveText(formatUsd(json.price_range.high))
 
-  // Sale likelihood: gauge meter value, "x% within 30 days", threshold as a
-  // percent, verdict badge, and the mandatory simulated-target badge.
+  // Sale likelihood: result-track meter value, "x% probability", threshold as
+  // a percent, verdict badge, and the mandatory simulated-target badge.
   const prob = json.sale_probability
   const pct = Math.min(100, Math.max(0, Number(prob.probability) * 100))
-  await expect(rail.locator('.gauge')).toHaveAttribute(
+  await expect(rail.locator('.result-track')).toHaveAttribute(
     'aria-valuenow',
     String(Number(pct.toFixed(1))),
   )
-  const gaugeMeta = rail.locator('.gauge-meta span')
-  await expect(gaugeMeta.nth(0)).toHaveText(`${formatPct(prob.probability)} within 30 days`)
-  await expect(gaugeMeta.nth(1)).toHaveText(`threshold ${formatPct(prob.threshold)}`)
+  const resultMeta = rail.locator('.result-meta span')
+  await expect(resultMeta.nth(0)).toHaveText(`${formatPct(prob.probability)} probability`)
+  await expect(resultMeta.nth(1)).toHaveText(`threshold ${formatPct(prob.threshold)}`)
   await expect(
     rail.getByText(prob.sells_within_30_days ? 'Likely fast sale' : 'Slower sale', {
       exact: true,
@@ -209,7 +223,7 @@ test('trace-truth: DOM renders exactly the intercepted /predict JSON', async ({ 
   for (const [i, f] of json.top_price_factors.entries()) {
     const row = rows.nth(i)
     await expect(row.locator('.factor-name')).toHaveText(prettyFeature(f.feature))
-    const arrow = f.impact === 'positive' ? '↑' : '↓'
+    const arrow = f.impact === 'positive' ? '+' : '−'
     await expect(row.locator('.factor-value')).toHaveText(
       `${arrow} ${formatPct(Math.abs(Number(f.magnitude)), 1)}`,
     )
@@ -317,8 +331,8 @@ test('race: 5 rapid submits (abort-supersede) settle to one consistent result', 
   await expect(rail.locator('.result-price')).toHaveCount(1)
   const last = payloads[payloads.length - 1]
   await expect(rail.locator('.result-price')).toHaveText(formatUsd(last.estimated_price))
-  await expect(rail.locator('.gauge-meta span').nth(0)).toHaveText(
-    `${formatPct(last.sale_probability.probability)} within 30 days`,
+  await expect(rail.locator('.result-meta span').nth(0)).toHaveText(
+    `${formatPct(last.sale_probability.probability)} probability`,
   )
   expect((await rail.innerText()).match(GARBAGE)).toBeNull()
   expect(pageErrors).toEqual([])
@@ -332,7 +346,8 @@ test('mid-load page switching (market → model → valuation) leaves no errors'
 
   await page.goto('/market') // returns before /market/clusters settles
   await page.getByRole('link', { name: 'Model Insights' }).click()
-  await page.getByRole('link', { name: 'Valuation' }).click()
+  // exact: "Valuation" substring-collides with the sidebar's "Model Evaluation".
+  await page.getByRole('link', { name: 'Valuation', exact: true }).click()
   await expect(page.getByRole('heading', { name: 'Value a property' })).toBeVisible()
   await page.waitForTimeout(2500) // let any in-flight promises reject/settle
 
@@ -397,8 +412,11 @@ test('client validation: bedrooms=99 names the offending field, no API call fire
   await page.getByLabel('Bedrooms').fill('99')
   await page.getByRole('button', { name: 'Estimate value' }).click()
 
-  const summary = page.getByRole('alert').filter({ hasText: 'Fix the highlighted fields' })
+  // Scoped to the form — the page-level error alert quotes the same
+  // "Check the highlighted inputs" copy once a server 422 has happened.
+  const summary = page.locator('form.valuation-form').getByRole('alert')
   await expect(summary).toBeVisible()
+  await expect(summary).toContainText('Check the highlighted inputs')
   await expect(summary).toContainText('Bedrooms')
   await expect(page.locator('#pf-bedrooms-error')).toContainText('Must be between 0 and 8')
   expect(predictCalls).toEqual([]) // client validation blocked the submit
@@ -424,7 +442,9 @@ test('neighborhood select lists exactly the 25 geo-CSV neighborhoods; unknown re
 test('backend down → error + Try again → backend restart → full recovery (LAST)', async ({ page }) => {
   test.setTimeout(240_000)
   const killed = await killPort(BACKEND_PORT)
-  expect(killed).toBe(true)
+  // The scenario is "backend down → recovery". A backend that was already
+  // down (killed === false) is still exactly the state this test needs to
+  // exercise the down-UI; only the respawn below must always run.
   await page.waitForTimeout(1000)
 
   await page.goto('/valuation')

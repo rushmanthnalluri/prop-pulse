@@ -1,8 +1,12 @@
 /**
  * WorkflowShell (WORKFLOW §6.1-6.2) — layout for every /workflow/* route:
- * the 12-stage stepper, the active-dataset context, server-truth gating, and
- * the stage pages (owned by WF-F2/F3/F4, lazily imported so each stage chunk
- * loads on demand).
+ * the active-dataset context, server-truth gating, and the stage pages
+ * (owned by WF-F2/F3/F4, lazily imported so each stage chunk loads on
+ * demand).
+ *
+ * Chrome split (blueprint §4): the sidebar in Layout.jsx owns the numbered
+ * pipeline stepper; this shell renders the quiet dataset-context strip at
+ * the top and the StagePager (prev ← / next →) at the foot of every stage.
  *
  * Truth model (§6.2, binding):
  * - Server truth first: `GET /workflow/datasets/{id}/state` drives the 08/09
@@ -39,7 +43,7 @@ import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { useToast } from '../../components/Toast'
 import ErrorBoundary from '../../components/ErrorBoundary'
 import { EmptyState, ErrorState, PanelSkeleton } from '../../components/StateView'
-import Stepper from '../../components/workflow/Stepper'
+import StagePager from '../../components/workflow/StagePager'
 import DatasetPicker from '../../components/workflow/DatasetPicker'
 import {
   DATASET_ID_RE,
@@ -49,8 +53,9 @@ import {
 } from './stages'
 import '../../styles/workflow.css'
 
-/* Stage pages — placeholders now, real implementations land with WF-F2/F3/F4
-   at exactly these paths (WORKFLOW §8). One lazy chunk per stage. */
+/* Stage pages — one lazy chunk per stage; all twelve are fully implemented
+   (WF-F2/F3/F4). The lazy boundary keeps each stage's code out of the main
+   bundle so /workflow/* loads on demand (WORKFLOW §8). */
 const UploadStage = lazy(() => import('./UploadStage'))
 const FeaturesStage = lazy(() => import('./FeaturesStage'))
 const StatsStage = lazy(() => import('./StatsStage'))
@@ -134,7 +139,8 @@ export function useWorkflow() {
   return ctx
 }
 
-/** Designed locked state (§6.4): names the unblock action, CTA to stage 07. */
+/** Designed locked state (§6.4): "Locked" tag (the reference's "Soon"-tag
+    pattern), the unblock action, CTA to stage 07. */
 function LockedStage({ stage, gate, datasetId }) {
   return (
     <div className="section">
@@ -143,6 +149,7 @@ function LockedStage({ stage, gate, datasetId }) {
         title="This stage is locked"
         detail={gate.reason}
       >
+        <span className="step-soon wf-locked-tag">Locked</span>
         <Link
           className="btn btn-primary btn-sm wf-locked-cta"
           to={`/workflow/${gate.ctaSlug}?dataset=${datasetId}`}
@@ -378,17 +385,17 @@ export default function WorkflowShell() {
   return (
     <WorkflowContext.Provider value={contextValue}>
       <div className="wf-shell">
-        <div className="wf-top">
-          <Stepper stages={stages} datasetId={datasetId} />
-          <div className="wf-context">
-            <p className="wf-context-line">
-              Sandbox workbench — models you train here serve this workbench only and
-              never replace the PropPulse champion.
-            </p>
-            <DatasetPicker />
-          </div>
+        {/* Quiet mono context strip — reads as the page-head meta area; the
+            dataset picker is a compact quiet control on the right. */}
+        <div className="wf-context">
+          <p className="wf-context-line">
+            Sandbox workbench — models you train here serve this workbench only and
+            never replace the PropPulse champion.
+          </p>
+          <DatasetPicker />
         </div>
         {body}
+        <StagePager currentSlug={stage.slug} datasetId={datasetId} />
       </div>
     </WorkflowContext.Provider>
   )

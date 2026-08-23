@@ -17,10 +17,16 @@ the docs-truth audit); `e2e/node_modules`.
 | ml/clustering/* + ml/explainability/* + ml/monitoring/* (`llba-ml-services.md`) | 12 | 2,398 | ✓ full |
 | backend/app/** (`llba-backend.md`) | 18 | 1,406 | ✓ full |
 | frontend/src/** + scripts/* + e2e config + docker/CI/config (`llba-frontend-infra.md`) | 15 + 14 | 2,271 + ~900 | ✓ full (styles.css: key rules) |
-| tests/** + backend/tests/** (`test-audit.md`, per-test strength classification) | 16 | 3,416 | ✓ full |
+| tests/** + backend/tests/** (`test-audit.md`, per-test strength classification) | 16 → 28 (workflow engine tests, missions 3-5) | 3,416 → +~3,200 | ✓ full |
+
+Post-audit additions (mission-5 pass, covered in `test-audit.md` §9): `e2e/helpers/backend.js`
+(self-heal guard, ~70 lines) and the 9 workflow test files (`test_workflow_*`,
+`backend/tests/test_market_features.py`, `backend/tests/test_audit_fixes.py`,
+`tests/ml/workflow/*`) that grow the collected suite to **454 tests / 28 files**.
 
 **Python source total: 12,596 lines (~50 files). Frontend src: 2,271 lines (16 files — baseline
-corrected from 15; orchestrator counting slip in wave-0). Tests: 3,416 lines. Infra/config:
-~900 lines.** Grand total reviewed ≈ 16,900 auditable lines, plus 14 infra/config files.
+corrected from 15; orchestrator counting slip in wave-0). Tests: ~6,600 lines (28 files).
+Infra/config: ~900 lines + `e2e/helpers/backend.js`.** Grand total reviewed ≈ 16,900 auditable
+lines, plus 14 infra/config files.
 
 Per-file reviewed-line tables are in each scope's report; no file was partially read.

@@ -1,0 +1,43 @@
+/* ==========================================================================
+   Stage 07 — Model Training (blueprint §8.8)
+   Page-scoped styles for TrainStage. Imported AFTER
+   styles/workflow-train.css (whose .wf-tabs / .wf-check / .wf-candidates /
+   .wf-jobstatus / .wf-jobrows base rules this page reuses) so
+   equal-specificity rules below win. The .bench-banner / .model-pick /
+   .champion-row vocabulary itself lives in styles.css (global). Tokens from
+   styles.css only — no shadows, 4/6/8 radii, nothing below 10px (see
+   styles.css .field-error for the canonical floor policy).
+   ========================================================================== */
+
+/* Model-inspection pick row (reference .model-pick) sits below the train
+   panel, separated by the section rhythm. */
+.wftp-pick { margin-top: 28px; }
+
+/* bench-banner name + badges share one baseline row. */
+.wftp-banner-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* Candidate detail panel (reference .model-detail). */
+.wftp-inspect .metrics { margin-bottom: 18px; }
+.wftp-inspect-params {
+  margin-top: 10px;
+  overflow-wrap: anywhere;
+}
+.wftp-inspect-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   Responsive (blueprint §10)
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 520px) {
+  .wftp-inspect-actions .btn { width: 100%; }
+}

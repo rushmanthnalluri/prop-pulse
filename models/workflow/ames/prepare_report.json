@@ -1,0 +1,213 @@
+{
+  "dataset_id": "ames",
+  "config": {
+    "outlier_rule": true,
+    "split_strategy": "auto",
+    "val_frac": 0.15,
+    "test_frac": 0.15,
+    "seed": 42
+  },
+  "fingerprint": "8b9a8d5c8aa183981996a4ea0b8cc21f541874c5",
+  "prepared_at": "2026-08-23T14:15:28+00:00",
+  "splits": {
+    "train": 945,
+    "val": 338,
+    "test": 175,
+    "rule": "time(YrSold)"
+  },
+  "steps": [
+    {
+      "step": "split",
+      "strategy_requested": "auto",
+      "rule": "time(YrSold)",
+      "train": 945,
+      "val": 338,
+      "test": 175,
+      "note": "canonical data/processed splits used in place (ADR-4); the config's split strategy/fractions are recorded but not applied to the bundled dataset"
+    },
+    {
+      "step": "outlier_rule",
+      "enabled": true,
+      "rows_removed": 2,
+      "removed_ids": [
+        524,
+        1299
+      ],
+      "applied_to": "train split only",
+      "note": "applied upstream by the canonical pipeline (data/processed/outliers_report.json)"
+    },
+    {
+      "step": "clean",
+      "fit_on": "train split only",
+      "total_na_filled": 7829,
+      "na_filled_by_column": {
+        "LotFrontage": 259,
+        "Alley": 1369,
+        "MasVnrType": 872,
+        "MasVnrArea": 8,
+        "BsmtQual": 37,
+        "BsmtCond": 37,
+        "BsmtExposure": 38,
+        "BsmtFinType1": 37,
+        "BsmtFinType2": 38,
+        "Electrical": 1,
+        "FireplaceQu": 690,
+        "GarageType": 81,
+        "GarageYrBlt": 81,
+        "GarageFinish": 81,
+        "GarageQual": 81,
+        "GarageCond": 81,
+        "PoolQC": 1453,
+        "Fence": 1179,
+        "MiscFeature": 1406
+      },
+      "note": "applied upstream by the canonical pipeline; counts are the raw frame's missing cells, all filled per the documented NA policies"
+    },
+    {
+      "step": "sale_speed_target",
+      "provider": "simulated",
+      "simulated": true,
+      "fit_on": "train split only",
+      "positive_rate_train": 0.2529,
+      "positive_rate_val": 0.2929,
+      "positive_rate_test": 0.28,
+      "note": "SIMULATED target (ADR-3) \u2014 seeded days-on-market simulation; not a real-world performance claim"
+    },
+    {
+      "step": "geo_join",
+      "neighborhoods_mapped": 25,
+      "note": "approximate neighborhood centroids (data/external/neighborhood_geo.csv, ADR-2)"
+    },
+    {
+      "step": "sandbox_stats",
+      "fit_on": "train split only",
+      "n_neighborhoods": 25,
+      "n_months": 36,
+      "n_feature_defaults": 79,
+      "neighborhood_stats_path": "models\\workflow\\ames\\neighborhood_stats.json",
+      "feature_defaults_path": "models\\workflow\\ames\\feature_defaults.json"
+    },
+    {
+      "step": "features",
+      "columns_before": 85,
+      "columns_after": 94,
+      "fit_on": "train split only (neighborhood stats)",
+      "note": "model-ready frame via build_feature_frame with sandbox stats"
+    }
+  ],
+  "before": {
+    "n_rows": 1460,
+    "n_cols": 81,
+    "total_missing": 7829
+  },
+  "after": {
+    "n_rows": 1458,
+    "n_cols": 85,
+    "total_missing": 0
+  },
+  "sample_before": [
+    {
+      "Id": 1,
+      "Neighborhood": "CollgCr",
+      "LotFrontage": 65.0,
+      "OverallQual": 7,
+      "GrLivArea": 1710,
+      "YrSold": 2008,
+      "MoSold": 2,
+      "SalePrice": 208500
+    },
+    {
+      "Id": 2,
+      "Neighborhood": "Veenker",
+      "LotFrontage": 80.0,
+      "OverallQual": 6,
+      "GrLivArea": 1262,
+      "YrSold": 2007,
+      "MoSold": 5,
+      "SalePrice": 181500
+    },
+    {
+      "Id": 3,
+      "Neighborhood": "CollgCr",
+      "LotFrontage": 68.0,
+      "OverallQual": 7,
+      "GrLivArea": 1786,
+      "YrSold": 2008,
+      "MoSold": 9,
+      "SalePrice": 223500
+    },
+    {
+      "Id": 4,
+      "Neighborhood": "Crawfor",
+      "LotFrontage": 60.0,
+      "OverallQual": 7,
+      "GrLivArea": 1717,
+      "YrSold": 2006,
+      "MoSold": 2,
+      "SalePrice": 140000
+    },
+    {
+      "Id": 5,
+      "Neighborhood": "NoRidge",
+      "LotFrontage": 84.0,
+      "OverallQual": 8,
+      "GrLivArea": 2198,
+      "YrSold": 2008,
+      "MoSold": 12,
+      "SalePrice": 250000
+    }
+  ],
+  "sample_after": [
+    {
+      "Id": 1,
+      "Neighborhood": "CollgCr",
+      "LotFrontage": 65.0,
+      "OverallQual": 7,
+      "GrLivArea": 1710,
+      "YrSold": 2008,
+      "MoSold": 2,
+      "SalePrice": 208500
+    },
+    {
+      "Id": 2,
+      "Neighborhood": "Veenker",
+      "LotFrontage": 80.0,
+      "OverallQual": 6,
+      "GrLivArea": 1262,
+      "YrSold": 2007,
+      "MoSold": 5,
+      "SalePrice": 181500
+    },
+    {
+      "Id": 3,
+      "Neighborhood": "CollgCr",
+      "LotFrontage": 68.0,
+      "OverallQual": 7,
+      "GrLivArea": 1786,
+      "YrSold": 2008,
+      "MoSold": 9,
+      "SalePrice": 223500
+    },
+    {
+      "Id": 4,
+      "Neighborhood": "Crawfor",
+      "LotFrontage": 60.0,
+      "OverallQual": 7,
+      "GrLivArea": 1717,
+      "YrSold": 2006,
+      "MoSold": 2,
+      "SalePrice": 140000
+    },
+    {
+      "Id": 5,
+      "Neighborhood": "NoRidge",
+      "LotFrontage": 84.0,
+      "OverallQual": 8,
+      "GrLivArea": 2198,
+      "YrSold": 2008,
+      "MoSold": 12,
+      "SalePrice": 250000
+    }
+  ],
+  "leakage_note": "Every statistic was fit on the training rows only \u2014 validation and test rows are transformed with frozen values."
+}

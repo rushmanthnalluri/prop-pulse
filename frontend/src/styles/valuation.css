@@ -1,26 +1,25 @@
 /* ==========================================================================
-   Valuation page (SPEC §5.2) — structured form + sticky result rail.
-   Tokens and primitives live in styles.css (single owner); this file owns
-   only valuation-specific layout and components. Imported from
-   pages/Valuation.jsx. Hairlines over shadows; nothing below 11px.
+   Valuation page (SPEC §5.2, blueprint §8.10) — the reference predict form +
+   sticky result aside. Tokens and primitives live in styles.css (single
+   owner); this file owns only valuation-specific layout and components.
+   Imported from pages/Valuation.jsx (after the shared stylesheet, so equal-
+   specificity overrides win). Hairlines over shadows; nothing below 10px;
+   user-facing errors/hints ≥ 11px (see styles.css .field-error).
    ========================================================================== */
 
-/* Layout: form 1.15 / rail 0.85 (SPEC §5.2); the rail sticks via the global
-   .sticky-rail (top: 24px) and goes static ≤1024px. */
-.valuation-grid {
-  display: grid;
-  grid-template-columns: 1.15fr 0.85fr;
-  gap: 36px;
-  align-items: start;
+/* Layout: the shared .predict-grid (1.25fr/0.75fr, gap 36px, one column
+   ≤820px) + .predict-result (sticky top 24px, static ≤820px) carry the
+   reference geometry; the rail adds the panel-stack rhythm. */
+.predict-grid > * {
+  /* Grid items default to min-width:auto — without this the comps table's
+     min-content (~573px) propagates up and stretches the whole single-column
+     track, pushing the page ~235px past a 390px viewport (WP-7c). */
+  min-width: 0;
 }
 .valuation-rail {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  /* Grid items default to min-width:auto — without this the comps table's
-     min-content (~573px) propagates up and stretches the whole single-column
-     track, pushing the page ~235px past a 390px viewport (WP-7c). */
-  min-width: 0;
 }
 .rail-stack {
   display: flex;
@@ -41,7 +40,7 @@
   color: var(--text-2);
 }
 .rail-empty-actions {
-  margin-top: 14px;
+  margin-top: 2px;
 }
 
 /* Restore-last-valuation bar (SPEC §5.2.2: URL params win, else this). */
@@ -80,20 +79,21 @@
   color: var(--text);
 }
 
-/* Form */
+/* Form — reference §8.10: fieldsets with mono uppercase legends come from
+   styles.css (.predict-fieldset/.predict-fields); below is page-specific. */
 .valuation-form .alert {
   margin-bottom: 16px;
 }
-.valuation-submit {
-  width: 100%;
-}
-.form-actions {
+/* Submit row: primary first, quiet secondaries after, note line under —
+   the reference's button placement logic. */
+.submit-row {
   display: flex;
+  align-items: center;
   gap: 10px;
-  margin-top: 10px;
+  flex-wrap: wrap;
 }
-.form-actions .btn {
-  flex: 1;
+.submit-note {
+  margin-top: 10px;
 }
 /* Warn-not-block tier (SPEC §5.2.1): pre-announces reduced confidence. */
 .field-warn {
@@ -106,13 +106,6 @@
   align-items: center;
   gap: 10px;
   padding-top: 24px; /* aligns the checkbox with the labeled inputs */
-}
-.check-input {
-  width: 16px;
-  height: 16px;
-  accent-color: var(--accent);
-  cursor: pointer;
-  flex-shrink: 0;
 }
 .adv-intro {
   margin-bottom: 12px;
@@ -130,25 +123,84 @@
   margin-bottom: 10px;
 }
 
-/* THE ESTIMATE — the only accent-bordered panel on the page. */
-.panel--hero {
-  border-color: var(--accent-border);
+/* --------------------------------------------------------------------------
+   Result panel (blueprint §8.10): base .result-panel / .result-kicker /
+   .result-verdict / .result-track / .result-meta / .result-facts live in
+   styles.css; these are the estimate-specific extensions.
+   -------------------------------------------------------------------------- */
+
+/* The estimate always takes the reference's amber "positive result" border —
+   a price has no placed/not-placed binary to color-code. */
+.result-panel--estimate {
+  border-color: rgba(217, 166, 63, 0.5);
+  /* Stick the estimate panel itself, not the whole rail: the filled rail is
+     ~3179px tall, so an aside-level sticky has zero slack and the verdict
+     scrolls away. The estimate pins while FactorBars / MicroMarket /
+     PricePosition / Comps / ScenarioExplorer scroll beneath it. */
+  position: sticky;
+  top: 24px;
 }
-.hero-head {
+/* The verdict is a price figure: numbers stay Plex Mono tabular in neutral
+   ink (tokens §2) — the amber signal lives on the border, not the number. */
+.result-verdict.result-price {
+  font-family: var(--font-mono);
+  /* apple-design type-first: the estimate is the page's one big number —
+     heavy weight + tighter tracking than the 30px/600 base (.result-verdict
+     stays the generic verdict text; only the price figure scales up). */
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  margin-top: 0;
+}
+.result-verdict-block {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  gap: 4px;
 }
-.result-price--empty {
+.result-verdict-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.02em;
   color: var(--text-3);
+}
+/* Band + caption read as one unit inside the panel's 14px flex rhythm. */
+.result-band .band {
+  margin-top: 6px;
+}
+.result-track {
+  position: relative; /* anchor for the threshold tick */
+}
+.result-tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--text);
+  transform: translateX(-1px);
+}
+.result-prob-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.result-prob-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+.result-fact-cap {
+  text-transform: capitalize;
 }
 /* Range-band fill animates on a new estimate (SPEC §2.4). */
 .band-fill {
   transition: left var(--dur-emphasis), right var(--dur-emphasis);
 }
+/* ConfidenceNote trust badge, separated by a hairline. */
 .hero-confidence {
-  margin-top: 14px;
   border-top: 1px solid var(--border);
   padding-top: 12px;
 }
@@ -160,6 +212,34 @@
 }
 .hero-confidence-mae {
   margin-top: 8px;
+}
+
+/* Pinned-estimate comparison (mission §42): the empty state is one quiet
+   button + mono hint (no panel chrome for a single affordance); the pinned
+   state is a plain .panel with .kv delta rows (pos/neg idiom shared with the
+   scenario explorer below). */
+.pin-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.pin-hint {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--text-3);
+}
+.compare-summary {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-bottom: 12px;
+}
+.compare-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 12px;
 }
 
 /* Factor bars: up = accent, down = danger (SPEC §2.1 semantics). The value
@@ -217,6 +297,15 @@
 }
 .comp-toggle:hover {
   color: var(--text);
+}
+/* Sanctioned › chevron: points right collapsed, rotates to point down when
+   the row is expanded (replaces the off-set disclosure-triangle glyphs). */
+.comp-chevron {
+  display: inline-block;
+  transition: transform var(--dur-hover);
+}
+.comp-toggle[aria-expanded='true'] .comp-chevron {
+  transform: rotate(90deg);
 }
 .comp-detail > td {
   background: var(--bg);
@@ -290,24 +379,19 @@
   line-height: 1.6;
 }
 
-/* Responsive (SPEC §8): ≤1024 single column with the rail static below the
-   form; ≤768 fieldset grids collapse to one column; ≤420 the submit row
-   goes full-width. (Rail de-stick and hero-price steps live in styles.css.) */
-@media (max-width: 1024px) {
-  .valuation-grid {
-    grid-template-columns: 1fr;
-  }
-}
-@media (max-width: 768px) {
-  .valuation-form .field-row {
-    grid-template-columns: 1fr;
-  }
+/* Small spacing helpers for the rail panels (mt-6/mt-12/mt-16 now live as
+   global utilities in styles.css; these mb-* remain page-specific). */
+.mb-10 { margin-bottom: 10px; }
+.mb-14 { margin-bottom: 14px; }
+
+/* Responsive (blueprint §10): grid/fieldset collapse and rail de-stick are
+   handled by styles.css at ≤820px; below is valuation-specific. */
+@media (max-width: 820px) {
   .check-field {
-    padding-top: 0;
+    padding-top: 0; /* single-column fields — no label row to align with */
   }
-}
-@media (max-width: 420px) {
-  .form-actions {
-    flex-direction: column;
+  /* De-stick the estimate panel on the stacked single column. */
+  .result-panel--estimate {
+    position: static;
   }
 }

@@ -161,7 +161,10 @@ async def run_load(
     )
     async with httpx.AsyncClient(timeout=REQUEST_TIMEOUT, limits=limits) as client:
         for _ in range(warmup):  # sequential warm-up, never measured
-            await client.request(method, url, json=payload)
+            try:
+                await client.request(method, url, json=payload)
+            except httpx.HTTPError:
+                pass  # unmeasured by design; the measured phase reports errors
         stats = RunStats()
         remaining = [requests]
         started = time.perf_counter()
@@ -210,13 +213,21 @@ def run_profile(iterations: int, payload: dict[str, Any]) -> dict[str, Any]:
     sys.path.insert(0, str(REPO_ROOT))
     import joblib  # noqa: PLC0415
 
-    from backend.app.services.prediction_service import PredictionService  # noqa: PLC0415
+    from backend.app.services.prediction_service import (  # noqa: PLC0415
+        PredictionService,
+        force_single_threaded,
+    )
     from ml.explainability.service import explain_instance  # noqa: PLC0415
     from ml.features.stats import load_neighborhood_stats  # noqa: PLC0415
 
     champion = json.loads((REPO_ROOT / "models" / "champion.json").read_text(encoding="utf-8"))
     regression_model = joblib.load(REPO_ROOT / champion["regression"]["path"])
-    classification_model = joblib.load(REPO_ROOT / champion["classification"]["path"])
+    # Pin n_jobs=1 exactly like the lifespan does (backend/app/main.py), so the
+    # stage profile measures the served path instead of the pre-fix joblib
+    # pool-churn path (reports/PERFORMANCE.md).
+    classification_model = force_single_threaded(
+        joblib.load(REPO_ROOT / champion["classification"]["path"])
+    )
     service = PredictionService(
         regression_model=regression_model,
         classification_model=classification_model,
@@ -299,7 +310,8 @@ def main() -> None:
     if re.match(r"^[A-Za-z]:[\\/]", endpoint):
         parser.error(
             "endpoint was rewritten by the shell (Git Bash POSIX-to-Windows "
-            "path conversion); pass it as --endpoint=/predict instead"
+            "path conversion); pass it as --endpoint //predict (double slash) "
+            "or prefix the command with MSYS_NO_PATHCONV=1"
         )
     if not endpoint.startswith("/"):
         endpoint = "/" + endpoint

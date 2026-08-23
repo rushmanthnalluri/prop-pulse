@@ -1,0 +1,64 @@
+/* ==========================================================================
+   ML Workbench — stage 09 Predict Property, sandbox half (blueprint §8.10)
+   Page-scoped styles for PredictStage + SandboxPredictPanel. Imported by
+   PredictStage AFTER workflow-bridge.css — equal-specificity overrides win
+   by source order. The grid (.predict-grid), the sticky aside
+   (.predict-result), the fieldsets (.predict-fieldset/.predict-fields) and
+   the result-panel family live in styles.css; this file carries only the
+   sandbox-specific extras. Tokens only; no shadows/gradients; radius 4/6/8.
+   ========================================================================== */
+
+/* Left column of the .predict-grid — grid items default to min-width:auto,
+   which would let a wide select blow the track out on narrow viewports. */
+.predict-main { min-width: 0; }
+
+/* Model fieldset: static hint under the run/model selects (reference: the
+   "Best model = …" line under the select). */
+.predict-model-hint { display: block; margin-top: 10px; }
+
+/* Simulated-target lead above the form (classification rosters). */
+.predict-sim-lead { margin: 0 0 12px; }
+
+/* --------------------------------------------------------------------------
+   Result aside (§8.10) — .result-panel/.result-kicker/.result-verdict/
+   .result-track/.result-meta/.result-facts are global (styles.css). Below:
+   the sandbox number treatments. Selectors are scoped one level deeper than
+   the workflow-bridge.css originals so these win regardless of chunk order.
+   -------------------------------------------------------------------------- */
+
+/* The regression verdict is a price — numbers render in Plex Mono per the
+   token rule, in plain ink (a magnitude is not a positive/negative call). */
+.predict-result .wf-result-price {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.15;
+}
+
+/* The ~80% range line under the verdict. */
+.predict-result .wf-result-range {
+  font-size: 12px;
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mono provenance meta row ("candidate · objective · job_id"). */
+.predict-result .wf-result-meta {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* Previous result dims while a re-predict is in flight — busy feedback lives
+   on the submit control; never a skeleton swap once data is on screen. */
+.result-panel--busy {
+  opacity: 0.55;
+  transition: opacity var(--dur-hover);
+}
+
+/* Badges sit flush with the kicker row / note text. */
+.predict-result .result-kicker-row .badge { flex-shrink: 0; }
+.predict-result .note .badge { margin-right: 6px; }

@@ -1,5 +1,6 @@
 /**
- * Form constants for the PropPulse valuation form.
+ * Form constants for the PropPulse valuation form, plus the stable
+ * data-contract facts (CONTRACT §4) shared by the insights surfaces.
  *
  * Categorical option sets mirror the API contract exactly
  * (`backend/app/schemas/property.py`, SPEC §8) — the backend rejects values
@@ -84,8 +85,12 @@ export const ENUM_LABELS = {
   street: { Pave: 'Paved', Grvl: 'Gravel' },
 }
 
-/** Deterministic cluster → color map, shared by map, trends, and cluster cards. */
-export const CLUSTER_COLORS = ['#0e7a6d', '#4c6e91', '#b98a2f', '#b4593f']
+/** Deterministic cluster → color map, shared by map, trends, and cluster cards.
+    Retuned for the dark system (D65): teal and the old `#4c6e91` slate were
+    ~3.6:1 on `#0F1110` (read as mud); slate now matches `--slate` `#6E8FA0`
+    (~5.5:1) and teal is lightened to `#2a9d8f` (~5.7:1). Ochre/terra already
+    cleared ~6:1 / ~4:1, so they keep their hues. */
+export const CLUSTER_COLORS = ['#2a9d8f', '#6E8FA0', '#b98a2f', '#b4593f']
 export function clusterColor(id) {
   const n = Number(id)
   if (!Number.isInteger(n) || n < 0) return '#6e7c8b'
@@ -149,11 +154,11 @@ export const ADVANCED_FIELDS = [
   { name: 'ms_zoning', label: 'MS zoning', kind: 'select', options: MS_ZONING, placeholder: 'API default: RL' },
   { name: 'lot_frontage', label: 'Lot frontage (ft)', kind: 'number', min: 1, max: 500, step: 'any' },
   { name: 'year_remod_add', label: 'Remodel year', kind: 'number', min: 1870, max: 2026, placeholder: 'Default: year built' },
-  { name: 'garage_area', label: 'Garage area (sqft)', kind: 'number', min: 0, max: 2000, step: 'any' },
-  { name: 'pool_area', label: 'Pool area (sqft)', kind: 'number', min: 0, max: 1000 },
-  { name: 'wood_deck_sf', label: 'Wood deck (sqft)', kind: 'number', min: 0, max: 1500 },
-  { name: 'open_porch_sf', label: 'Open porch (sqft)', kind: 'number', min: 0, max: 1000 },
-  { name: 'screen_porch', label: 'Screen porch (sqft)', kind: 'number', min: 0, max: 800 },
+  { name: 'garage_area', label: 'Garage area (sq ft)', kind: 'number', min: 0, max: 2000, step: 'any' },
+  { name: 'pool_area', label: 'Pool area (sq ft)', kind: 'number', min: 0, max: 1000 },
+  { name: 'wood_deck_sf', label: 'Wood deck (sq ft)', kind: 'number', min: 0, max: 1500 },
+  { name: 'open_porch_sf', label: 'Open porch (sq ft)', kind: 'number', min: 0, max: 1000 },
+  { name: 'screen_porch', label: 'Screen porch (sq ft)', kind: 'number', min: 0, max: 800 },
   { name: 'sale_date', label: 'Sale date', kind: 'date', placeholder: 'Default: latest train month (2008-12)' },
   { name: 'bsmt_qual', label: 'Basement quality', kind: 'select', options: BSMT_QUAL, labels: ENUM_LABELS.bsmt_qual, hint: 'Rates basement ceiling height' },
   { name: 'kitchen_qual', label: 'Kitchen quality', kind: 'select', options: QUALITY_NO_PO, labels: ENUM_LABELS.quality },
@@ -173,14 +178,14 @@ export const ADVANCED_FIELDS = [
   { name: 'exterior1st', label: 'Exterior covering', kind: 'select', options: EXTERIOR_1ST, labels: ENUM_LABELS.exterior1st },
   { name: 'paved_drive', label: 'Paved drive', kind: 'select', options: PAVED_DRIVE, labels: ENUM_LABELS.paved_drive },
   { name: 'street', label: 'Street', kind: 'select', options: STREET, labels: ENUM_LABELS.street },
-  { name: 'mas_vnr_area', label: 'Masonry veneer (sqft)', kind: 'number', min: 0, max: 2000, step: 'any' },
+  { name: 'mas_vnr_area', label: 'Masonry veneer (sq ft)', kind: 'number', min: 0, max: 2000, step: 'any' },
   { name: 'kitchen_abv_gr', label: 'Kitchens above grade', kind: 'number', min: 0, max: 3 },
   { name: 'tot_rms_abvgrd', label: 'Total rooms above grade', kind: 'number', min: 1, max: 15, hint: 'Excludes bathrooms' },
-  { name: 'bsmt_fin_sf1', label: 'Basement finished (sqft)', kind: 'number', min: 0, max: 2500 },
-  { name: 'bsmt_unf_sf', label: 'Basement unfinished (sqft)', kind: 'number', min: 0, max: 2500 },
-  { name: 'first_flr_sf', label: '1st floor (sqft)', kind: 'number', min: 300, max: 4000 },
-  { name: 'second_flr_sf', label: '2nd floor (sqft)', kind: 'number', min: 0, max: 3000 },
-  { name: 'enclosed_porch', label: 'Enclosed porch (sqft)', kind: 'number', min: 0, max: 600 },
+  { name: 'bsmt_fin_sf1', label: 'Basement finished (sq ft)', kind: 'number', min: 0, max: 2500 },
+  { name: 'bsmt_unf_sf', label: 'Basement unfinished (sq ft)', kind: 'number', min: 0, max: 2500 },
+  { name: 'first_flr_sf', label: '1st floor (sq ft)', kind: 'number', min: 300, max: 4000 },
+  { name: 'second_flr_sf', label: '2nd floor (sq ft)', kind: 'number', min: 0, max: 3000 },
+  { name: 'enclosed_porch', label: 'Enclosed porch (sq ft)', kind: 'number', min: 0, max: 600 },
   { name: 'misc_val', label: 'Misc value ($)', kind: 'number', min: 0, max: 20000 },
   { name: 'mo_sold', label: 'Month sold (override)', kind: 'number', min: 1, max: 12 },
   { name: 'yr_sold', label: 'Year sold (override)', kind: 'number', min: 2006, max: 2026 },
@@ -203,11 +208,53 @@ export const TRAIN_RANGES = {
 }
 
 /**
+ * Training-data defaults the API applies to blank optional numerics
+ * (`models/feature_defaults.json` — "median for numeric columns"). Mirrored
+ * here (same frozen-artifact pattern as TRAIN_RANGES) so the blank-fallback
+ * hints can state the real value instead of a bare "training median". Keyed
+ * by API field name; only the two core optional numeric fields are mirrored.
+ */
+export const FEATURE_DEFAULTS = {
+  lot_frontage: 70, // LotFrontage median
+  garage_area: 478, // GarageArea median
+}
+
+/**
  * Training sale window (CONTRACT §1.9/§2): an omitted `sale_date` silently
  * defaults to the latest train month (`end`); later dates are clamped to the
  * window boundary for scoring, never extrapolated.
  */
 export const TRAIN_SALE_WINDOW = { start: '2006-01', end: '2008-12' }
 
+/**
+ * Split sizes — stable data-contract facts, not API-derived metrics
+ * (CONTRACT §4: 945 train sales 2006H1–2008H2, validation 338 (2009), sealed
+ * test 175 (2010)). GET /model/info carries no split sizes; insights surfaces
+ * derive the val/test sizes from the payload confusion matrices when loaded
+ * (`utils/splits.js`) and fall back to these constants otherwise.
+ */
+export const SPLIT_CONTRACT = { train: 945, val: 338, test: 175 }
+
+/**
+ * Model-metadata contract fallbacks (CONTRACT §4), shown only while
+ * GET /model/info is down — live payload values are always preferred when
+ * loaded. 94 model features (79 raw + 15 engineered), 4 micro-market
+ * clusters, and the pinned dataset/feature versions.
+ */
+export const MODEL_INFO_FALLBACKS = {
+  nFeatures: 94,
+  dataset: 'ames-1.0',
+  featureVersion: '9b0f8ba4201c',
+  nClusters: 4,
+}
+
 /** localStorage key for the last submitted valuation payload (SPEC §5.2.2). */
 export const LAST_VALUATION_KEY = 'proppulse:last-valuation'
+
+/**
+ * localStorage key for the pinned estimate snapshot (innovation pass, mission
+ * §42 — "Pin this estimate" on the valuation result). Stores the real payload
+ * + real /predict figures so later estimates can be compared against it;
+ * client-only, same best-effort persistence tier as LAST_VALUATION_KEY.
+ */
+export const PINNED_ESTIMATE_KEY = 'proppulse:pinned-estimate'

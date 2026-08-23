@@ -353,6 +353,7 @@ def test_drift_check_corrupt_reference_is_clean_error_not_traceback(
         capture_output=True,
         text=True,
         cwd=REPO_ROOT,
+        timeout=120,
     )
     assert result.returncode == 2
     assert "corrupt drift reference" in result.stderr
@@ -720,6 +721,7 @@ def test_cli_no_runpy_warning_and_exit_zero_on_no_data(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
         cwd=REPO_ROOT,
+        timeout=120,
     )
     assert result.returncode == 0
     assert "RuntimeWarning" not in result.stderr

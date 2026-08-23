@@ -1,53 +1,74 @@
 /**
- * App shell: sidebar navigation (desktop) / topbar (≤900px), API status pill
- * with a 30s poll, and a global error banner while the API is unreachable.
- * The poll pauses when the tab is hidden and re-checks immediately on
+ * App shell (blueprint §3/§4): 264px sticky sidebar — brand, the numbered
+ * pipeline stepper (stages 01–09, deep-linking into /workflow/*), the product
+ * nav, and a footer row with the active dataset + API status. The main column
+ * is the centered 940px container with the mono footer row. ≤900px the
+ * sidebar becomes a full-width top bar and the stepper a horizontal scroll
+ * strip (blueprint §10; the active item is scrolled into view); a compact
+ * api-status-compact dot rides beside the brand, shown only there.
+ *
+ * The API-status poll pauses when the tab is hidden and re-checks on
  * visibility return or manual click; window online/offline events update the
- * pill promptly between polls (WP-7c).
+ * pill promptly between polls. Down/degraded states raise the alert-language
+ * banners above the main column.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { NavLink, Outlet, useLocation } from 'react-router'
+import { Link, Outlet, useLocation, useMatch } from 'react-router'
 import { api } from '../api/client'
-import { workflowDocumentTitle } from '../pages/workflow/stages'
+import { useLocalStorage } from '../hooks/useLocalStorage'
+import { WORKFLOW_STAGES, stageBySlug } from '../pages/workflow/stages'
 
-const NAV_GROUPS = [
-  {
-    caption: 'Analyze',
-    items: [
-      { to: '/', label: 'Overview', end: true },
-      { to: '/valuation', label: 'Valuation' },
-      { to: '/market', label: 'Market Intelligence' },
-    ],
-  },
-  {
-    caption: 'Platform',
-    items: [
-      { to: '/model', label: 'Model Insights' },
-      { to: '/health', label: 'Model Health' },
-    ],
-  },
-  {
-    // WORKFLOW §6.1: the guided ML workbench beside the champion product.
-    caption: 'Workbench',
-    items: [{ to: '/workflow', label: 'ML Workbench' }],
-  },
+/* The sidebar stepper carries the nine real pipeline stages (01–09); stages
+   10–12 are bridge stages into the champion product pages, which the Product
+   group already covers. StagePager chains the full 12-stage order. */
+const PIPELINE_STAGES = WORKFLOW_STAGES.slice(0, 9)
+
+const PRODUCT_ITEMS = [
+  { to: '/', label: 'Overview', end: true },
+  { to: '/valuation', label: 'Valuation' },
+  { to: '/market', label: 'Market Intelligence' },
+  { to: '/model', label: 'Model Insights' },
+  { to: '/health', label: 'Model Health' },
 ]
 
 const TITLES = {
-  '/': 'Overview — PropPulse',
-  '/valuation': 'Valuation — PropPulse',
-  '/market': 'Market Intelligence — PropPulse',
-  '/model': 'Model Insights — PropPulse',
-  '/health': 'Model Health — PropPulse',
+  '/': 'Overview · PropPulse',
+  '/valuation': 'Valuation · PropPulse',
+  '/market': 'Market Intelligence · PropPulse',
+  '/model': 'Model Insights · PropPulse',
+  '/health': 'Model Health · PropPulse',
 }
 
-function BrandMark() {
+/** "{Stage title} · PropPulse" for any /workflow/* path, null elsewhere. */
+function workflowDocumentTitle(pathname) {
+  if (!pathname.startsWith('/workflow')) return null
+  const match = pathname.match(/^\/workflow\/([^/?#]+)/)
+  const stage = match ? stageBySlug(match[1]) : null
+  return stage ? `${stage.title} · PropPulse` : 'ML Workbench · PropPulse'
+}
+
+/** localStorage key owned by WorkflowShell (WORKFLOW_STORAGE_KEY) — the
+    shell mirrors the active dataset there; the sidebar only reads it. */
+const WORKFLOW_STORAGE_KEY = 'proppulse:workflow'
+
+/**
+ * One sidebar item: `li.is-active > a > [step-num] + step-label`, exactly the
+ * reference stepper DOM. `useMatch` drives the active state so the <li> can
+ * carry `is-active` (blueprint §4 selector) and the link `aria-current`.
+ */
+function SidebarItem({ to, num, label, end = false, dataStage }) {
+  const match = useMatch({ path: to, end })
   return (
-    <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
-      <rect width="26" height="26" rx="6" fill="#123152" />
-      <path d="M6 15.5 13 9l7 6.5" fill="none" stroke="#0e7a6d" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M8.5 18.5h9" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
-    </svg>
+    <li className={match ? 'is-active' : undefined}>
+      <Link
+        to={to}
+        aria-current={match ? 'page' : undefined}
+        data-stage={dataStage}
+      >
+        {num && <span className="step-num">{num}</span>}
+        <span className="step-label">{label}</span>
+      </Link>
+    </li>
   )
 }
 
@@ -119,82 +140,108 @@ function ApiStatus({ status, onRecheck }) {
   )
 }
 
-function NavItems({ onNavigate }) {
-  return NAV_GROUPS.map((group) => (
-    <div key={group.caption}>
-      <div className="nav-caption">{group.caption}</div>
-      {group.items.map((item) => (
-        <NavLink
-          key={item.to}
-          to={item.to}
-          end={item.end}
-          className={({ isActive }) => `nav-item${isActive ? ' active' : ''}`}
-          onClick={onNavigate}
-        >
-          <span className="nav-item-label">{item.label}</span>
-        </NavLink>
-      ))}
-    </div>
-  ))
-}
-
 export default function Layout() {
   const { status, recheck } = useApiStatus()
   const location = useLocation()
-  const topNavRef = useRef(null)
+  const sidebarRef = useRef(null)
+  const mainRef = useRef(null)
+  const prevPathRef = useRef(location.pathname)
+  const [storedWorkflow] = useLocalStorage(WORKFLOW_STORAGE_KEY, null)
+  const activeDatasetId =
+    typeof storedWorkflow?.dataset_id === 'string' ? storedWorkflow.dataset_id : 'ames'
 
   useEffect(() => {
     document.title =
       TITLES[location.pathname] ??
       workflowDocumentTitle(location.pathname) ??
-      'Page not found — PropPulse'
+      '404 · PropPulse'
   }, [location.pathname])
 
-  // Keep the active topbar item visible on small screens.
+  // Keep the active stepper item visible inside the ≤900px scroll strip.
+  // Manual scrollLeft, NOT scrollIntoView: scrollIntoView also moves
+  // Chromium's sequential-focus start point to the active link, so the
+  // first Tab after navigation would skip the skip-link and every nav item
+  // before the active one (hardening §21 keyboard-walk regression).
   useEffect(() => {
-    const active = topNavRef.current?.querySelector('.nav-item.active')
-    active?.scrollIntoView({ behavior: 'instant', block: 'nearest', inline: 'center' })
+    const active = sidebarRef.current?.querySelector('.pipeline-stepper li.is-active a')
+    const strip = active?.closest('.pipeline-stepper')
+    if (!active || !strip) return
+    const delta = active.getBoundingClientRect().left - strip.getBoundingClientRect().left
+    strip.scrollLeft += delta - (strip.clientWidth - active.clientWidth) / 2
+  }, [location.pathname])
+
+  // Focus-on-route-change (UI UX Pro Max `focus-on-route-change` rule): move
+  // focus to the <main> region after navigation so screen-reader users start
+  // at the new content instead of the old page position. Skipped on first
+  // render (don't steal focus from a restored browser session) — guarded by
+  // path comparison, not a boolean flag, because StrictMode replays mount
+  // effects in dev and a flag would already be consumed by the replay.
+  useEffect(() => {
+    if (prevPathRef.current === location.pathname) return
+    prevPathRef.current = location.pathname
+    mainRef.current?.focus({ preventScroll: true })
   }, [location.pathname])
 
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main">Skip to content</a>
 
-      <aside className="sidebar">
-        <div className="side-brand">
-          <BrandMark />
-          <div>
-            <div className="side-brand-name">PropPulse</div>
-            <div className="side-brand-tag">Property Intelligence</div>
-          </div>
-        </div>
-        <nav className="side-nav" aria-label="Primary">
-          <NavItems />
+      <aside className="pipeline-sidebar" ref={sidebarRef}>
+        <Link className="sidebar-brand" to="/">
+          <span className="brand-mark" aria-hidden="true">PP</span>
+          <span className="brand-text">
+            <span className="brand-line-1">PropPulse</span>
+            <span className="brand-line-2">Property Intelligence</span>
+          </span>
+        </Link>
+
+        {/* Compact API-status twin for the ≤900px top bar (CSS shows it only
+            there); mirrors ApiStatus's states and labels, non-interactive. */}
+        <span
+          className={`api-status-compact api-status-compact--${status}`}
+          role="status"
+          aria-label={STATUS_LABEL[status]}
+        >
+          <span className="api-status-dot" aria-hidden="true" />
+        </span>
+
+        <p className="nav-caption">Pipeline</p>
+        <nav className="pipeline-stepper" aria-label="ML pipeline stages">
+          <ol>
+            {PIPELINE_STAGES.map((stage) => (
+              <SidebarItem
+                key={stage.slug}
+                to={`/workflow/${stage.slug}`}
+                num={stage.num}
+                label={stage.title}
+                dataStage={stage.slug}
+              />
+            ))}
+          </ol>
         </nav>
-        <div className="side-foot">
+
+        <p className="nav-caption">Product</p>
+        <nav className="pipeline-stepper pipeline-stepper--product" aria-label="Product pages">
+          <ol>
+            {PRODUCT_ITEMS.map((item) => (
+              <SidebarItem
+                key={item.to}
+                to={item.to}
+                label={item.label}
+                end={item.end}
+              />
+            ))}
+          </ol>
+        </nav>
+
+        <div className="sidebar-footer">
+          <Link to="/" className="sidebar-overview-link">← Overview</Link>
+          <span className="sidebar-dataset">{activeDatasetId}</span>
           <ApiStatus status={status} onRecheck={recheck} />
-          <div className="side-foot-meta">
-            Ames, IA · training window
-            <br />
-            2006–2008 · 25 neighborhoods
-          </div>
         </div>
       </aside>
 
-      <div className="main">
-        <div className="topbar">
-          <div className="topbar-brand">
-            <div className="side-brand" style={{ border: 'none', padding: 0 }}>
-              <BrandMark />
-              <div className="side-brand-name">PropPulse</div>
-            </div>
-            <ApiStatus status={status} onRecheck={recheck} />
-          </div>
-          <nav className="topbar-nav" aria-label="Primary" ref={topNavRef}>
-            <NavItems />
-          </nav>
-        </div>
-
+      <div className="app-body">
         {status === 'down' && (
           <div className="error-banner" role="alert">
             <span>
@@ -218,13 +265,15 @@ export default function Layout() {
           </div>
         )}
 
-        <main className="container" id="main">
+        <main id="main" tabIndex={-1} ref={mainRef}>
           <Outlet />
         </main>
 
-        <footer className="site-foot">
-          PropPulse · property intelligence for Ames, IA · sale-speed target is
-          simulated (ADR-3) · historical sales 2006–2008, not current listings
+        <footer className="site-footer">
+          <div className="footer-row">
+            <span>PropPulse · property intelligence for Ames, IA</span>
+            <span>9-stage ML workflow</span>
+          </div>
         </footer>
       </div>
     </div>

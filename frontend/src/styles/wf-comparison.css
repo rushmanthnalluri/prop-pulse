@@ -1,0 +1,30 @@
+/* ==========================================================================
+   Shared ComparisonTable chrome (stages 07–08) — the rules the benchmark /
+   verdict table and the EvaluationWorkspace both render. Single canonical
+   copy: these rules used to be duplicated verbatim between
+   workflow-train.css and workflow-evaluate.css. Imported by TrainStage and
+   EvaluateStage before their page sheets (same pattern as
+   confusion-matrix.css). Tokens from styles.css only.
+   ========================================================================== */
+
+.wf-sim-note { margin: 0 0 12px; }
+
+/* Keeps visually-hidden <caption>s clipped inside the scroll frame: they are
+   absolutely positioned, so the scroll container must become their
+   containing block or they escape the .table-scroll clip. */
+.wf-clip { position: relative; }
+
+.wf-best-chip { margin-left: 8px; }
+.wf-stale-chip { margin-left: 8px; }
+.wf-stale-note { margin-top: 10px; }
+.wf-stale-note .badge { margin-right: 4px; }
+.wf-threshold-hint { margin-left: 8px; font-size: 11px; color: var(--text-3); }
+
+/* Paired-bootstrap honesty banner (regression, §7). */
+.wf-bootstrap { margin-top: 14px; }
+
+.wf-chart-caption {
+  font-size: 11px;
+  color: var(--text-3);
+  margin: 10px 0 0;
+}

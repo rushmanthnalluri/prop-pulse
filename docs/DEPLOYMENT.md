@@ -142,8 +142,10 @@ prediction log is synced back as an artifact.
 Reading the report: drift = PSI ≥ 0.2 (override with `DRIFT_PSI_THRESHOLD`),
 warn = PSI ≥ 0.1. Calendar-derived features (`YrSold`, `MoSold`, `sale_year`,
 `sale_month`, `sale_quarter`, `property_age`, `years_since_remod`) always flag
-on post-2010 traffic — structural, because the dataset ends in 2010 while
-serving stamps the sale date as today. They are reported separately under
+on sustained live traffic — structural, because the dataset ends in 2010
+while serving defaults an omitted sale date to the latest train month
+(2008-12) and clamps later dates to that boundary, so live rows pile up at
+the window edge. They are reported separately under
 `calendar_drift_features`, and since the post-audit guard
 (`ml/monitoring/drift_check.py`) **calendar-only drift never sets
 `retraining_recommended`** — the flag requires at least one drifted

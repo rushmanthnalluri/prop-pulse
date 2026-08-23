@@ -598,7 +598,7 @@ fields an explicit `null` is a 422.
 | `wood_deck_sf` | int | 0–1500 | `0` (schema placeholder — see note below) |
 | `open_porch_sf` | int | 0–1000 | `0` (schema placeholder — see note below) |
 | `screen_porch` | int | 0–800 | `0` (schema placeholder — see note below) |
-| `sale_date` | ISO date \| null | mapped to `MoSold`/`YrSold` | `null` → today |
+| `sale_date` | ISO date \| null | 2006-01-01–2026-12-31; mapped to `MoSold`/`YrSold` | `null` → latest train month (2008-12) |
 
 Note on the four porch/pool/deck fields: the `0` is only the pydantic schema
 placeholder. Serving serializes with `exclude_unset=True`, so an **omitted**

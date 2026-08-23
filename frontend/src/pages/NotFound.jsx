@@ -1,25 +1,27 @@
 /**
- * 404 catch-all (SPEC §5.6): branded recovery page with links back to the two
- * primary destinations. document.title is set by Layout for unknown paths
- * ("Page not found — PropPulse"); the route is wrapped in an ErrorBoundary in
- * App.jsx (AUDIT §5.6). No search box — five routes, overkill.
+ * 404 catch-all — the reference error.html pattern: kicker "Error 404",
+ * h1 "Page not found", message, then btn-primary back to the overview and
+ * btn-secondary to the upload page. document.title is set by Layout for
+ * unknown paths ("404 · PropPulse"); the route is wrapped in an
+ * ErrorBoundary in App.jsx. No active nav highlight.
  */
 import { Link } from 'react-router'
 
 export default function NotFoundPage() {
   return (
-    <div className="crash-box">
-      <span className="kicker">Error 404</span>
-      <h1 className="page-title">Page not found</h1>
+    <div className="page-head">
+      <p className="page-kicker">Error 404</p>
+      <h1>Page not found</h1>
       <p className="page-desc">
-        That page doesn't exist — the valuation tools are one click away.
+        That page doesn&rsquo;t exist — the valuation tools and the guided
+        pipeline are one click away.
       </p>
-      <div style={{ display: 'flex', gap: 12, marginTop: 24, flexWrap: 'wrap' }}>
+      <div className="page-actions">
         <Link className="btn btn-primary" to="/">
           Back to overview
         </Link>
-        <Link className="btn btn-secondary" to="/valuation">
-          Value a home
+        <Link className="btn btn-secondary" to="/workflow/01-upload">
+          Go to Upload
         </Link>
       </div>
     </div>

@@ -36,6 +36,7 @@ import logging
 import os
 import re
 import shutil
+import time
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -101,6 +102,13 @@ _ALLOWED_SUFFIX = ".csv"
 
 #: Job states that block dataset deletion (§2.3 lifecycle: 409 while running).
 _BLOCKING_JOB_STATES = frozenset({"queued", "preparing", "running"})
+
+#: Sandbox removal retry window. A finishing training subprocess can hold open
+#: handles under ``models/workflow/<id>/`` for a few hundred ms after its
+#: status file reads ``done``; ``_rmtree_wait_locked`` retries within this
+#: budget so Windows file locks do not leak orphaned directories (C16).
+_RMTREE_ATTEMPTS = 30
+_RMTREE_DELAY_S = 0.1
 
 
 # ---------------------------------------------------------------------------
@@ -782,6 +790,34 @@ def list_datasets() -> list[DatasetRecord]:
     return records
 
 
+def _rmtree_wait_locked(
+    path: Path, *, attempts: int = _RMTREE_ATTEMPTS, delay_s: float = _RMTREE_DELAY_S
+) -> bool:
+    """Remove ``path``, retrying briefly for OS-held file locks (Windows).
+
+    A just-finished training subprocess reports ``done`` in its status file
+    before the interpreter has fully exited, so its open handles (notably
+    ``subprocess.log``) can still lock files under ``models/workflow/<id>/``
+    for a few hundred ms after the API starts serving ``done``. On Windows
+    ``shutil.rmtree(..., ignore_errors=True)`` silently leaves those files —
+    and hence every ancestor directory — behind. Retrying until the OS
+    releases the locks (or a short window elapses) makes deletion reliable.
+
+    Returns ``True`` once ``path`` is gone, ``False`` if it still exists.
+    """
+    for _ in range(attempts):
+        if not path.exists():
+            return True
+        try:
+            shutil.rmtree(path)
+            if not path.exists():
+                return True
+        except OSError:
+            pass
+        time.sleep(delay_s)
+    return not path.exists()
+
+
 def delete_dataset(dataset_id: str) -> None:
     """Delete an upload's storage *and* sandbox directories (§2.3 lifecycle).
 
@@ -814,5 +850,10 @@ def delete_dataset(dataset_id: str) -> None:
                 )
 
     shutil.rmtree(target)
-    shutil.rmtree(sandbox, ignore_errors=True)
+    if not _rmtree_wait_locked(sandbox):
+        logger.warning(
+            "sandbox %s not fully removed within %.1fs — some files may remain",
+            sandbox,
+            _RMTREE_ATTEMPTS * _RMTREE_DELAY_S,
+        )
     logger.info("deleted dataset %s (upload + sandbox directories)", dataset_id)

@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import logging
 import math
+import os
 import subprocess
 import sys
 import threading
@@ -125,10 +126,18 @@ def _read_status_file(path: Path) -> dict[str, Any] | None:
 
 
 def _write_status_file(job_dir: Path, payload: dict[str, Any]) -> None:
+    """Atomically rewrite ``status.json`` (tmp sibling + ``os.replace``).
+
+    Polling readers (``get_job``/``job_status_scan``) run on other request
+    threads, so the rewrite must be atomic — the same protocol the engine
+    uses (``ml.workflow.train_job._write_status``); a torn read would look
+    like a missing/corrupt job.
+    """
     job_dir.mkdir(parents=True, exist_ok=True)
-    (job_dir / "status.json").write_text(
-        json.dumps(payload, indent=2) + "\n", encoding="utf-8"
-    )
+    path = job_dir / "status.json"
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
 
 
 def _active_status(payload: dict[str, Any] | None) -> bool:
@@ -303,12 +312,16 @@ class WorkflowJobService:
                 spawn_training_job(dataset_id, job_id, objective, candidates, job_dir)
             except OSError as exc:
                 status_payload["status"] = "failed"
-                status_payload["error"] = f"could not spawn the training subprocess: {exc}"
+                # AUD: no {exc} in client-visible strings — OSError text can
+                # embed absolute interpreter paths; the class name is enough.
+                status_payload["error"] = (
+                    f"could not spawn the training subprocess ({exc.__class__.__name__})"
+                )
                 status_payload["finished_at"] = _utc_now_iso()
                 _write_status_file(job_dir, status_payload)
                 raise HTTPException(
                     status_code=503,
-                    detail=f"could not spawn the training subprocess: {exc}",
+                    detail=f"could not spawn the training subprocess ({exc.__class__.__name__})",
                 ) from exc
             _running_job = (dataset_id, job_id)
 

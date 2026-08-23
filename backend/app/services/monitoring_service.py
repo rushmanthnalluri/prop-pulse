@@ -14,9 +14,38 @@ import time
 from pathlib import Path
 from typing import Any
 
+from ml.paths import REPO_ROOT
+
 logger = logging.getLogger(__name__)
 
 __all__ = ["MonitoringService"]
+
+
+def _scrub_server_paths(payload: dict[str, Any]) -> dict[str, Any]:
+    """Relativize absolute filesystem paths in a served drift report.
+
+    ``reports/drift/latest.json`` is served verbatim, but older reports (and
+    any generated with an out-of-repo ``--log`` path) can carry absolute
+    server paths in ``log_path`` and embedded in ``recommendation_text`` —
+    disclosing host layout through ``GET /metrics``. The payload shape is
+    unchanged: same keys, same types, only the path values are rewritten.
+    """
+    raw = payload.get("log_path")
+    if not isinstance(raw, str) or not raw:
+        return payload
+    candidate = Path(raw)
+    if not candidate.is_absolute():
+        return payload
+    try:
+        display = candidate.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        display = candidate.name
+    scrubbed = dict(payload)
+    scrubbed["log_path"] = display
+    text = scrubbed.get("recommendation_text")
+    if isinstance(text, str):
+        scrubbed["recommendation_text"] = text.replace(raw, display)
+    return scrubbed
 
 
 class MonitoringService:
@@ -59,7 +88,9 @@ class MonitoringService:
             logger.warning("unreadable drift report %s: %s", path, exc)
             # Never echo the exception (it can contain absolute server paths).
             return {"status": "no_data", "detail": "unreadable drift report"}
-        return payload if isinstance(payload, dict) else {"status": "no_data"}
+        if not isinstance(payload, dict):
+            return {"status": "no_data"}
+        return _scrub_server_paths(payload)
 
     def snapshot(self) -> dict[str, Any]:
         """Full ``GET /metrics`` payload: counters, avg latency, drift summary."""

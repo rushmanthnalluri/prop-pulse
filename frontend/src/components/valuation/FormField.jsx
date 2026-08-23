@@ -71,6 +71,7 @@ export default function FormField({ desc, value, error, warn, onChange, onBlur, 
           min={desc.min}
           max={desc.max}
           step={desc.kind === 'date' ? undefined : desc.integer ? 1 : 'any'}
+          inputMode={desc.kind === 'date' ? undefined : 'decimal'}
           placeholder={desc.optional && desc.kind !== 'date' ? desc.placeholder || 'Model default' : undefined}
           aria-required={desc.required || undefined}
           onChange={(event) => onChange(desc.name, event.target.value)}

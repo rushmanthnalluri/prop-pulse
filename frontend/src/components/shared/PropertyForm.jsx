@@ -1,7 +1,8 @@
 /**
- * The property form (SPEC §5.2.1), shared by two submit flows: six core
- * fieldsets + an advanced-overrides <details> grouped under mono
- * subheadings, driven by valuation/formConfig.js (declarative, mirrors
+ * The property form (SPEC §5.2.1), shared by two submit flows: eight core
+ * fieldsets (blueprint §8.10 `.predict-fieldset` language — mono uppercase
+ * legends, range-led hints) + an advanced-overrides <details> grouped under
+ * mono subheadings, driven by valuation/formConfig.js (declarative, mirrors
  * backend/app/schemas/property.py).
  *
  * Lives in components/shared/ since WF-F4 (WORKFLOW §6.3-09/§8): the champion
@@ -173,10 +174,20 @@ export default function PropertyForm({
 
   return (
     <form className="valuation-form" onSubmit={handleSubmit} noValidate>
+      {showSummary && summaryIssues.length > 0 && (
+        <div className="alert alert-error" role="alert">
+          <span className="alert-title">Check the highlighted inputs</span>
+          {summaryIssues.slice(0, 6).map((issue) => (
+            <div key={issue}>{issue}</div>
+          ))}
+          {summaryIssues.length > 6 && <div>…and {summaryIssues.length - 6} more</div>}
+        </div>
+      )}
+
       {CORE_GROUPS.map((group) => (
-        <fieldset className="fieldset" key={group.legend}>
+        <fieldset className="predict-fieldset" key={group.legend}>
           <legend>{group.legend}</legend>
-          <div className="field-row">
+          <div className="predict-fields">
             {group.fields.map((desc) => (
               <FormField
                 key={desc.name}
@@ -201,7 +212,7 @@ export default function PropertyForm({
         {ADVANCED_GROUPS.map((group) => (
           <div className="adv-group" key={group.title}>
             <span className="adv-group-title">{group.title}</span>
-            <div className="field-row">
+            <div className="predict-fields">
               {group.fields.map((desc) => (
                 <FormField
                   key={desc.name}
@@ -219,47 +230,38 @@ export default function PropertyForm({
         ))}
       </details>
 
-      {showSummary && summaryIssues.length > 0 && (
-        <div className="alert alert-error" role="alert">
-          <span className="alert-title">Fix the highlighted fields</span>
-          {summaryIssues.slice(0, 6).map((issue) => (
-            <div key={issue}>{issue}</div>
-          ))}
-          {summaryIssues.length > 6 && <div>…and {summaryIssues.length - 6} more</div>}
-        </div>
-      )}
-
-      <div className="submit-stack">
+      <div className="submit-row">
         <BusyButton
           type="submit"
           busy={submitting}
           busyLabel={busyLabel}
-          className="btn btn-primary valuation-submit"
+          className="btn btn-primary"
         >
           {submitLabel}
         </BusyButton>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={onLoadExample}
+          disabled={submitting}
+        >
+          Load example property
+        </button>
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={onReset}
+          disabled={submitting}
+        >
+          Reset
+        </button>
         <span className="visually-hidden" role="status">
           {submitting ? busyLabel : ''}
         </span>
-        <div className="form-actions">
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={onLoadExample}
-            disabled={submitting}
-          >
-            Load example property
-          </button>
-          <button
-            type="button"
-            className="btn btn-secondary"
-            onClick={onReset}
-            disabled={submitting}
-          >
-            Reset
-          </button>
-        </div>
       </div>
+      <p className="note submit-note">
+        Blank optional fields fall back to the model&apos;s training-data defaults.
+      </p>
     </form>
   )
 }
