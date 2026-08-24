@@ -109,6 +109,14 @@ def split_dataset(
     n_train = n - n_val - n_test
 
     if resolved == "time":
+        # resolve_strategy guarantees YrSold for the time strategy; MoSold/Id
+        # are validated-schema columns but a direct call may lack them.
+        missing_keys = [c for c in _TIME_SORT_KEYS if c not in df.columns]
+        if missing_keys:
+            raise ValueError(
+                f"strategy='time' requires the sort-key columns {_TIME_SORT_KEYS}; "
+                f"missing: {missing_keys}"
+            )
         ordered = df.sort_values(_TIME_SORT_KEYS, kind="mergesort")
     else:
         ordered = df.sample(frac=1.0, random_state=seed)

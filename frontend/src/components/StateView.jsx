@@ -63,13 +63,35 @@ export function ErrorState({ error, onRetry, title = 'Could not load this data' 
   )
 }
 
-export function EmptyState({ kicker = 'No data', title, detail, children }) {
+/* Default empty-state glyph: a shallow tray — "nothing here yet". 17px
+   inline SVG, currentColor, 1.5 stroke (the .empty-state-icon ring styles
+   live in styles.css). */
+function EmptyIcon() {
+  return (
+    <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2.5 10.5l2-6h9l2 6" />
+      <path d="M2.5 10.5V13a1.5 1.5 0 0 0 1.5 1.5h10A1.5 1.5 0 0 0 15.5 13v-2.5h-3.9a1.6 1.6 0 0 1-3.2 0H2.5z" />
+    </svg>
+  )
+}
+
+/**
+ * Empty state: icon slot (override with `icon={<Svg/>}`, hide with
+ * `icon={null}`), kicker → title → detail hierarchy, and a centred action
+ * area for children.
+ */
+export function EmptyState({ kicker = 'No data', title, detail, icon, children }) {
   return (
     <div className="empty-state">
+      {icon !== null && (
+        <span className="empty-state-icon" aria-hidden="true">
+          {icon ?? <EmptyIcon />}
+        </span>
+      )}
       <span className="kicker">{kicker}</span>
       <div className="empty-state-title">{title}</div>
       {detail && <p className="empty-state-detail">{detail}</p>}
-      {children}
+      {children && <div className="empty-state-actions">{children}</div>}
     </div>
   )
 }

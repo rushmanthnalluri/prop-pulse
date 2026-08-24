@@ -15,7 +15,7 @@
 .wf-clip { position: relative; }
 
 .wf-best-chip { margin-left: 8px; }
-.wf-stale-chip { margin-left: 8px; }
+.wf-stale-chip { margin-left: 8px; cursor: help; }
 .wf-stale-note { margin-top: 10px; }
 .wf-stale-note .badge { margin-right: 4px; }
 .wf-threshold-hint { margin-left: 8px; font-size: 11px; color: var(--text-3); }
@@ -23,8 +23,28 @@
 /* Paired-bootstrap honesty banner (regression, §7). */
 .wf-bootstrap { margin-top: 14px; }
 
+/* --------------------------------------------------------------------------
+   Verdict-table refinement (scoped to .wf-comparison — the shared .table /
+   .sort-header / .champion-row vocabulary itself stays global in styles.css)
+   -------------------------------------------------------------------------- */
+
+/* The best row keeps its champion tint on hover instead of flipping to the
+   plain row-hover surface (specificity must beat .table tbody tr:hover td). */
+.wf-comparison .table tbody tr.champion-row:hover td {
+  background: rgba(217, 166, 63, 0.09);
+}
+/* …and carries the leading accent edge — the active-row idiom from the jobs
+   history — so the verdict row reads at a glance in a long candidate list. */
+.wf-comparison .table tbody tr.champion-row td:first-child {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* Split/honesty caption: a footer rule closes each chart card ("val, 338
+   rows — the sandbox test split stays sealed"). */
 .wf-chart-caption {
   font-size: 11px;
   color: var(--text-3);
-  margin: 10px 0 0;
+  margin: 12px 0 0;
+  padding-top: 9px;
+  border-top: 1px solid var(--border);
 }

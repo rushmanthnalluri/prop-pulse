@@ -29,6 +29,7 @@ import json
 import logging
 import math
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -43,7 +44,6 @@ from fastapi import HTTPException
 
 from ml.paths import REPO_ROOT
 from ml.workflow.datasets import (
-    MAX_UPLOAD_ROWS,
     WORKFLOW_MODELS_ROOT,
     UnknownDataset,
     get_record,
@@ -61,17 +61,8 @@ from backend.app.services.workflow.datasets import (
 
 logger = logging.getLogger(__name__)
 
-#: Valid candidate sets per objective (§3.9): regression = the five of
-#: ``train_regression.train_all``; classification = ``MODEL_NAMES``;
-#: clustering = DBSCAN only.
-VALID_CANDIDATES: dict[str, tuple[str, ...]] = {
-    "regression": ("linear", "ridge", "lasso", "random_forest", "xgboost"),
-    "classification": ("logistic", "decision_tree", "random_forest", "xgboost"),
-    "clustering": ("dbscan",),
-}
-
 #: Job id scheme (§3.9): ``job_`` + uuid8 — mirrors the dataset uuid8 scheme.
-_JOB_ID_RE = r"^job_[0-9a-f]{8}$"
+_JOB_ID_RE = re.compile(r"^job_[0-9a-f]{8}$")
 
 #: §3.9 selection blocks per objective (best flag + comparison-table note).
 _SELECTION_BLOCKS: dict[str, dict[str, Any]] = {
@@ -108,9 +99,7 @@ def _utc_now_iso() -> str:
 
 
 def _valid_job_id(job_id: str) -> bool:
-    import re  # noqa: PLC0415 — cheap, keeps module import lean
-
-    return bool(re.fullmatch(_JOB_ID_RE, job_id or ""))
+    return bool(_JOB_ID_RE.fullmatch(job_id or ""))
 
 
 def _jobs_dir(dataset_id: str) -> Path:
@@ -120,7 +109,7 @@ def _jobs_dir(dataset_id: str) -> Path:
 def _read_status_file(path: Path) -> dict[str, Any] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
+    except (OSError, ValueError):  # JSONDecodeError + UnicodeDecodeError
         return None
     return payload if isinstance(payload, dict) else None
 
@@ -264,7 +253,11 @@ class WorkflowJobService:
         if not can_train:
             raise HTTPException(status_code=400, detail=reason)
 
-        valid = VALID_CANDIDATES[objective]
+        # Lazy: ml.workflow.train imports xgboost at module level — keep it
+        # out of the API process until a job is actually created.
+        from ml.workflow.train import OBJECTIVE_CANDIDATES  # noqa: PLC0415
+
+        valid = OBJECTIVE_CANDIDATES[objective]
         unknown = [c for c in candidates if c not in valid]
         if unknown:
             raise HTTPException(
@@ -357,14 +350,8 @@ class WorkflowJobService:
 
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Live view of one job's status file; 404 on unknown/malformed ids."""
-        if not _valid_job_id(job_id):
-            raise HTTPException(status_code=404, detail=f"unknown job id: {job_id!r}")
-        if WORKFLOW_MODELS_ROOT.exists():
-            for status_file in WORKFLOW_MODELS_ROOT.glob(f"*/jobs/{job_id}/status.json"):
-                payload = _read_status_file(status_file)
-                if payload is not None:
-                    return self._serve_status(payload)
-        raise HTTPException(status_code=404, detail=f"unknown job id: {job_id!r}")
+        _, _, payload = self._job_dir_for(job_id)
+        return self._serve_status(payload)
 
     def list_jobs(self, dataset_id: str) -> list[dict[str, Any]]:
         """All jobs of a dataset, newest first (§3.9 scan)."""
@@ -578,8 +565,7 @@ class WorkflowJobService:
 
         Raises:
             HTTPException: 404 unknown job or candidate; 409 the job/candidate
-                has no completed result; 503 the WF-B2 evaluation module is not
-                importable yet.
+                has no completed result.
         """
         _dataset_id, job_dir, status = self._job_dir_for(job_id)
         results = status.get("results") or {}
@@ -597,14 +583,8 @@ class WorkflowJobService:
                     f"(status: {results[candidate].get('status')})"
                 ),
             )
-        try:
-            from ml.workflow.evaluate import evaluation_payload  # noqa: PLC0415
-        except ImportError as exc:
-            raise HTTPException(
-                status_code=503,
-                detail="the workflow training engine (ml.workflow.evaluate) is not "
-                "available in this build",
-            ) from exc
+        from ml.workflow.evaluate import evaluation_payload  # noqa: PLC0415
+
         try:
             payload = evaluation_payload(job_dir, candidate)
         except FileNotFoundError as exc:
@@ -615,7 +595,6 @@ class WorkflowJobService:
 
 
 __all__ = [
-    "VALID_CANDIDATES",
     "WorkflowJobService",
     "spawn_training_job",
     "sweep_orphaned_jobs",

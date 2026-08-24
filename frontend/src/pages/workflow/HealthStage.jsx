@@ -13,7 +13,9 @@
 import { Link } from 'react-router'
 import { formatNumber } from '../../format'
 import { ErrorState, PanelSkeleton } from '../../components/StateView'
+import FindCard from '../../components/workflow/FindCard'
 import { useWorkflow } from './WorkflowShell'
+import { IconArrowRight, IconDrift, IconPulse, IconShield, IconWave } from './icons'
 import '../../styles/workflow-bridge.css'
 
 export default function HealthStage() {
@@ -93,6 +95,8 @@ export default function HealthStage() {
         )}
       </section>
 
+      <hr className="divider" aria-hidden="true" />
+
       <section className="section" aria-labelledby="wf-health-bridge-title">
         <div className="wf-bridge">
           <div className="wf-bridge-head">
@@ -106,35 +110,23 @@ export default function HealthStage() {
             server process. What you&rsquo;ll find:
           </p>
           <div className="wf-find-grid">
-            <div className="wf-find-card">
-              <span className="wf-find-title">Liveness</span>
-              <p className="wf-find-body">
-                Service status and whether the champion regression and classification
-                models are loaded.
-              </p>
-            </div>
-            <div className="wf-find-card">
-              <span className="wf-find-title">Live traffic</span>
-              <p className="wf-find-body">
-                Per-process request and error counts, average latency, and uptime —
-                counters reset on every restart, labelled as such.
-              </p>
-            </div>
-            <div className="wf-find-card">
-              <span className="wf-find-title">Feature drift</span>
-              <p className="wf-find-body">
-                Per-feature distribution shift of served predictions against the
-                champion&rsquo;s training reference.
-              </p>
-            </div>
-            <div className="wf-find-card">
-              <span className="wf-find-title">Prediction drift</span>
-              <p className="wf-find-body">
-                Drift on the prediction stream itself, reported with its real status —
-                including an honest &ldquo;no data yet&rdquo; when the reference window
-                is empty.
-              </p>
-            </div>
+            <FindCard Icon={IconShield} title="Liveness">
+              Service status and whether the champion regression and classification
+              models are loaded.
+            </FindCard>
+            <FindCard Icon={IconPulse} title="Live traffic">
+              Per-process request and error counts, average latency, and uptime —
+              counters reset on every restart, labelled as such.
+            </FindCard>
+            <FindCard Icon={IconDrift} title="Feature drift">
+              Per-feature distribution shift of served predictions against the
+              champion&rsquo;s training reference.
+            </FindCard>
+            <FindCard Icon={IconWave} title="Prediction drift">
+              Drift on the prediction stream itself, reported with its real status —
+              including an honest &ldquo;no data yet&rdquo; when the reference window
+              is empty.
+            </FindCard>
           </div>
           <p className="wf-bridge-note">
             Note: sandbox predictions never enter the prediction log that feeds drift
@@ -142,7 +134,8 @@ export default function HealthStage() {
             reference.
           </p>
           <Link className="btn btn-primary wf-bridge-cta" to="/health">
-            Open Model Health →
+            Open Model Health
+            <IconArrowRight />
           </Link>
         </div>
       </section>

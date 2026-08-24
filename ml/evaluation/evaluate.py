@@ -135,6 +135,10 @@ def decile_profile(values: np.ndarray) -> dict[str, Any]:
     if v.size == 0 or not np.all(np.isfinite(v)):
         raise ValueError("values must be non-empty and finite")
     edges = np.unique(np.quantile(v, np.linspace(0.0, 1.0, 11)))
+    if edges.size < 2:
+        # Constant (or near-constant) input: all decile edges collapse to one
+        # value and np.histogram would silently return zero counts.
+        raise ValueError("values must span at least two distinct bin edges")
     counts, edges = np.histogram(v, bins=edges)
     proportions = counts / counts.sum()
     return {

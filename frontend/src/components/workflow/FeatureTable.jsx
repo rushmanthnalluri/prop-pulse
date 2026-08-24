@@ -71,10 +71,15 @@ function noteFor(feature) {
 
 /** 4px coverage bar + 1dp percent; danger fill under 95% (reference threshold). */
 function CoverageCell({ feature }) {
-  const coverage = Math.round((100 - (feature?.missing_pct ?? 0)) * 10) / 10
+  // Clamped like MissingTable's bar — a stray missing_pct outside [0, 100]
+  // must not yield a negative/overflowing width or a "-0.5%" label.
+  const coverage = Math.min(
+    100,
+    Math.max(0, Math.round((100 - (feature?.missing_pct ?? 0)) * 10) / 10),
+  )
   return (
     <span className="coverage">
-      <span className="coverage-track">
+      <span className="coverage-track" aria-hidden="true">
         <span
           className={`coverage-fill${coverage < 95 ? ' coverage-low' : ''}`}
           style={{ '--w': `${coverage}%` }}
@@ -132,7 +137,7 @@ function RegistryGroup({ id, title, rows, children }) {
           {rows} {rows === 1 ? 'field' : 'fields'}
         </span>
       </div>
-      <div className="table-scroll borderless">
+      <div className="table-scroll borderless table-zebra">
         <table className="table">
           <thead>
             <tr>

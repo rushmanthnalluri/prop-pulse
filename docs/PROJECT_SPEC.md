@@ -248,8 +248,8 @@ Professional, minimal, responsive (Tailwind or plain CSS — pick one, document)
 
 ## 12. Config & security
 
-- `.env.example` keys: `MODEL_DIR`, `DATA_DIR`, `MLFLOW_TRACKING_URI`, `API_HOST`,
-  `API_PORT`, `VITE_API_URL`, `LOG_LEVEL`, `PREDICTION_LOG_PATH`, `DRIFT_PSI_THRESHOLD`.
+- `.env.example` keys: `MODEL_DIR`, `DATA_DIR`, `MLFLOW_TRACKING_URI`,
+  `VITE_API_URL`, `LOG_LEVEL`, `PREDICTION_LOG_PATH`, `DRIFT_PSI_THRESHOLD`.
 - No secrets anywhere. No absolute paths in code (use `ml/paths.py` / config).
 - Random seed = 42 everywhere.
 

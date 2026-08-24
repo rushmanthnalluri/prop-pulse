@@ -16,7 +16,6 @@ window (``MIN_TRAIN_ROWS``..``MAX_UPLOAD_ROWS``, §2.3).
 """
 from __future__ import annotations
 
-import json
 import logging
 from typing import Any
 
@@ -24,7 +23,6 @@ from fastapi import HTTPException
 
 from ml.workflow import datasets as wf_datasets
 from ml.workflow.datasets import (
-    BUNDLED_DATASET_ID,
     MAX_UPLOAD_ROWS,
     CorruptUpload,
     DatasetBusyError,
@@ -58,18 +56,19 @@ def _unknown_404(exc: UnknownDataset) -> HTTPException:
 
 def job_status_scan(dataset_id: str) -> list[dict[str, Any]]:
     """Read every ``jobs/*/status.json`` of a dataset (tolerant of partial files)."""
+    # Lazy: jobs.py imports this module at module level (circular at import time).
+    from backend.app.services.workflow.jobs import _read_status_file  # noqa: PLC0415
+
     jobs_dir = wf_datasets.sandbox_dir(dataset_id) / "jobs"
     statuses: list[dict[str, Any]] = []
     if not jobs_dir.exists():
         return statuses
     for status_file in sorted(jobs_dir.glob("*/status.json")):
-        try:
-            payload = json.loads(status_file.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        payload = _read_status_file(status_file)
+        if payload is None:
             logger.warning("skipping unreadable job status %s", status_file)
             continue
-        if isinstance(payload, dict):
-            statuses.append(payload)
+        statuses.append(payload)
     return statuses
 
 

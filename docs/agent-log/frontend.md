@@ -71,7 +71,7 @@ frontend/
 - `npm install` — 201 packages; final resolved stack: **react 19.2.8,
   react-dom 19.2.8, react-router 8.3.0, react-leaflet 5.0.0, leaflet 1.9.4,
   recharts 2.15.4, vite 6.4.3**. `npm audit` → **found 0 vulnerabilities**.
-- `npm run build` — ✓ built in ~20 s; route-level code-splitting:
+- `npm run build` — built in ~20 s; route-level code-splitting:
   index 311 kB (gzip 98.7), MarketMap 158 kB, ModelInsights 389 kB, css 27.5 kB.
 - `npm run lint` — clean (zero warnings).
 - **Live smoke** (backend on :8000 + `npm run dev` on :5173):

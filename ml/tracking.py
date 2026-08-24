@@ -14,6 +14,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import tempfile
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -80,9 +81,10 @@ def log_dict_artifact(payload: dict, filename: str) -> None:
     """
     import mlflow
 
-    tmp = Path(os.getenv("TMPDIR", ".")) / filename
-    tmp.write_text(json.dumps(payload, indent=2, default=str))
-    try:
+    # Unique temp dir per call: TMPDIR is unset on Windows, so a fixed CWD
+    # path would pollute the repo root and race under concurrent runs. The
+    # artifact keeps its basename either way.
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tmp = Path(tmpdir) / filename
+        tmp.write_text(json.dumps(payload, indent=2, default=str))
         mlflow.log_artifact(str(tmp))
-    finally:
-        tmp.unlink(missing_ok=True)

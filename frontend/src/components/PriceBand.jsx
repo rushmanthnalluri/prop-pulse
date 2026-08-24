@@ -34,7 +34,7 @@ export default function PriceBand({ low, high, estimate }) {
       </div>
       <div className="band-scale">
         <span>{formatUsd(lo)}</span>
-        <span>estimate {formatUsd(est)}</span>
+        <span className="band-scale-mid">estimate {formatUsd(est)}</span>
         <span>{formatUsd(hi)}</span>
       </div>
     </>

@@ -23,6 +23,7 @@
  */
 import { test, expect } from '@playwright/test'
 import { fileURLToPath } from 'node:url'
+import { pinChromeForShot } from '../helpers/ui.js'
 
 const EVIDENCE = fileURLToPath(new URL('../../docs/audit/evidence/', import.meta.url))
 
@@ -116,9 +117,7 @@ test('AUD-24b: factor names are not truncated at 390x844 (no ellipsis overflow)'
   await expect(rail.getByText('Neighborhood median price')).toBeVisible()
 
   // Evidence capture for docs/audit/fix-frontend.md (pin sticky elements for the stitch).
-  await page.addStyleTag({
-    content: '.pipeline-sidebar, .predict-result { position: static !important; }',
-  })
+  await pinChromeForShot(page)
   await page.screenshot({ path: `${EVIDENCE}fix-frontend-mobile-390.png`, fullPage: true })
 })
 
@@ -197,7 +196,8 @@ test('AUD-10: a stalled API surfaces a timeout error instead of spinning forever
   })
   await submitDefaultForm(page)
 
-  const error = page.getByRole('alert').filter({ hasText: /timed out/ })
+  // Scoped to main — the same copy also lands in the error toast (Notifications).
+  const error = page.locator('main').getByRole('alert').filter({ hasText: /timed out/ })
   await expect(error).toBeVisible({ timeout: 45_000 }) // client aborts at ~30s
   await expect(error).toContainText(/check your connection/i)
 })

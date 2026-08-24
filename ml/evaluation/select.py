@@ -271,7 +271,9 @@ def select_classification_champion(metrics: dict[str, Any]) -> ClassificationCho
     is more informative than ROC-AUC). Brier sanity check: the PR-AUC winner's
     calibrated Brier must lie within ``BRIER_SANITY_TOLERANCE`` of the best
     calibrated Brier, otherwise the best-Brier model within tolerance of the
-    best PR-AUC is preferred and the override is recorded in ``reason``.
+    best PR-AUC is preferred and the override is recorded in ``reason``; if no
+    candidate satisfies both tolerances, the PR-AUC winner is kept and the
+    reason says so.
 
     Raises:
         ValueError: If no calibrated variants are present.
@@ -303,14 +305,47 @@ def select_classification_champion(metrics: dict[str, Any]) -> ClassificationCho
                 )
                 winner = name
                 break
+        else:
+            logger.warning(
+                "Brier sanity check: no calibrated candidate within tolerance "
+                "on both metrics — keeping PR-AUC winner %s",
+                winner,
+            )
+        # Report the shipped champion's own Brier gap, not the overridden
+        # PR-AUC winner's.
+        brier_gap = float(metrics[winner]["val_calibrated"]["brier"]) - best_brier
 
-    reason = (
-        f"{winner} (calibrated) has the best validation PR-AUC "
-        f"({metrics[winner]['val_calibrated']['pr_auc']:.6f}) among calibrated "
-        f"variants with Brier {metrics[winner]['val_calibrated']['brier']:.6f} "
-        f"(gap to best Brier {brier_gap:+.6f}, tolerance "
-        f"{BRIER_SANITY_TOLERANCE}) per SPEC §6."
-    )
+    if brier_sane:
+        reason = (
+            f"{winner} (calibrated) has the best validation PR-AUC "
+            f"({metrics[winner]['val_calibrated']['pr_auc']:.6f}) among calibrated "
+            f"variants with Brier {metrics[winner]['val_calibrated']['brier']:.6f} "
+            f"(gap to best Brier {brier_gap:+.6f}, tolerance "
+            f"{BRIER_SANITY_TOLERANCE}) per SPEC §6."
+        )
+    elif winner != ranking[0]:
+        # The override must be recorded in the reason (docstring contract);
+        # ranking[0] is the overridden PR-AUC winner.
+        reason = (
+            f"{winner} (calibrated) selected by the SPEC §6 Brier sanity check: "
+            f"PR-AUC winner {ranking[0]} missed the best calibrated Brier by "
+            f"more than {BRIER_SANITY_TOLERANCE}; {winner} has validation "
+            f"PR-AUC {metrics[winner]['val_calibrated']['pr_auc']:.6f} with "
+            f"Brier {metrics[winner]['val_calibrated']['brier']:.6f} "
+            f"(gap to best Brier {brier_gap:+.6f}, tolerance "
+            f"{BRIER_SANITY_TOLERANCE})."
+        )
+    else:
+        # Brier-insane PR-AUC winner kept: no fallback candidate existed, so
+        # no override happened — the reason must not claim one did.
+        reason = (
+            f"{winner} (calibrated) kept as the best validation PR-AUC "
+            f"({metrics[winner]['val_calibrated']['pr_auc']:.6f}) despite "
+            f"missing the best calibrated Brier by more than "
+            f"{BRIER_SANITY_TOLERANCE} (gap to best Brier {brier_gap:+.6f}): "
+            f"no calibrated candidate was within tolerance on both metrics "
+            f"per SPEC §6."
+        )
     logger.info("classification ranking (calibrated val PR-AUC): %s", ranking)
     return ClassificationChoice(
         champion=winner,

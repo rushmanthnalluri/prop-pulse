@@ -47,7 +47,7 @@ env-driven) — SPEC §12 does not require it, noted for the devops agent.
 - eps handling: proportions clipped at 1e-6 then renormalized; empty-bin penalty large-but-finite
   (8.155 for the crafted case; 27.631 for full surprise mass at 1e-9 expected).
 - Out-of-range values land in edge bins: `[min−5000, max+50000]` → proportions `[0.5, 0, …, 0, 0.5]`;
-  all-above-max production → PSI 12.42 (drift-scale). ✓ ±inf open edges work as documented.
+  all-above-max production → PSI 12.42 (drift-scale). ±inf open edges work as documented.
 - `psi_bins_from_train`: constant → `[c−0.5, c, c+0.5]`; 95%-zero sample → 2 edges (the F1 mechanism);
   empty/junk/`n_bins=0` raise ValueError.
 

@@ -65,17 +65,11 @@ import {
   xAxisProps,
   yAxisProps,
 } from '../../components/shared/chartTheme'
-import { formatDateTime, formatMetric, formatNumber } from '../../format'
+import { datasetRowsMeta, formatDateTime, formatMetric, formatNumber } from '../../format'
 import '../../styles/confusion-matrix.css'
 import '../../styles/wf-comparison.css'
 import '../../styles/workflow-train.css'
 import '../../styles/workflow-train-page.css'
-
-const OBJECTIVE_LABELS = {
-  regression: 'Regression',
-  classification: 'Classification',
-  clustering: 'Clustering',
-}
 
 /** Short labels for the server selection metrics (jobs.py _SELECTION_BLOCKS). */
 const SELECTION_METRIC_LABELS = { rmsle: 'RMSLE', pr_auc: 'PR-AUC' }
@@ -282,7 +276,7 @@ function CandidatePanel({ objective, candidate, selectionMetric, datasetId }) {
           </p>
         )}
         <p className="model-role">
-          {CANDIDATE_INFO[candidate.name] ?? `${OBJECTIVE_LABELS[objective]} candidate`}
+          {CANDIDATE_INFO[candidate.name] ?? `${wf.OBJECTIVE_LABELS[objective]} candidate`}
         </p>
         <div className="metrics metrics-auto">
           {metrics.map(([key, label, fmt]) => (
@@ -307,7 +301,7 @@ function CandidatePanel({ objective, candidate, selectionMetric, datasetId }) {
             className="btn btn-secondary"
             to={`/workflow/08-evaluate?dataset=${datasetId}&job=${candidate.job_id}`}
           >
-            Open full evaluation — stage 08 →
+            Open full evaluation — stage 08
           </Link>
         </div>
       </div>
@@ -423,7 +417,7 @@ export default function TrainStage() {
       activateJob(accepted.job_id)
       toast.info(
         'Training started',
-        `${OBJECTIVE_LABELS[objective]} · ${selected[objective].length} candidate${selected[objective].length === 1 ? '' : 's'} — job ${accepted.job_id}`,
+        `${wf.OBJECTIVE_LABELS[objective]} · ${selected[objective].length} candidate${selected[objective].length === 1 ? '' : 's'} — job ${accepted.job_id}`,
       )
       reloadJobs()
     } catch (err) {
@@ -468,7 +462,7 @@ export default function TrainStage() {
 
   return (
     <>
-      <div className="page-head">
+      <header className="page-head">
         <span className="kicker">Stage 07 · Modelling</span>
         <h1 className="page-title">Model Training</h1>
         <p className="page-desc">
@@ -478,20 +472,20 @@ export default function TrainStage() {
         </p>
         <p className="page-meta">
           {[
-            dataset ? `${dataset.name} · ${dataset.n_rows} rows` : null,
+            dataset ? datasetRowsMeta(dataset) : null,
             state?.prepared ? 'splits prepared' : 'not prepared — the first job auto-prepares with defaults',
             state?.jobs ? `${state.jobs.total} job${state.jobs.total === 1 ? '' : 's'} so far` : null,
           ]
             .filter(Boolean)
             .join(' · ')}
         </p>
-      </div>
+      </header>
 
       <hr className="divider" />
 
       <div className="section">
         <div className="section-head">
-          <span className="section-title">Model selection</span>
+          <h2 className="section-title">Model selection</h2>
           <span className="section-note">one job at a time · server-wide</span>
         </div>
         <p className="section-sub">
@@ -518,7 +512,7 @@ export default function TrainStage() {
               className={`wf-tab${objective === obj ? ' wf-tab--active' : ''}`}
               onClick={() => switchObjective(obj)}
             >
-              {OBJECTIVE_LABELS[obj]}
+              {wf.OBJECTIVE_LABELS[obj]}
               {obj === 'classification' && <SimulatedBadge className="wf-tab-badge" />}
             </button>
           ))}
@@ -622,7 +616,7 @@ export default function TrainStage() {
       {activeJob && activeJob.datasetId === datasetId && (
         <div className="section">
           <div className="section-head">
-            <span className="section-title">Live job status</span>
+            <h2 className="section-title">Live job status</h2>
             <span className="section-note">polled every 1.5 s · pauses when the tab is hidden</span>
           </div>
           <JobStatus jobId={activeJob.id} datasetId={datasetId} onTerminal={onTerminal} />
@@ -631,7 +625,7 @@ export default function TrainStage() {
 
       <div className="section">
         <div className="section-head">
-          <span className="section-title">Benchmark — the candidates, head to head</span>
+          <h2 className="section-title">Benchmark — the candidates, head to head</h2>
           <span className="section-note">
             {nVal != null
               ? `${formatNumber(nVal, 0)} validation rows · test stays sealed`
@@ -691,7 +685,7 @@ export default function TrainStage() {
 
       <div className="section">
         <div className="section-head">
-          <span className="section-title">Job history</span>
+          <h2 className="section-title">Job history</h2>
           <span className="section-note">newest first</span>
         </div>
         {jobsLoading && !jobs ? (

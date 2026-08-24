@@ -84,7 +84,7 @@ class MonitoringService:
             }
         try:
             payload = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
+        except (OSError, ValueError) as exc:  # JSONDecodeError + UnicodeDecodeError
             logger.warning("unreadable drift report %s: %s", path, exc)
             # Never echo the exception (it can contain absolute server paths).
             return {"status": "no_data", "detail": "unreadable drift report"}

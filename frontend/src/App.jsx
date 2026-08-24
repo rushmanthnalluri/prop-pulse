@@ -23,8 +23,8 @@ const HealthPage = lazy(() => import('./pages/Health'))
 // loads each stage page itself.
 const WorkflowShell = lazy(() => import('./pages/workflow/WorkflowShell'))
 
-const guarded = (element, key) => (
-  <ErrorBoundary key={key}>
+const guarded = (element) => (
+  <ErrorBoundary>
     <Suspense fallback={<PageSkeleton />}>{element}</Suspense>
   </ErrorBoundary>
 )
@@ -42,10 +42,10 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <ErrorBoundary><OverviewPage /></ErrorBoundary> },
       { path: 'valuation', element: <ErrorBoundary><ValuationPage /></ErrorBoundary> },
-      { path: 'market', element: guarded(<MarketPage />, 'market') },
-      { path: 'model', element: guarded(<ModelInsightsPage />, 'model') },
-      { path: 'health', element: guarded(<HealthPage />, 'health') },
-      { path: 'workflow/*', element: guarded(<WorkflowShell />, 'workflow') },
+      { path: 'market', element: guarded(<MarketPage />) },
+      { path: 'model', element: guarded(<ModelInsightsPage />) },
+      { path: 'health', element: guarded(<HealthPage />) },
+      { path: 'workflow/*', element: guarded(<WorkflowShell />) },
       { path: '*', element: <ErrorBoundary><NotFoundPage /></ErrorBoundary> },
     ],
   },

@@ -245,8 +245,10 @@ function validateNumeric(desc, rawValue, values) {
 
 /**
  * Validate one field by kind. Selects/checkboxes are constrained by their
- * options and always pass; dates are range-checked against the schema
- * window (2006-01-01…2026-12-31); numbers go through validateNumeric.
+ * options and always pass; dates are calendar-validated and range-checked
+ * against the descriptor's own min/max window (sale_date carries
+ * 2006-01-01…2026-12-31 — ISO strings compare lexicographically); numbers go
+ * through validateNumeric.
  */
 export function validateField(desc, rawValue, values) {
   if (desc.kind === 'select' || desc.kind === 'checkbox') return null
@@ -254,7 +256,20 @@ export function validateField(desc, rawValue, values) {
     const raw = String(rawValue ?? '').trim()
     if (raw === '') return desc.required ? 'Required' : null
     if (!/^\d{4}-\d{2}-\d{2}$/.test(raw)) return 'Use YYYY-MM-DD'
-    if (raw < '2006-01-01' || raw > '2026-12-31') return 'Must be between 2006-01-01 and 2026-12-31'
+    // The shape regex alone passes impossible dates (2006-13-99, 2006-02-30);
+    // reject anything that is not a real calendar day.
+    const [year, month, day] = raw.split('-').map(Number)
+    const date = new Date(Date.UTC(year, month - 1, day))
+    if (
+      date.getUTCFullYear() !== year ||
+      date.getUTCMonth() !== month - 1 ||
+      date.getUTCDate() !== day
+    ) {
+      return 'Enter a valid calendar date'
+    }
+    if ((desc.min !== undefined && raw < desc.min) || (desc.max !== undefined && raw > desc.max)) {
+      return `Must be between ${desc.min} and ${desc.max}`
+    }
     return null
   }
   return validateNumeric(desc, rawValue, values)
@@ -265,7 +280,7 @@ export function validateField(desc, rawValue, values) {
  * validation but leave the train-observed ranges get a --warn hint that
  * pre-announces `confidence.level: "reduced"`. Never blocks submission.
  */
-export const TRAIN_WARN_COPY =
+const TRAIN_WARN_COPY =
   'Outside the 2006–2008 training range — the API will answer with reduced confidence.'
 
 export function trainWarns(values) {
@@ -311,6 +326,23 @@ export function payloadToFormValues(payload) {
     values[name] = payload[name]
   }
   return values
+}
+
+/**
+ * "Northridge Heights · 2,200 sq ft · built 2003" — one-line summary of a
+ * stored/submitted payload, shared by the restore bar (Valuation.jsx) and
+ * the pinned-estimate panel (PinnedComparison.jsx).
+ */
+export function payloadSummary(payload) {
+  if (!payload || typeof payload !== 'object') return null
+  const parts = []
+  const hood = NEIGHBORHOODS.find((n) => n.value === payload.neighborhood)
+  if (hood) parts.push(hood.label)
+  const area = Number(payload.gr_liv_area)
+  if (Number.isFinite(area)) parts.push(`${formatNumber(area, 0)} sq ft`)
+  const built = Number(payload.year_built)
+  if (Number.isFinite(built)) parts.push(`built ${formatYear(built)}`)
+  return parts.length > 0 ? parts.join(' · ') : null
 }
 
 /** Submitted payload → URL search params (shareable valuation, SPEC §7.7). */

@@ -29,7 +29,13 @@
 .chart-card .chart-head > * { min-width: 0; }
 .chart-card .chart-tag { white-space: normal; }
 
-.wf-eval-closing { margin-top: 28px; max-width: 640px; }
+/* The sealed-set honesty note closes the workspace as a footnote. */
+.wf-eval-closing {
+  margin-top: 28px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+  max-width: 640px;
+}
 
 /* ConfusionMatrix totals modifiers → styles/confusion-matrix.css (shared sheet). */
 

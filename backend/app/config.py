@@ -1,11 +1,9 @@
 """Backend settings — env-driven configuration (SPEC §8/§12).
 
 Reads the keys defined in ``.env.example`` (``MODEL_DIR``, ``DATA_DIR``,
-``MLFLOW_TRACKING_URI``, ``API_HOST``, ``API_PORT``, ``VITE_API_URL``,
-``LOG_LEVEL``, ``PREDICTION_LOG_PATH``, ``DRIFT_PSI_THRESHOLD``,
-``CORS_ORIGINS``). Paths are repo-relative and resolved against
-:data:`ml.paths.REPO_ROOT` — no absolute paths are ever constructed from
-user input alone.
+``LOG_LEVEL``, ``PREDICTION_LOG_PATH``, ``CORS_ORIGINS``). Paths are
+repo-relative and resolved against :data:`ml.paths.REPO_ROOT` — no absolute
+paths are ever constructed from user input alone.
 """
 from __future__ import annotations
 
@@ -35,13 +33,8 @@ class Settings(BaseSettings):
 
     model_dir: str = "models"
     data_dir: str = "data"
-    mlflow_tracking_uri: str = ""
-    api_host: str = "127.0.0.1"
-    api_port: int = 8000
-    vite_api_url: str = "http://localhost:8000"
     log_level: str = "INFO"
     prediction_log_path: str = "logs/predictions.jsonl"
-    drift_psi_threshold: float = 0.2
     #: Comma-separated browser origins allowed by CORS (dev-only defaults:
     #: Vite dev :5173, Vite preview :4173, docker :8080). Env-var override
     #: behavior is unchanged — CORS_ORIGINS replaces this list wholesale.
@@ -57,11 +50,6 @@ class Settings(BaseSettings):
     def resolved_model_dir(self) -> Path:
         """Absolute path of the model artifact directory."""
         return self._resolve(self.model_dir)
-
-    @property
-    def resolved_data_dir(self) -> Path:
-        """Absolute path of the dataset directory."""
-        return self._resolve(self.data_dir)
 
     @property
     def resolved_prediction_log_path(self) -> Path:

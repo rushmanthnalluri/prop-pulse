@@ -12,6 +12,11 @@ import { formatNumber } from '../../format'
 /** One before → after metric cell ("1,460 → 1,455"), value over label. */
 function DeltaMetric({ label, before, after, warnWhenPositive = false }) {
   const changed = before !== after
+  const delta = Number(after) - Number(before)
+  const signedDelta =
+    changed && Number.isFinite(delta)
+      ? `${delta > 0 ? '+' : ''}${formatNumber(delta, 0)}`
+      : null
   const cls =
     warnWhenPositive && Number(after) > 0
       ? 'metric-value metric-value--warn'
@@ -23,7 +28,13 @@ function DeltaMetric({ label, before, after, warnWhenPositive = false }) {
         {formatNumber(after, 0)}
       </div>
       <div className="metric-label">{label}</div>
-      <div className="metric-hint">{changed ? 'changed by the pipeline' : 'unchanged'}</div>
+      <div className="metric-hint">
+        {signedDelta !== null
+          ? `${signedDelta} · changed by the pipeline`
+          : changed
+            ? 'changed by the pipeline'
+            : 'unchanged'}
+      </div>
     </div>
   )
 }
@@ -55,7 +66,7 @@ function SamplePanel({ title, tag, rows }) {
   return (
     <div className="panel wfpp-sample">
       {head}
-      <div className="table-scroll borderless">
+      <div className="table-scroll borderless table-zebra">
         <table className="table">
           <thead>
             <tr>

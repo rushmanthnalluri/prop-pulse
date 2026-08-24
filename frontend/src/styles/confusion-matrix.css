@@ -5,9 +5,11 @@
    shared components/ConfusionMatrix.jsx wherever it renders; imported by
    pages/ModelInsights.jsx and pages/workflow/TrainStage.jsx +
    EvaluateStage.jsx, BEFORE their page sheets so equal-specificity page
-   rules keep winning by source order. The base .cm-grid/.cm-cell live in
-   styles.css (global); the small-screen densify tiers stay in the page
-   sheets — each page picked a different breakpoint for them.
+   rules keep winning by source order (new rules here deliberately reuse the
+   .cm-grid.cm-grid--totals … selector pattern, so the page sheets' small-
+   screen densify tiers still outrank them). The base .cm-grid/.cm-cell live
+   in styles.css (global); the densify tiers stay in the page sheets — each
+   page picked a different breakpoint for them.
    Title is 11px: the global floor (the insights copy had drifted to 10px).
    ========================================================================== */
 
@@ -28,6 +30,41 @@
   grid-template-columns: 104px repeat(3, 1fr);
 }
 
+/* Heat encoding: the component sets --cm-i (0..1 = count / largest cell) on
+   each data cell; the correct diagonal scales up from the amber base wash,
+   errors deepen in danger red. Ranges are contrast-checked on --surface —
+   the strongest amber cell keeps the amber numeral ≈5.4:1 and its label
+   ≈4.8:1; the strongest error cell keeps the danger numeral ≈4.5:1. */
+.cm-grid.cm-grid--totals .cm-cell--tn,
+.cm-grid.cm-grid--totals .cm-cell--tp {
+  background: rgba(217, 166, 63, calc(0.05 + var(--cm-i, 0) * 0.17));
+}
+
+.cm-grid.cm-grid--totals .cm-cell--fp,
+.cm-grid.cm-grid--totals .cm-cell--fn {
+  background: rgba(211, 107, 98, calc(0.06 + var(--cm-i, 0) * 0.055));
+}
+
+/* Cell labels step up one ink level so they hold AA over the deepest wash. */
+.cm-grid.cm-grid--totals .cm-cell span {
+  color: var(--text-2);
+}
+
+.cm-grid.cm-grid--totals .cm-cell {
+  transition: background-color var(--dur-hover);
+}
+
+.cm-grid.cm-grid--totals .cm-cell strong {
+  font-size: 24px;
+}
+
+/* Hover ring mirrors the correlation-heatmap cell idiom; the negative
+   offset keeps it inside the cell, crisp under the grid's rounded clip. */
+.cm-grid.cm-grid--totals .cm-cell:not(.cm-axis):hover {
+  outline: 1.5px solid var(--accent);
+  outline-offset: -1.5px;
+}
+
 .cm-axis--total {
   background: var(--raised);
 }
@@ -37,12 +74,22 @@
   justify-content: center;
 }
 
-.cm-total strong {
+/* Totals recede one size under the cell counts (full specificity so the
+   rule actually lands above the 24px count size; the page sheets' small-
+   screen densify tiers still win by source order). */
+.cm-grid.cm-grid--totals .cm-total strong {
   font-size: 15px;
   font-weight: 500;
   color: var(--text-2);
 }
 
-.cm-total--grand strong {
-  color: var(--text);
+/* The grand total is the split size — the one number a reviewer checks
+   first — so it gets the amber dim wash and ink (full specificity, to sit
+   above the receding-totals rule). */
+.cm-total--grand {
+  background: var(--accent-dim);
+}
+
+.cm-grid.cm-grid--totals .cm-total--grand strong {
+  color: var(--accent);
 }

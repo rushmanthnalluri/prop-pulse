@@ -20,6 +20,7 @@ import { api } from '../../api/client'
 import { useApi } from '../../api/useApi'
 import { formatMetric, formatPct } from '../../format'
 import SandboxPredictPanel from '../../components/workflow/SandboxPredictPanel'
+import { IconArrowRight } from './icons'
 import '../../styles/workflow-bridge.css'
 import '../../styles/workflow-predict.css'
 
@@ -55,7 +56,7 @@ export default function PredictStage() {
 
       <hr className="divider" />
 
-      <div className="section">
+      <section className="section" aria-labelledby="wf-sandbox-title">
         <div className="section-head">
           <h2 className="section-title" id="wf-sandbox-title">
             Your model — sandbox prediction
@@ -67,11 +68,13 @@ export default function PredictStage() {
           predictions, workbench-only, never the PropPulse champion.
         </p>
         <SandboxPredictPanel />
-      </div>
+      </section>
 
-      <div className="section">
+      <hr className="divider" aria-hidden="true" />
+
+      <section className="section" aria-labelledby="wf-champion-bridge-title">
         <div className="section-head">
-          <h2 className="section-title">The champion experience</h2>
+          <h2 className="section-title" id="wf-champion-bridge-title">The champion experience</h2>
           <span className="section-note">the product page, untouched by the sandbox</span>
         </div>
         <div className="wf-bridge">
@@ -102,10 +105,11 @@ export default function PredictStage() {
             <p className="wf-bridge-meta mono">{championMeta.join(' · ')}</p>
           )}
           <Link className="btn btn-primary wf-bridge-cta" to="/valuation">
-            Estimate value →
+            Estimate value
+            <IconArrowRight />
           </Link>
         </div>
-      </div>
+      </section>
     </>
   )
 }

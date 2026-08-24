@@ -7,19 +7,39 @@
  * dataset" pattern), unboxed metric facts, the per-feature PSI ranking as
  * a dense `.table`, the drifted / warn / calendar feature chips, and the
  * advisory retraining flag (a flag only — no retraining endpoint exists).
+ *
+ * Headline PSI values get a PsiScale — a threshold-ticked micro bar under
+ * the number so shift severity reads at a glance. The bar is the visual
+ * twin of the printed thresholds; it never replaces them.
  */
-import { formatDateTime, formatMetric, formatNumber, prettyFeature } from '../../format'
+import { finiteOr, formatDateTime, formatMetric, formatNumber, prettyFeature, psiLevel, psiTone } from '../../format'
 import { ErrorState, PanelSkeleton } from '../StateView'
 import DriftEmpty from './DriftEmpty'
 
-const finiteOr = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback)
-
-/** Threshold-colored metric tone: danger at drift, warn at warn. */
-function psiTone(psi, warnThreshold, driftThreshold) {
-  if (!Number.isFinite(psi)) return ''
-  if (psi >= driftThreshold) return ' metric-value--bad'
-  if (psi >= warnThreshold) return ' metric-value--warn'
-  return ''
+/**
+ * PsiScale — the visual twin of a PSI reading: a fill to the served value on
+ * a track ticked at the snapshot's warn/drift thresholds, with the scale end
+ * padded past the worse of the drift line or the reading. Pure presentation
+ * of served numbers; the value and thresholds stay printed beside it, and
+ * the aria-label repeats them for assistive tech. Shared with the
+ * prediction-drift panel.
+ */
+export function PsiScale({ psi, warnThreshold, driftThreshold, label }) {
+  if (!Number.isFinite(psi)) return null
+  const end = Math.max(driftThreshold * 1.6, psi * 1.12, Number.EPSILON)
+  const pct = (value) => `${Math.min(100, Math.max(0, (value / end) * 100))}%`
+  const level = psiLevel(psi, warnThreshold, driftThreshold) || 'ok'
+  return (
+    <span
+      className={`health-psi health-psi--${level}`}
+      role="img"
+      aria-label={`${label}: PSI ${formatMetric(psi)} — warn ≥ ${formatMetric(warnThreshold, 1)}, drift ≥ ${formatMetric(driftThreshold, 1)}`}
+    >
+      <span className="health-psi-fill" style={{ width: pct(psi) }} aria-hidden="true" />
+      <span className="health-psi-tick health-psi-tick--warn" style={{ left: pct(warnThreshold) }} aria-hidden="true" />
+      <span className="health-psi-tick health-psi-tick--drift" style={{ left: pct(driftThreshold) }} aria-hidden="true" />
+    </span>
+  )
 }
 
 /** Row status for the PSI table — threshold compare, no invented states. */
@@ -60,13 +80,19 @@ function FeatureDriftReport({ drift }) {
   const drifted = drift.drift_detected === true
 
   return (
-    <div className="panel">
-      <div className="panel-head">
+    <div className="panel health-drift-panel">
+      <div className="panel-head panel-head--raised">
         <h3 className="panel-title">Drift report</h3>
         {drifted ? (
-          <span className="badge badge-danger">Drift detected</span>
+          <span className="badge badge-danger">
+            <span className="health-badge-dot" aria-hidden="true" />
+            Drift detected
+          </span>
         ) : (
-          <span className="badge badge-accent">Stable</span>
+          <span className="badge badge-success">
+            <span className="health-badge-dot" aria-hidden="true" />
+            Stable
+          </span>
         )}
       </div>
       <div className="panel-body">
@@ -81,6 +107,12 @@ function FeatureDriftReport({ drift }) {
               {formatMetric(drift.max_psi)}
             </div>
             <div className="metric-label">Max PSI</div>
+            <PsiScale
+              psi={maxPsi}
+              warnThreshold={warnThreshold}
+              driftThreshold={driftThreshold}
+              label="Max PSI"
+            />
             <div className="metric-hint">
               warn ≥ {formatMetric(warnThreshold, 1)} · drift ≥ {formatMetric(driftThreshold, 1)}
             </div>
@@ -88,9 +120,15 @@ function FeatureDriftReport({ drift }) {
           <div className="metric">
             <div className="metric-value">
               {drift.retraining_recommended === true ? (
-                <span className="badge badge-warn">Recommended</span>
+                <span className="badge badge-warn">
+                  <span className="health-badge-dot" aria-hidden="true" />
+                  Recommended
+                </span>
               ) : (
-                <span className="badge badge-muted">Not recommended</span>
+                <span className="badge badge-muted">
+                  <span className="health-badge-dot" aria-hidden="true" />
+                  Not recommended
+                </span>
               )}
             </div>
             <div className="metric-label">Retraining</div>
@@ -99,7 +137,10 @@ function FeatureDriftReport({ drift }) {
           {drift.low_sample === true && (
             <div className="metric">
               <div className="metric-value">
-                <span className="badge badge-warn">Low sample</span>
+                <span className="badge badge-warn">
+                  <span className="health-badge-dot" aria-hidden="true" />
+                  Low sample
+                </span>
               </div>
               <div className="metric-label">Sample size</div>
               <div className="metric-hint">PSI indicative only</div>
@@ -112,7 +153,7 @@ function FeatureDriftReport({ drift }) {
             <div className="health-block-label">
               Per-feature PSI — top {perFeature.length} by shift
             </div>
-            <div className="table-scroll">
+            <div className="table-scroll table-zebra">
               <table className="table">
                 <caption className="visually-hidden">
                   Population Stability Index per model feature, highest shift first.

@@ -22,7 +22,7 @@ import { useCallback } from 'react'
 import { Link } from 'react-router'
 import { getStats } from '../../api/workflow'
 import { useApi } from '../../api/useApi'
-import { formatNumber } from '../../format'
+import { datasetMetaName, formatNumber } from '../../format'
 import { EmptyState, ErrorState, PageSkeleton } from '../../components/StateView'
 import ProvenanceBanner from '../../components/workflow/ProvenanceBanner'
 import { useWorkflow } from './WorkflowShell'
@@ -52,7 +52,7 @@ export default function StatsStage() {
 
   const metaParts = dataset
     ? [
-        `Dataset · ${dataset.name}${dataset.source === 'bundled' ? (dataset.name.endsWith('(bundled)') ? '' : ' (bundled default)') : ' (uploaded)'}`,
+        `Dataset · ${datasetMetaName(dataset)}`,
         `${formatNumber(dataset.n_rows, 0)} × ${formatNumber(dataset.n_cols, 0)}`,
         ...(data
           ? [
@@ -64,7 +64,7 @@ export default function StatsStage() {
 
   return (
     <div>
-      <div className="page-head">
+      <header className="page-head">
         <span className="kicker">Stage 03 · Records</span>
         <h1 className="page-title">Descriptive Statistics</h1>
         <p className="page-desc">
@@ -73,7 +73,7 @@ export default function StatsStage() {
             : 'Mean, median, spread, and range across every numeric field of the active dataset — computed server-side on the raw rows.'}
         </p>
         <p className="page-meta">{metaParts.join(' · ')}</p>
-      </div>
+      </header>
 
       <hr className="divider" />
 
@@ -83,7 +83,7 @@ export default function StatsStage() {
         </div>
       ) : (
         <>
-          <div className="wfs-banner-slot">
+          <div className="wf-banner-slot">
             <ProvenanceBanner
               provenance={{ dataset_name: dataset?.name ?? datasetId }}
               label="These statistics describe the active dataset — switch it from the dataset chip above."
@@ -92,9 +92,9 @@ export default function StatsStage() {
 
           <div className="section">
             <div className="section-head">
-              <span className="section-title">
+              <h2 className="section-title">
                 All numeric fields — centre, spread, and range
-              </span>
+              </h2>
               <span className="section-note">
                 {formatNumber(numeric.length, 0)} fields
               </span>
@@ -114,7 +114,7 @@ export default function StatsStage() {
               </EmptyState>
             ) : (
               <>
-                <div className="table-scroll scroll-68" tabIndex={0}>
+                <div className="table-scroll scroll-68 table-zebra" tabIndex={0}>
                   <table className="table table-sticky">
                     <thead>
                       <tr>

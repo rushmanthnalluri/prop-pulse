@@ -2,10 +2,13 @@
    ML Workbench — guided workflow shell (WORKFLOW §6.1-6.4)
    Page-scoped styles for WorkflowShell + StagePager chrome + DatasetPicker +
    ProvenanceBanner. The numbered pipeline stepper now lives in the app
-   sidebar (Layout.jsx + styles.css, blueprint §4); the old in-content
-   stepper strip is gone. Design tokens from styles.css only: hairlines over
-   boxes, the single elevation shadow (--shadow-pop) reserved for the dataset
-   dropdown, hovers animate color/background/border only (--dur-hover).
+   sidebar (Layout.jsx + styles.css, blueprint §4); the shell's context strip
+   adds the twelve-segment stage-progress rail (.wf-progress-*) — completed /
+   current / locked / upcoming, wired to the shell's stepper view-model.
+   Design tokens from styles.css only: hairlines over boxes, the single
+   elevation shadow (--shadow-pop) reserved for the dataset dropdown, hovers
+   animate color/background/border and the chip chevron's state rotation
+   (--dur-hover).
    Stage-page styles for WF-F2/F3/F4 sections also live here (single owner
    per package, §8 — those agents append below this header).
    ========================================================================== */
@@ -17,24 +20,141 @@
 .wf-shell .page-head { padding-top: 24px; }
 
 /* --------------------------------------------------------------------------
-   Context strip: mono quiet meta line + the dataset control
+   Context strip: mono quiet meta line + the dataset control, with the
+   twelve-segment stage-progress rail below (completed / current / locked /
+   upcoming). The strip is a quiet stack: meta row, hairline-fine rail.
    -------------------------------------------------------------------------- */
 
 .wf-context {
+  padding: 13px 0 12px;
+  border-bottom: 1px solid var(--border);
+}
+.wf-context-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px 16px;
-  padding: 14px 0 12px;
-  border-bottom: 1px solid var(--border);
+  gap: 10px 20px;
 }
 .wf-context-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0;
   font-family: var(--font-mono);
   font-size: 11px;
+  line-height: 1.55;
   color: var(--text-3);
   max-width: 560px;
   letter-spacing: 0.02em;
+}
+/* Sandbox-mode indicator — amber status dot (meaningful: this whole area is
+   the workbench, never the champion). */
+.wf-context-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-wash);
+}
+.wf-context-side {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+/* Stage-position tag — orientation meta while the sidebar owns step nav. */
+.wf-context-stage {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  white-space: nowrap;
+}
+.wf-context-stage-num {
+  color: var(--text-2);
+  font-weight: 500;
+}
+
+/* --------------------------------------------------------------------------
+   Stage-progress rail — one flexed segment per stage; segments shrink evenly
+   so the full twelve fit at every width (no scroll, no overflow at 390px).
+   States are icon + colour (never colour-only: the status is in every link's
+   aria-label). The sidebar stepper stays the primary nav — this rail is the
+   at-a-glance state strip the sidebar cannot carry.
+   -------------------------------------------------------------------------- */
+
+.wf-progress { padding-top: 11px; }
+.wf-progress-list {
+  display: flex;
+  gap: 3px;
+}
+.wf-progress-list li { flex: 1 1 0; min-width: 0; display: flex; }
+
+.wf-progress-seg {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
+  transition:
+    background var(--dur-hover),
+    border-color var(--dur-hover),
+    color var(--dur-hover);
+}
+.wf-progress-num {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.wf-progress-seg:hover {
+  background: var(--raised);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+/* Completed: quiet accent wash + check — done, receding. */
+.wf-progress-seg--done {
+  background: var(--accent-wash);
+  border-color: transparent;
+  color: var(--accent);
+}
+.wf-progress-seg--done:hover { border-color: var(--accent-border); color: var(--accent-hover); }
+
+/* Current: the rail's one assertive segment — accent edge + accent numeral. */
+.wf-progress-seg--current {
+  background: var(--raised);
+  border-color: var(--accent-border);
+  color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+.wf-progress-seg--current .wf-progress-num { font-weight: 600; }
+.wf-progress-seg--current:hover { color: var(--accent-hover); }
+
+/* Locked: recedes (dimmed lock), never disguised as available. */
+.wf-progress-seg--locked { opacity: 0.55; }
+.wf-progress-seg--locked:hover { opacity: 1; color: var(--text-2); }
+
+/* Live-jobs dot (stage 07 while a training job runs — server truth). Subtle
+   pulse via the shared wf-step-pulse keyframes; the global reduced-motion
+   block stills it. */
+.wf-progress-live {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: wf-step-pulse var(--dur-pulse);
 }
 
 /* --------------------------------------------------------------------------
@@ -46,18 +166,41 @@
 .wf-ds-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 4px 10px;
-  background: transparent;
+  gap: 9px;
+  padding: 5px 11px;
+  background: var(--surface);
   border: 1px solid var(--border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-2);
   cursor: pointer;
-  transition: border-color var(--dur-hover), color var(--dur-hover);
+  transition:
+    border-color var(--dur-hover),
+    background var(--dur-hover),
+    color var(--dur-hover);
 }
-.wf-ds-chip:hover { border-color: var(--text-3); color: var(--text); }
+.wf-ds-chip:hover {
+  background: var(--raised);
+  border-color: var(--text-3);
+  color: var(--text);
+}
+.wf-ds-chip:focus-visible {
+  outline: 1.5px solid var(--accent);
+  outline-offset: 2px;
+}
+.wf-ds-chip[aria-expanded='true'] {
+  background: var(--raised);
+  border-color: var(--text-3);
+  color: var(--text);
+}
+.wf-ds-chip svg {
+  color: var(--text-3);
+  transition: color var(--dur-hover), transform var(--dur-hover);
+}
+.wf-ds-chip:hover svg,
+.wf-ds-chip[aria-expanded='true'] svg { color: var(--text-2); }
+.wf-ds-chip[aria-expanded='true'] svg { transform: rotate(180deg); }
 .wf-ds-chip-name {
   font-weight: 500;
   max-width: 200px;
@@ -74,6 +217,7 @@
   z-index: var(--z-dropdown);
   width: 360px;
   max-width: calc(100vw - 32px);
+  overflow: hidden; /* keep item hovers inside the rounded corners */
   background: var(--elevated);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
@@ -101,16 +245,12 @@
 .wf-ds-status { padding: 12px 14px; display: grid; gap: 8px; }
 
 .wf-ds-list { max-height: 320px; overflow-y: auto; }
-.wf-ds-item {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 4px 8px;
-  padding: 0;
-  border-top: 1px solid var(--border);
-}
+.wf-ds-item { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 8px; padding: 0; border-top: 1px solid var(--border); }
 .wf-ds-item:first-child { border-top: none; }
-.wf-ds-item--active { background: var(--accent-wash); }
+.wf-ds-item--active {
+  background: var(--accent-wash);
+  box-shadow: inset 2px 0 0 var(--accent); /* active-dataset edge */
+}
 
 .wf-ds-choose {
   flex: 1;
@@ -118,7 +258,7 @@
   display: flex;
   flex-direction: column;
   gap: 3px;
-  padding: 9px 14px;
+  padding: 10px 14px;
   background: none;
   border: none;
   font-family: var(--font-ui);
@@ -129,6 +269,7 @@
   transition: background var(--dur-hover);
 }
 .wf-ds-choose:hover { background: var(--raised); }
+.wf-ds-choose:focus-visible { box-shadow: inset 0 0 0 1.5px var(--accent); outline: none; }
 .wf-ds-item--active .wf-ds-choose:hover { background: var(--accent-wash); }
 
 .wf-ds-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -150,9 +291,13 @@
   font-size: 11px;
   color: var(--danger);
   cursor: pointer;
-  transition: border-color var(--dur-hover);
+  transition: border-color var(--dur-hover), background var(--dur-hover);
 }
-.wf-ds-delete:hover { border-color: rgba(198, 93, 85, 0.45); }
+.wf-ds-delete:hover {
+  border-color: rgba(211, 107, 98, 0.45);
+  background: var(--danger-dim);
+}
+.wf-ds-delete:focus-visible { outline: 1.5px solid var(--danger); outline-offset: 1px; }
 
 /* Inline delete confirm (§6.3-01 — never window.confirm) */
 .wf-ds-confirm {
@@ -162,10 +307,11 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px;
-  padding: 9px 14px;
+  padding: 10px 14px;
   background: var(--danger-dim);
-  border-top: 1px solid rgba(198, 93, 85, 0.45);
+  border-top: 1px solid rgba(211, 107, 98, 0.45);
   font-size: 12.5px;
+  line-height: 1.5;
   color: var(--text-2);
 }
 .wf-ds-confirm-actions { display: inline-flex; gap: 8px; }
@@ -184,11 +330,16 @@
   display: flex;
   align-items: flex-start;
   gap: 10px;
-  padding: 10px 14px;
-  background: rgba(217, 166, 63, 0.06);
-  border: 1px solid rgba(217, 166, 63, 0.4);
+  padding: 11px 15px;
+  background: linear-gradient(
+    180deg,
+    rgba(217, 166, 63, 0.08) 0%,
+    rgba(217, 166, 63, 0.045) 100%
+  );
+  border: 1px solid rgba(217, 166, 63, 0.38);
   border-radius: var(--radius-lg);
   font-size: 12.5px;
+  line-height: 1.5;
   color: var(--text-2);
 }
 .wf-prov-badge { flex-shrink: 0; margin-top: 1px; }
@@ -198,18 +349,48 @@
   display: block;
   font-size: 11px;
   color: var(--text-3);
-  margin-top: 3px;
+  margin-top: 4px;
 }
 
+/* Designed locked state (stages 08/09 deep-links): the lock tile echoes the
+   dropzone's affordance tile; status chip + CTA share one action row. The
+   standalone tag/CTA margins stay for the other stages' EmptyState CTAs. */
+.wf-locked-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-bottom: 14px;
+  background: var(--raised);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text-3);
+}
+.wf-locked-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  margin-top: 16px;
+}
 .wf-locked-tag { display: inline-block; margin-top: 12px; }
 .wf-locked-cta { margin-top: 14px; }
+.wf-locked-actions .wf-locked-tag,
+.wf-locked-actions .wf-locked-cta { margin-top: 0; }
 
 /* --------------------------------------------------------------------------
-   Responsive: the context row wraps under the picker on narrow widths.
+   Responsive: the context row wraps under the picker on narrow widths; the
+   progress rail's flexed segments shrink evenly, so it never overflows.
    -------------------------------------------------------------------------- */
 
 @media (max-width: 640px) {
   .wf-context { padding: 10px 0; }
+  .wf-context-top { gap: 8px 14px; }
+  .wf-context-side { gap: 10px; }
+  .wf-progress { padding-top: 9px; }
+  .wf-progress-seg { height: 23px; }
   .wf-ds-chip-name { max-width: 140px; }
   .wf-ds-panel { width: min(360px, calc(100vw - 32px)); }
 }

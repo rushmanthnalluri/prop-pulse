@@ -220,7 +220,8 @@ def select_dbscan_params(X: np.ndarray) -> tuple[int, float, np.ndarray, list[Ep
 
     Returns:
         ``(min_samples, eps, labels, trace, rationale)`` where ``trace`` lists
-        every evaluated :class:`EpsCandidate` (valid ones first).
+        every evaluated :class:`EpsCandidate` in evaluation order (each
+        ``min_samples`` candidate's rungs ascending).
     """
     candidates: list[EpsCandidate] = []
     knee_candidates: list[EpsCandidate] = []

@@ -130,7 +130,7 @@ E7=pytest, E8=misc (all `docs/audit/evidence/docs-truth-*.txt`).
 | peak July 167 sales / trough Feb 27; 2006→2008 median +0.6% | EDA_REPORT.md:31; METHODOLOGY.md:28-30 | Jul 167 / Feb 27 / +0.6% | **MATCH** |
 | OverallQual r=0.789 (Spearman 0.795); GrLivArea 0.752; $/sqft 121.13/120.58 | EDA_REPORT.md:23-24, :45 | 0.789 / 0.795 / 0.752 / 121.13 / 120.58 | **MATCH** |
 | geo: 25 unique points; span lat 41.9920–42.0627, long −93.6868…−93.6033; bbox; downtown distance 0.50–5.79 km; NN median 0.76 / min 0.13 (MeadowV/Mitchel) / max 1.62 km; IDOTRR "less representative" | GEOGRAPHY.md:24-32, :60-61, :76 | recomputed from `neighborhood_geo.csv` — all exact, incl. the MeadowV/Mitchel pair and the IDOTRR note | **MATCH (recomputed)** |
-| leakage exclusions: no SaleType/SaleCondition/Id/DOM/price_per_sqft in features | README.md:166-170; METHODOLOGY.md:60-64 | none present in `feature_list.json`; decomposition 79 raw + 11 engineered + 4 stats = 94 ✓ | **MATCH** |
+| leakage exclusions: no SaleType/SaleCondition/Id/DOM/price_per_sqft in features | README.md:166-170; METHODOLOGY.md:60-64 | none present in `feature_list.json`; decomposition 79 raw + 11 engineered + 4 stats = 94 | **MATCH** |
 | "None" literal tokens, zero NaN, `keep_default_na=False` convention | SPEC §14; data/README.md:42-44 | 0 NaNs; "None" tokens present; raw spellings `C (all)`, `2fmCon`… confirmed | **MATCH** |
 
 ### E. Process/infra claims (E6, E7, E8)

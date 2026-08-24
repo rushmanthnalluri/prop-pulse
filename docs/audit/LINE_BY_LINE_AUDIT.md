@@ -11,13 +11,13 @@ the docs-truth audit); `e2e/node_modules`.
 
 | Scope (audit report) | Files | Lines | Reviewed |
 |---|---|---|---|
-| ml/data/* + ml/paths.py (`llba-data.md`) | 8 | 1,131 | ✓ full |
-| ml/features/* (`llba-features.md`) | 5 | 1,091 | ✓ full |
-| ml/training/* + ml/evaluation/* + ml/tracking.py (`llba-training.md`) | 6 | 2,147 | ✓ full |
-| ml/clustering/* + ml/explainability/* + ml/monitoring/* (`llba-ml-services.md`) | 12 | 2,398 | ✓ full |
-| backend/app/** (`llba-backend.md`) | 18 | 1,406 | ✓ full |
-| frontend/src/** + scripts/* + e2e config + docker/CI/config (`llba-frontend-infra.md`) | 15 + 14 | 2,271 + ~900 | ✓ full (styles.css: key rules) |
-| tests/** + backend/tests/** (`test-audit.md`, per-test strength classification) | 16 → 28 (workflow engine tests, missions 3-5) | 3,416 → +~3,200 | ✓ full |
+| ml/data/* + ml/paths.py (`llba-data.md`) | 8 | 1,131 | Full |
+| ml/features/* (`llba-features.md`) | 5 | 1,091 | Full |
+| ml/training/* + ml/evaluation/* + ml/tracking.py (`llba-training.md`) | 6 | 2,147 | Full |
+| ml/clustering/* + ml/explainability/* + ml/monitoring/* (`llba-ml-services.md`) | 12 | 2,398 | Full |
+| backend/app/** (`llba-backend.md`) | 18 | 1,406 | Full |
+| frontend/src/** + scripts/* + e2e config + docker/CI/config (`llba-frontend-infra.md`) | 15 + 14 | 2,271 + ~900 | Full (styles.css: key rules) |
+| tests/** + backend/tests/** (`test-audit.md`, per-test strength classification) | 16 → 28 (workflow engine tests, missions 3-5) | 3,416 → +~3,200 | Full |
 
 Post-audit additions (mission-5 pass, covered in `test-audit.md` §9): `e2e/helpers/backend.js`
 (self-heal guard, ~70 lines) and the 9 workflow test files (`test_workflow_*`,

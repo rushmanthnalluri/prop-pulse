@@ -19,27 +19,55 @@
  * only, globally reduced).
  */
 import { useLocalStorage } from '../../hooks/useLocalStorage'
-import { NEIGHBORHOODS, PINNED_ESTIMATE_KEY } from '../../constants'
-import { formatDateTime, formatNumber, formatUsd, formatYear } from '../../format'
+import { PINNED_ESTIMATE_KEY } from '../../constants'
+import { formatDateTime, formatUsd } from '../../format'
 import { useToast } from '../Toast'
-
-/** "Northridge Heights · 2,200 sq ft · built 2003" — same shape as the
- *  restore-bar summary in Valuation.jsx, sourced from the stored payload. */
-function payloadSummary(payload) {
-  if (!payload || typeof payload !== 'object') return null
-  const parts = []
-  const hood = NEIGHBORHOODS.find((n) => n.value === payload.neighborhood)
-  if (hood) parts.push(hood.label)
-  const area = Number(payload.gr_liv_area)
-  if (Number.isFinite(area)) parts.push(`${formatNumber(area, 0)} sq ft`)
-  const built = Number(payload.year_built)
-  if (Number.isFinite(built)) parts.push(`built ${formatYear(built)}`)
-  return parts.length > 0 ? parts.join(' · ') : null
-}
+import { payloadSummary } from './formConfig'
 
 /** Signed money delta in the ScenarioExplorer idiom: +$1,200 / −$850 / +$0. */
 function signedUsd(delta) {
   return `${delta >= 0 ? '+' : '−'}${formatUsd(Math.abs(delta))}`
+}
+
+/** Pushpin glyph for the pin affordances — 13px, inherits currentColor. */
+function PinIcon() {
+  return (
+    <svg
+      width="13"
+      height="13"
+      viewBox="0 0 14 14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M5 1.6h4L8.6 5.4l1.9 2.4h-7l1.9-2.4L5 1.6z" />
+      <path d="M7 7.8v4.6" />
+    </svg>
+  )
+}
+
+/** Signed-delta arrow — direction is also in the text sign; this is the
+ *  glanceable cue (aria-hidden, never the only carrier of the sign). */
+function DeltaArrow({ up }) {
+  return (
+    <svg
+      className="compare-delta-icon"
+      width="12"
+      height="12"
+      viewBox="0 0 14 14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {up ? <path d="M7 11.5v-8M3.5 7 7 3.5 10.5 7" /> : <path d="M7 2.5v8M3.5 7 7 10.5 10.5 7" />}
+    </svg>
+  )
 }
 
 export default function PinnedComparison({ result, payload }) {
@@ -65,6 +93,7 @@ export default function PinnedComparison({ result, payload }) {
     return (
       <div className="pin-row">
         <button type="button" className="btn btn-secondary btn-sm" onClick={pin}>
+          <PinIcon />
           Pin this estimate
         </button>
         <span className="pin-hint">Kept on this device — compare later estimates against it.</span>
@@ -108,6 +137,7 @@ export default function PinnedComparison({ result, payload }) {
           <div>
             <dt>Difference</dt>
             <dd className={['compare-delta', deltaClass].filter(Boolean).join(' ')}>
+              {delta !== 0 && <DeltaArrow up={delta > 0} />}
               {deltaText}
             </dd>
           </div>
@@ -123,6 +153,7 @@ export default function PinnedComparison({ result, payload }) {
         </dl>
         <div className="compare-actions">
           <button type="button" className="btn btn-secondary btn-sm" onClick={pin}>
+            <PinIcon />
             Update pin
           </button>
           <button type="button" className="link-quiet" onClick={clearPinned}>

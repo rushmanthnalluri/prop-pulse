@@ -5,6 +5,10 @@
  * app-wide pattern (SPEC §7.6): click cycles asc → desc → natural, where
  * natural is the API's own order. The `unmatched` row is the backend's
  * bucket for requests that matched no registered route (404 probes).
+ *
+ * The Share column pairs its percentage with a micro bar so route weight is
+ * scannable at a glance; the number stays printed (never visual-only), and
+ * the bars drop off ≤520px to keep the table on-width.
  */
 import { useMemo } from 'react'
 import { formatNumber, formatPct } from '../../format'
@@ -33,7 +37,9 @@ export default function TrafficTable({ metrics }) {
   if (loading && !data) {
     return (
       <>
-        <MetricsSkeleton count={3} />
+        <div className="health-statband">
+          <MetricsSkeleton count={3} />
+        </div>
         <div className="health-traffic-table">
           <PanelSkeleton height={150} />
         </div>
@@ -54,28 +60,30 @@ export default function TrafficTable({ metrics }) {
 
   return (
     <>
-      <div className="metrics metrics--3">
-        <div className="metric">
-          <div className="metric-value">{formatNumber(data?.requests_total, 0)}</div>
-          <div className="metric-label">Requests</div>
-          <div className="metric-hint">since process start</div>
-        </div>
-        <div className="metric">
-          <div
-            className={`metric-value${Number.isFinite(errors) && errors > 0 ? ' metric-value--bad' : ''}`}
-          >
-            {formatNumber(data?.errors_total, 0)}
+      <div className="health-statband">
+        <div className="metrics metrics--3">
+          <div className="metric">
+            <div className="metric-value">{formatNumber(data?.requests_total, 0)}</div>
+            <div className="metric-label">Requests</div>
+            <div className="metric-hint">since process start</div>
           </div>
-          <div className="metric-label">Errors (5xx)</div>
-          <div className="metric-hint">counts HTTP 5xx only</div>
-        </div>
-        <div className="metric">
-          <div className="metric-value">
-            {formatNumber(data?.avg_latency_ms, 0)}
-            <span className="health-unit"> ms</span>
+          <div className="metric">
+            <div
+              className={`metric-value${Number.isFinite(errors) && errors > 0 ? ' metric-value--bad' : ''}`}
+            >
+              {formatNumber(data?.errors_total, 0)}
+            </div>
+            <div className="metric-label">Errors (5xx)</div>
+            <div className="metric-hint">counts HTTP 5xx only</div>
           </div>
-          <div className="metric-label">Avg latency</div>
-          <div className="metric-hint">mean since process start, not a percentile</div>
+          <div className="metric">
+            <div className="metric-value">
+              {formatNumber(data?.avg_latency_ms, 0)}
+              <span className="health-unit"> ms</span>
+            </div>
+            <div className="metric-label">Avg latency</div>
+            <div className="metric-hint">mean since process start, not a percentile</div>
+          </div>
         </div>
       </div>
 
@@ -88,7 +96,7 @@ export default function TrafficTable({ metrics }) {
           />
         </div>
       ) : (
-        <div className="table-scroll health-traffic-table">
+        <div className="table-scroll table-zebra health-traffic-table">
           <table className="table">
             <caption className="visually-hidden">
               Requests served per route since process start, with each route's share of the total.
@@ -105,7 +113,17 @@ export default function TrafficTable({ metrics }) {
                 <tr key={row.path}>
                   <td className="mono">{row.path}</td>
                   <td className="num">{formatNumber(row.count, 0)}</td>
-                  <td className="num dim">{formatPct(row.share)}</td>
+                  <td className="num dim">
+                    <span className="health-share">
+                      <span className="health-share-track" aria-hidden="true">
+                        <span
+                          className="health-share-fill"
+                          style={{ width: `${Math.min(100, Math.max(0, (row.share ?? 0) * 100))}%` }}
+                        />
+                      </span>
+                      {formatPct(row.share)}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -114,8 +132,7 @@ export default function TrafficTable({ metrics }) {
       )}
 
       <p className="note health-section-note">
-        Counters are per-process and in-memory — they reset on every backend restart. The{' '}
-        <code>unmatched</code> row buckets requests that matched no registered route (e.g. 404
+        The <code>unmatched</code> row buckets requests that matched no registered route (e.g. 404
         probes). Click a column header to sort; a third click restores the API order.
       </p>
     </>

@@ -26,7 +26,6 @@ from ml.paths import EXTERNAL_DIR
 HouseStyle = Literal["1.5Fin", "1.5Unf", "1Story", "2.5Fin", "2.5Unf", "2Story", "SFoyer", "SLvl"]
 BldgType = Literal["1Fam", "2fmCon", "Duplex", "Twnhs", "TwnhsE"]
 MSZoning = Literal["C (all)", "FV", "RH", "RL", "RM"]
-QualityNone = Literal["Ex", "Gd", "TA", "Fa", "Po", "None"]
 QualityNoPo = Literal["Ex", "Gd", "TA", "Fa"]
 BsmtQual = Literal["Ex", "Gd", "TA", "Fa", "None"]
 FireplaceQu = Literal["Ex", "Gd", "TA", "Fa", "Po", "None"]

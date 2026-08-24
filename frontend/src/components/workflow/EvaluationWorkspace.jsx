@@ -62,7 +62,7 @@ import {
 import ConfusionMatrix from '../ConfusionMatrix'
 import { EmptyState, ErrorState, PanelSkeleton } from '../StateView'
 import SimulatedBadge from './SimulatedBadge'
-import { clusterColor } from '../../constants'
+import { clusterColor, clusterLabel } from '../../constants'
 import { formatMetric, formatNumber, formatPct, formatUsd, prettyFeature } from '../../format'
 
 const kTick = (value) => `$${Math.round(Number(value) / 1000)}k`
@@ -112,7 +112,9 @@ function ImportanceChart({ importance, reduced, split, n, tallFrame = false }) {
       .map((d) => ({ feature: prettyFeature(d.feature), weight: Number(d.weight) }))
   }, [importance])
 
-  if (importance === null || importance === undefined) {
+  // Empty covers every no-data shape (null, non-array, empty, or all
+  // non-finite weights): the EmptyState card stands in — never a blank gap.
+  if (rows.length === 0) {
     return (
       <div className="chart-card">
         <div className="chart-head">
@@ -127,7 +129,6 @@ function ImportanceChart({ importance, reduced, split, n, tallFrame = false }) {
       </div>
     )
   }
-  if (rows.length === 0) return null
 
   return (
     <div className="chart-card">
@@ -714,7 +715,7 @@ function ClusteringWorkspace({ data, reduced }) {
   // the noise group in danger — the honest count of what fell outside.
   const sizeRows = useMemo(() => {
     const rows = clusters.map((cluster) => ({
-      name: cluster.label ?? `Cluster ${cluster.cluster_id}`,
+      name: clusterLabel(cluster),
       neighborhoods: Array.isArray(cluster.neighborhoods) ? cluster.neighborhoods.length : 0,
       sales: cluster.n_sales ?? null,
       price: cluster.median_price ?? null,
@@ -813,15 +814,17 @@ function ClusteringWorkspace({ data, reduced }) {
         </p>
       </div>
 
-      <div className="wf-cluster-grid">
+      <ul className="wf-cluster-grid">
         {clusters.map((cluster) => (
-          <div className="wf-cluster-card" key={cluster.cluster_id}>
-            <span
-              className="wf-cluster-swatch"
-              style={{ background: clusterColor(cluster.cluster_id) }}
-              aria-hidden="true"
-            />
-            <span className="wf-cluster-label">{cluster.label ?? `Cluster ${cluster.cluster_id}`}</span>
+          <li className="wf-cluster-card" key={cluster.cluster_id}>
+            <div className="wf-cluster-head">
+              <span
+                className="wf-cluster-swatch"
+                style={{ background: clusterColor(cluster.cluster_id) }}
+                aria-hidden="true"
+              />
+              <span className="wf-cluster-label">{clusterLabel(cluster)}</span>
+            </div>
             <dl className="wf-cluster-stats">
               <div>
                 <dt>Neighborhoods</dt>
@@ -840,9 +843,9 @@ function ClusteringWorkspace({ data, reduced }) {
                 <dd className="mono">${formatNumber(cluster.median_price_per_sqft, 0)}</dd>
               </div>
             </dl>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
 
       <div className="table-scroll wf-clip wf-assignments mt-16">
         <table className="table">

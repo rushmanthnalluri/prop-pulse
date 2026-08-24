@@ -49,61 +49,61 @@ Assembly logic (Valuation.jsx:54–72): `neighborhood`, `house_style`, `central_
 
 | Form control | Payload key | Schema field | Valid range / set | Match |
 |---|---|---|---|---|
-| Neighborhood select | `neighborhood` | `neighborhood: str` (+validator) | 25 geo-CSV neighborhoods | ✓ (diff-verified) |
-| House style select | `house_style` | `HouseStyle` Literal | 8 styles | ✓ |
-| Central air select | `central_air` | `central_air: bool` | yes/no → bool cast | ✓ |
-| Bedrooms | `bedrooms` | int | 0–8 | ✓ |
-| Full baths | `full_bath` | int | 0–4 | ✓ |
-| Half baths | `half_bath` | int | 0–2 | ✓ |
-| Basement full baths | `bsmt_full_bath` | int | 0–3 | ✓ |
-| Basement half baths | `bsmt_half_bath` | int | 0–2 | ✓ |
-| Living area | `gr_liv_area` | int | 300–6000 | ✓ |
-| Lot area | `lot_area` | int | 500–200000 | ✓ |
-| Basement area | `total_bsmt_sf` | int | 0–4000 | ✓ |
-| Year built | `year_built` | int | 1870–2026 | ✓ |
-| Overall quality | `overall_qual` | int | 1–10 | ✓ |
-| Overall condition | `overall_cond` | int | 1–10 | ✓ |
-| Garage cars | `garage_cars` | int | 0–5 | ✓ |
-| Fireplaces | `fireplaces` | int | 0–4 | ✓ |
-| Building type (adv) | `bldg_type` | `BldgType` | 5 values | ✓ |
-| MS zoning (adv) | `ms_zoning` | `MSZoning` | 5 values incl. `C (all)` | ✓ |
-| Lot frontage (adv) | `lot_frontage` | float\|None | 1–500 | ✓ |
-| Remodel year (adv) | `year_remod_add` | int\|None | 1870–2026 | ✓ |
-| Garage area (adv) | `garage_area` | float\|None | 0–2000 | ✓ |
-| Pool area (adv) | `pool_area` | int | 0–1000 | ✓ |
-| Wood deck (adv) | `wood_deck_sf` | int | 0–1500 | ✓ |
-| Open porch (adv) | `open_porch_sf` | int | 0–1000 | ✓ |
-| Screen porch (adv) | `screen_porch` | int | 0–800 | ✓ |
-| Sale date (adv) | `sale_date` | `dt.date`\|None | date input → ISO | ✓ |
-| Basement quality (adv) | `bsmt_qual` | `BsmtQual` | Ex/Gd/TA/Fa/None | ✓ |
-| Kitchen quality (adv) | `kitchen_qual` | `QualityNoPo` | Ex/Gd/TA/Fa | ✓ |
-| Exterior quality (adv) | `exter_qual` | `QualityNoPo` | Ex/Gd/TA/Fa | ✓ |
-| Heating QC (adv) | `heating_qc` | `HeatingQC` | 5 values | ✓ |
-| Garage type (adv) | `garage_type` | `GarageType` | 7 values | ✓ |
-| Garage finish (adv) | `garage_finish` | `GarageFinish` | 4 values | ✓ |
-| Foundation (adv) | `foundation` | `Foundation` | 6 values | ✓ |
-| Electrical (adv) | `electrical` | `Electrical` | 5 values | ✓ |
-| Functional (adv) | `functional` | `Functional` | 7 values | ✓ |
-| Fireplace quality (adv) | `fireplace_qu` | `FireplaceQu` | 6 values | ✓ |
-| Lot shape (adv) | `lot_shape` | `LotShape` | 4 values | ✓ |
-| Lot config (adv) | `lot_config` | `LotConfig` | 5 values | ✓ |
-| Land slope (adv) | `land_slope` | `LandSlope` | 3 values | ✓ |
-| Proximity condition (adv) | `condition1` | `Condition1` | 9 values | ✓ |
-| Roof style (adv) | `roof_style` | `RoofStyle` | 6 values | ✓ |
-| Exterior covering (adv) | `exterior1st` | `Exterior1st` | 12 values | ✓ |
-| Paved drive (adv) | `paved_drive` | `PavedDrive` | Y/N/P | ✓ |
-| Street (adv) | `street` | `Street` | Pave/Grvl | ✓ |
-| Masonry veneer (adv) | `mas_vnr_area` | float\|None | 0–2000 | ✓ |
-| Kitchens above grade (adv) | `kitchen_abv_gr` | int\|None | 0–3 | ✓ |
-| Total rooms above grade (adv) | `tot_rms_abvgrd` | int\|None | 1–15 | ✓ |
-| Basement finished (adv) | `bsmt_fin_sf1` | int\|None | 0–2500 | ✓ |
-| Basement unfinished (adv) | `bsmt_unf_sf` | int\|None | 0–2500 | ✓ |
-| 1st floor (adv) | `first_flr_sf` | int\|None | 300–4000 | ✓ |
-| 2nd floor (adv) | `second_flr_sf` | int\|None | 0–3000 | ✓ |
-| Enclosed porch (adv) | `enclosed_porch` | int\|None | 0–600 | ✓ |
-| Misc value (adv) | `misc_val` | int\|None | 0–20000 | ✓ |
-| Month sold override (adv) | `mo_sold` | int\|None | 1–12 | ✓ |
-| Year sold override (adv) | `yr_sold` | int\|None | 2006–2026 | ✓ |
+| Neighborhood select | `neighborhood` | `neighborhood: str` (+validator) | 25 geo-CSV neighborhoods | Yes (diff-verified) |
+| House style select | `house_style` | `HouseStyle` Literal | 8 styles | Yes |
+| Central air select | `central_air` | `central_air: bool` | yes/no → bool cast | Yes |
+| Bedrooms | `bedrooms` | int | 0–8 | Yes |
+| Full baths | `full_bath` | int | 0–4 | Yes |
+| Half baths | `half_bath` | int | 0–2 | Yes |
+| Basement full baths | `bsmt_full_bath` | int | 0–3 | Yes |
+| Basement half baths | `bsmt_half_bath` | int | 0–2 | Yes |
+| Living area | `gr_liv_area` | int | 300–6000 | Yes |
+| Lot area | `lot_area` | int | 500–200000 | Yes |
+| Basement area | `total_bsmt_sf` | int | 0–4000 | Yes |
+| Year built | `year_built` | int | 1870–2026 | Yes |
+| Overall quality | `overall_qual` | int | 1–10 | Yes |
+| Overall condition | `overall_cond` | int | 1–10 | Yes |
+| Garage cars | `garage_cars` | int | 0–5 | Yes |
+| Fireplaces | `fireplaces` | int | 0–4 | Yes |
+| Building type (adv) | `bldg_type` | `BldgType` | 5 values | Yes |
+| MS zoning (adv) | `ms_zoning` | `MSZoning` | 5 values incl. `C (all)` | Yes |
+| Lot frontage (adv) | `lot_frontage` | float\|None | 1–500 | Yes |
+| Remodel year (adv) | `year_remod_add` | int\|None | 1870–2026 | Yes |
+| Garage area (adv) | `garage_area` | float\|None | 0–2000 | Yes |
+| Pool area (adv) | `pool_area` | int | 0–1000 | Yes |
+| Wood deck (adv) | `wood_deck_sf` | int | 0–1500 | Yes |
+| Open porch (adv) | `open_porch_sf` | int | 0–1000 | Yes |
+| Screen porch (adv) | `screen_porch` | int | 0–800 | Yes |
+| Sale date (adv) | `sale_date` | `dt.date`\|None | date input → ISO | Yes |
+| Basement quality (adv) | `bsmt_qual` | `BsmtQual` | Ex/Gd/TA/Fa/None | Yes |
+| Kitchen quality (adv) | `kitchen_qual` | `QualityNoPo` | Ex/Gd/TA/Fa | Yes |
+| Exterior quality (adv) | `exter_qual` | `QualityNoPo` | Ex/Gd/TA/Fa | Yes |
+| Heating QC (adv) | `heating_qc` | `HeatingQC` | 5 values | Yes |
+| Garage type (adv) | `garage_type` | `GarageType` | 7 values | Yes |
+| Garage finish (adv) | `garage_finish` | `GarageFinish` | 4 values | Yes |
+| Foundation (adv) | `foundation` | `Foundation` | 6 values | Yes |
+| Electrical (adv) | `electrical` | `Electrical` | 5 values | Yes |
+| Functional (adv) | `functional` | `Functional` | 7 values | Yes |
+| Fireplace quality (adv) | `fireplace_qu` | `FireplaceQu` | 6 values | Yes |
+| Lot shape (adv) | `lot_shape` | `LotShape` | 4 values | Yes |
+| Lot config (adv) | `lot_config` | `LotConfig` | 5 values | Yes |
+| Land slope (adv) | `land_slope` | `LandSlope` | 3 values | Yes |
+| Proximity condition (adv) | `condition1` | `Condition1` | 9 values | Yes |
+| Roof style (adv) | `roof_style` | `RoofStyle` | 6 values | Yes |
+| Exterior covering (adv) | `exterior1st` | `Exterior1st` | 12 values | Yes |
+| Paved drive (adv) | `paved_drive` | `PavedDrive` | Y/N/P | Yes |
+| Street (adv) | `street` | `Street` | Pave/Grvl | Yes |
+| Masonry veneer (adv) | `mas_vnr_area` | float\|None | 0–2000 | Yes |
+| Kitchens above grade (adv) | `kitchen_abv_gr` | int\|None | 0–3 | Yes |
+| Total rooms above grade (adv) | `tot_rms_abvgrd` | int\|None | 1–15 | Yes |
+| Basement finished (adv) | `bsmt_fin_sf1` | int\|None | 0–2500 | Yes |
+| Basement unfinished (adv) | `bsmt_unf_sf` | int\|None | 0–2500 | Yes |
+| 1st floor (adv) | `first_flr_sf` | int\|None | 300–4000 | Yes |
+| 2nd floor (adv) | `second_flr_sf` | int\|None | 0–3000 | Yes |
+| Enclosed porch (adv) | `enclosed_porch` | int\|None | 0–600 | Yes |
+| Misc value (adv) | `misc_val` | int\|None | 0–20000 | Yes |
+| Month sold override (adv) | `mo_sold` | int\|None | 1–12 | Yes |
+| Year sold override (adv) | `yr_sold` | int\|None | 2006–2026 | Yes |
 
 ## (3) State reachability (read from code paths) — PASS for all 3 pages
 
@@ -115,11 +115,11 @@ Assembly logic (Valuation.jsx:54–72): `neighborhood`, `house_style`, `central_
 
 ## (4) API client — PASS WITH CONCERN
 
-- Base URL: `import.meta.env.VITE_API_URL || 'http://localhost:8000'`, trailing slashes stripped (client.js:9); documented in `.env.example`; vite dev port 5173 is in the backend default CORS origins (config.py:44). ✓
-- Non-OK parsing: string `detail` passthrough; 422 array → `loc` minus `body` joined with `msg` (client.js:23–35); unreadable body → `Request failed with status N`. ✓
-- Network errors: fetch reject → `ApiError("Cannot reach the PropPulse API at …", 0)`. ✓
+- Base URL: `import.meta.env.VITE_API_URL || 'http://localhost:8000'`, trailing slashes stripped (client.js:9); documented in `.env.example`; vite dev port 5173 is in the backend default CORS origins (config.py:44).
+- Non-OK parsing: string `detail` passthrough; 422 array → `loc` minus `body` joined with `msg` (client.js:23–35); unreadable body → `Request failed with status N`.
+- Network errors: fetch reject → `ApiError("Cannot reach the PropPulse API at …", 0)`.
 - **Timeout: none — F1.** No `AbortSignal.timeout`, no AbortController anywhere.
-- Unmount cleanup: `useApi` guards setState with `cancelled` (useApi.js:14–25) but the HTTP request itself is never aborted; Valuation's `submit` (Valuation.jsx:257–263) has no cancellation at all (setState on unmounted component is a harmless no-op in React 19). Health pill interval *is* cleaned up (Layout.jsx:61–64). ✓/F1
+- Unmount cleanup: `useApi` guards setState with `cancelled` (useApi.js:14–25) but the HTTP request itself is never aborted; Valuation's `submit` (Valuation.jsx:257–263) has no cancellation at all (setState on unmounted component is a harmless no-op in React 19). Health pill interval *is* cleaned up (Layout.jsx:61–64). Verified (F1).
 
 ## (5) Formatting & component math — PASS (format.js verified by execution)
 
@@ -147,7 +147,7 @@ react-router **8.3.0** installed (package.json `^8.3.0`); `createBrowserRouter`,
 
 ## (10) Accessibility quick pass — PASS WITH CONCERN
 
-- All form controls wrapped in implicit `<label>` via `Field` (Valuation.jsx:36–44) — label association ✓. `aria-expanded` on advanced toggle; `role="status"`/`role="alert"` on async states; `role="meter"` + aria values on the gauge; `aria-label="Primary"` on nav; decorative SVGs `aria-hidden`.
+- All form controls wrapped in implicit `<label>` via `Field` (Valuation.jsx:36–44) — label association. `aria-expanded` on advanced toggle; `role="status"`/`role="alert"` on async states; `role="meter"` + aria values on the gauge; `aria-label="Primary"` on nav; decorative SVGs `aria-hidden`.
 - Contrast failures (computed, evidence: frontend-static-contrast.txt): `--ink-400 #94a3b8` on white = **2.56:1** (fails AA 4.5:1) used for 11.5–12.5 px hint/caption/footer text (`.field-hint`, `.price-band-scale-caption`, `.prob-gauge-note`, `.model-version-footer`, `.map-popup-code`); primary button white on `--teal-600 #0d9488` = **3.74:1** (fails AA for 14 px/600 text); muted badge 4.23:1 marginally below AA. → F4.
 
 ## Findings

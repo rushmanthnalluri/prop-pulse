@@ -2,7 +2,8 @@
 
 How to run PropPulse beyond `npm run dev`: configuration reference, a local
 production-style run, the Docker Compose stack, drift-check scheduling, the CI
-pipeline, and a hardening checklist for putting it behind real traffic.
+pipeline, a checklist of the production controls already in place, and a
+hardening checklist for putting it behind real traffic.
 
 > **Build status (updated, supersedes ADR-7's original caveat):** images build
 > cleanly and the full compose stack (backend, frontend-nginx, optional mlflow
@@ -19,10 +20,8 @@ copy it, never commit secrets). Relative paths resolve against the repo root.
 | Variable | Default | Purpose |
 |---|---|---|
 | `MODEL_DIR` | `models` | Model artifact root (champions, feature list, stats, monitoring refs) |
-| `DATA_DIR` | `data` | Dataset root; only `data/external/neighborhood_geo.csv` is needed at serving time |
+| `DATA_DIR` | `data` | Dataset root; only `data/external/neighborhood_geo.csv` (geo lookup) and `data/processed/train.csv` (SHAP background) are needed at serving time |
 | `MLFLOW_TRACKING_URI` | *(empty)* | Empty → local file store `./mlruns`; set e.g. `http://localhost:5000` for a server |
-| `API_HOST` | `127.0.0.1` | Uvicorn bind address (containers must use `0.0.0.0` — compose overrides this) |
-| `API_PORT` | `8000` | Uvicorn port |
 | `VITE_API_URL` | `http://localhost:8000` | Frontend → backend base URL. For the frontend Docker image this is a **build-time ARG** (Vite inlines it); changing it requires rebuilding the image |
 | `LOG_LEVEL` | `INFO` | Backend logging verbosity (`DEBUG|INFO|WARNING|ERROR`) |
 | `PREDICTION_LOG_PATH` | `logs/predictions.jsonl` | JSONL prediction log (SPEC §10 binding schema) |
@@ -84,9 +83,9 @@ docker compose -f docker-compose.yml -f docker-compose.alt-ports.yml up --build
 
 | Service | Port | Notes |
 |---|---|---|
-| `backend` | 8000 | Healthcheck `GET /health` (start_period 40s for champion loading); bind-mounts `./logs` and `./reports/drift` so the host and container share the prediction log + drift report; compose forces `API_HOST=0.0.0.0` |
+| `backend` | 8000 | Healthcheck `GET /health` (start_period 40s for champion loading); bind-mounts `./logs` and `./reports/drift` so the host and container share the prediction log + drift report |
 | `frontend` | 8080→80 | `VITE_API_URL` baked at build time (default `http://localhost:8000`); `depends_on: backend healthy` |
-| `mlflow` (profile `mlflow`) | 5000 | `ghcr.io/mlflow/mlflow:latest` serving the `./mlruns` file store (`MLFLOW_ALLOW_FILE_STORE=true` set in the service env) |
+| `mlflow` (profile `mlflow`) | 5000 | `ghcr.io/mlflow/mlflow:v3.15.1` serving the `./mlruns` file store (`MLFLOW_ALLOW_FILE_STORE=true` set in the service env) |
 
 Smoke check once up:
 
@@ -102,9 +101,10 @@ Compose caveats (see also `docker/README.md`):
 - On native Linux, create `logs/` and `reports/drift/` on the host first so
   the non-root container user can write the bind mounts (Docker Desktop on
   Windows/macOS handles this).
-- The backend image contains `models/` whole plus
-  `data/external/neighborhood_geo.csv`; raw/processed data, notebooks,
-  figures, reports, and `mlruns` are excluded via `.dockerignore`.
+- The backend image contains `models/` whole plus two files from `data/`:
+  `data/external/neighborhood_geo.csv` (geo lookup) and
+  `data/processed/train.csv` (SHAP background); the rest of `data/`,
+  notebooks, figures, reports, and `mlruns` are excluded via `.dockerignore`.
 - Compose never pushes images and uses no secrets.
 
 ## 4. Drift-check scheduling
@@ -159,10 +159,13 @@ noisy.
 `.github/workflows/ci.yml` — on push to `main` and on PRs, three jobs:
 
 1. **python** (ubuntu-latest, Python 3.12): `pip install -r requirements.txt`
-   → `python -m pytest tests backend/tests -q` (unit + API + integration;
-   processed data and champion artifacts are committed).
+   → strict `pip-audit` gate over both `requirements.txt` (one documented,
+   justified ignore — `reports/SECURITY.md` §1.1) and the slim
+   `backend/requirements.txt` (no ignores) → `python -m pytest tests
+   backend/tests -q` (unit + API + integration; processed data and champion
+   artifacts are committed).
 2. **frontend** (Node 24): `npm ci` when `frontend/package-lock.json` exists,
-   else `npm install` → `npm run build`.
+   else `npm install` → `npm audit --audit-level=high` gate → `npm run build`.
 3. **docker**: `cp .env.example .env` → `docker compose config -q` (base file
    alone) **and** `docker compose -f docker-compose.yml -f docker-compose.alt-ports.yml
    config -q` (merged alt-ports config) — static validation only; no image
@@ -172,7 +175,40 @@ The dev environment pins were verified on Python 3.14 while CI runs 3.12;
 all pinned packages publish cp312 wheels, but the first CI run is the real
 proof.
 
-## 6. Hardening checklist (before real traffic)
+## 6. Production checklist (controls already in place)
+
+What the repo gives you today — every item is verifiable in-tree:
+
+- **Secrets hygiene:** `.env` is gitignored and excluded from the Docker build
+  context (`.dockerignore`); `.env.example` is the committed, secret-free
+  template. Compose injects config via `env_file: .env`, CI derives `.env`
+  from the example, and the compose stack uses no secrets at all.
+- **Dependency audit gates:** CI fails on known fixable CVEs — `pip-audit
+  --strict` over both requirements files (a single documented, justified
+  ignore on the dev set only) and `npm audit --audit-level=high` for the
+  frontend (`.github/workflows/ci.yml`; accepted-risk record:
+  `reports/SECURITY.md`).
+- **Non-root backend container:** `docker/backend.Dockerfile` creates a
+  system user and drops privileges (`USER appuser`); the runtime-writable
+  dirs (`/app/logs`, `/app/reports/drift`) are pre-created and chowned. The
+  frontend image is `nginx:alpine` serving static files with hardened
+  `docker/nginx.conf` (security headers + CSP, `no-cache` on `index.html`,
+  immutable caching only for fingerprinted `/assets/`); in compose the
+  frontend runs with its own `wget` healthcheck, `read_only` rootfs (+ tmpfs
+  for nginx's writable dirs), and a 5s stop grace period.
+- **Healthchecks:** the compose backend has a `GET /health` healthcheck
+  (start_period 40s for champion loading) and the frontend starts only once
+  the backend is healthy (`depends_on: service_healthy`).
+- **Restart policies:** every compose service sets `restart: unless-stopped`.
+- **Log persistence:** `./logs` (prediction JSONL) and `./reports/drift`
+  (drift report) are bind-mounted into the backend container, so both survive
+  container rebuilds and are shared between the API writer and the drift
+  reader.
+- **Scheduled drift check:** `python -m ml.monitoring.drift_check` exits 0 on
+  missing/empty logs (`no_data`), so the cron entry in §4 is safe to enable
+  before first traffic; the report it writes feeds `GET /metrics`.
+
+## 7. Hardening checklist (before real traffic)
 
 The service is a development-grade deployment. For production:
 

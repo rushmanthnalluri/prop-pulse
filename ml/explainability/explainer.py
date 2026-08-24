@@ -118,7 +118,8 @@ class RegressionExplainer:
 
     Args:
         model_path: Fitted champion pipeline (``preprocess`` + ``model`` steps).
-        background_size: Train rows sampled (seed 42) as the SHAP background.
+        background_size: Train rows sampled (seed 42) as the SHAP background
+            (clamped to the available train rows).
         seed: Sampling seed — fixed at 42 per SPEC §12.
 
     Raises:
@@ -178,8 +179,10 @@ class RegressionExplainer:
         except FileNotFoundError as exc:
             raise RuntimeError(f"cannot build SHAP background: {exc}") from exc
         feature_frame = build_feature_frame(train)
-        background = feature_frame.sample(n=background_size, random_state=seed)
-        self.background_size = int(background_size)
+        background = feature_frame.sample(
+            n=min(background_size, len(feature_frame)), random_state=seed
+        )
+        self.background_size = int(len(background))
         self._background = np.asarray(preprocessor.transform(background), dtype=float)
 
         self._explainer = self._build_explainer()

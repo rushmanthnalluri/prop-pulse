@@ -15,7 +15,7 @@ export default function MetricsTable({ rows, caption }) {
   if (!Array.isArray(rows) || rows.length === 0) return null
   return (
     <div className="table-scroll">
-      <table className="table insights-metrics">
+      <table className="table table-sticky insights-metrics">
         {caption && <caption className="visually-hidden">{caption}</caption>}
         <thead>
           <tr>

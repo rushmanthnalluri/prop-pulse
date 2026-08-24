@@ -2,13 +2,16 @@
  * Overview page (blueprint §8.1) — the reference home rebuilt on PropPulse
  * payloads, top to bottom:
  *
- *   1. `.home-head` hero — kicker / H1 / description / pipeline CTAs, with
- *      the "Active model" panel (GET /model/info) in the right rail.
+ *   1. `.home-head` command centre — kicker / H1 / description / pipeline
+ *      CTAs / live service strip (GET /metrics) in the hero column, the
+ *      "Active model" panel (GET /model/info) in the right rail, and a
+ *      full-width quick-action row into /valuation, /market, /model,
+ *      /health.
  *   2. "Dataset overview" — 8-cell `.metrics.metrics-rows` strip, the lazy
  *      four-card chart grid (recharts stays out of the landing bundle,
  *      AUDIT §4), then the computed "Data insights" list.
  *   3. "What drives the price" — top-5 mean-|SHAP| driver rows
- *      (GET /model/importance) with a "Full analysis →" head link.
+ *      (GET /model/importance) with a "Full analysis" head link.
  *   4. "The record, at a glance" — group-index tiles counted from the live
  *      workbench registry (GET /workflow/datasets/ames/features).
  *   5. "Disclosures" — the standing honesty notes (ADR-3, historical window,
@@ -18,11 +21,12 @@
  * Every number comes from the live API layer. The four static GETs are
  * session-cached and fetched signal-free (the shared promise must never be
  * bound to one consumer's abort — see api/client.js `cachedGet`); the
- * workbench registry fetch is page-owned and uses the normal abort path.
- * Sections own their async state and fail independently — a failed
- * /model/importance never blanks the metrics strip.
+ * workbench registry fetch and the live /metrics readout are page-owned and
+ * use the normal abort path. Sections own their async state and fail
+ * independently — a failed /model/importance never blanks the metrics
+ * strip.
  */
-import { lazy, Suspense, useCallback } from 'react'
+import { lazy, Suspense, useCallback, useMemo } from 'react'
 import { Link } from 'react-router'
 import { api } from '../api/client'
 import { useApi } from '../api/useApi'
@@ -36,28 +40,21 @@ import {
   MetricsSkeleton,
   PanelSkeleton,
 } from '../components/StateView'
-import { TRAIN_SALE_WINDOW } from '../constants'
-import { formatMetric, formatNumber, formatPct, formatUsd, prettyFeature } from '../format'
+import { clusterLabel, TRAIN_SALE_WINDOW } from '../constants'
+import {
+  championTag,
+  formatMetric,
+  formatNumber,
+  formatPct,
+  formatUsd,
+  isFiniteValue,
+  prettyFeature,
+  sortedImportanceEntries,
+} from '../format'
 import { WORKFLOW_STAGES } from './workflow/stages'
 import '../styles/overview.css'
 
 const OverviewCharts = lazy(() => import('../components/overview/OverviewCharts'))
-
-const fin = (value) => Number.isFinite(Number(value))
-
-/** `${name}_${version}` for a champion entry, or null when the shape drifts. */
-function championTag(engine) {
-  if (engine && typeof engine.name === 'string' && typeof engine.version === 'string') {
-    return `${engine.name}_${engine.version}`
-  }
-  return null
-}
-
-/** Cluster display label, mirroring ClusterCard/TrendsChart fallbacks. */
-const clusterLabel = (cluster) =>
-  typeof cluster?.label === 'string' && cluster.label
-    ? cluster.label
-    : `Cluster ${cluster?.cluster_id ?? '?'}`
 
 /** Capitalize the first character of a free-text label opening a sentence
     ("mid northwest leads…" → "Mid northwest leads…"); mid-sentence uses stay
@@ -78,7 +75,7 @@ function totalTrainingSales(trends) {
   for (const s of series) {
     const counts = Array.isArray(s?.sales_count) ? s.sales_count : []
     for (const count of counts) {
-      if (fin(count)) {
+      if (isFiniteValue(count)) {
         total += Number(count)
         seen = true
       }
@@ -159,6 +156,134 @@ const PIPELINE_NOTES = {
 
 const PIPELINE_STAGES = WORKFLOW_STAGES.slice(0, 9)
 
+/* -------------------------------------------------------------------------
+ * Quick actions — the command-centre row into the product routes. Copy is
+ * factual: each line names what the destination actually serves.
+ * ------------------------------------------------------------------------- */
+
+/** Right-pointing row arrow (14px, currentColor) — the hover affordance on
+    pipeline rows, record tiles, and quick-action cards. */
+function RowArrow({ className }) {
+  return (
+    <svg
+      className={className}
+      width="14"
+      height="14"
+      viewBox="0 0 14 14"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M2.5 7h9M8.5 4l3 3-3 3"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+/** 16px stroke icons for the quick-action cards (no icon library). */
+const ACTION_ICONS = {
+  valuation: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M2 2h4.6L14 9.4a1.4 1.4 0 0 1 0 2L11.4 14a1.4 1.4 0 0 1-2 0L2 6.6V2z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <circle cx="5.2" cy="5.2" r="0.9" stroke="currentColor" strokeWidth="1.2" />
+    </svg>
+  ),
+  market: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M8 14s5-4.6 5-8a5 5 0 1 0-10 0c0 3.4 5 8 5 8z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <circle cx="8" cy="6" r="1.8" stroke="currentColor" strokeWidth="1.5" />
+    </svg>
+  ),
+  model: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M8 1.5 15 5l-7 3.5L1 5l7-3.5z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M1.5 8.5 8 12l6.5-3.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+  health: (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path
+        d="M1.5 8h2.8l2-5 3.4 10 2-5h2.8"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  ),
+}
+
+const QUICK_ACTIONS = [
+  {
+    to: '/valuation',
+    icon: ACTION_ICONS.valuation,
+    title: 'Value a property',
+    desc: 'ML price estimate with a prediction interval and sale probability.',
+  },
+  {
+    to: '/market',
+    icon: ACTION_ICONS.market,
+    title: 'Explore the market',
+    desc: 'Micro-market map, cluster stats, and half-year price trends.',
+  },
+  {
+    to: '/model',
+    icon: ACTION_ICONS.model,
+    title: 'Model insights',
+    desc: 'Champion metrics, price drivers, and validation evidence.',
+  },
+  {
+    to: '/health',
+    icon: ACTION_ICONS.health,
+    title: 'Model health',
+    desc: 'Live service status, request traffic, and drift monitoring.',
+  },
+]
+
+function QuickActions() {
+  return (
+    <nav className="ov-actions" aria-label="Quick actions">
+      {QUICK_ACTIONS.map((action) => (
+        <Link className="ov-action" to={action.to} key={action.to}>
+          <span className="ov-action-icon" aria-hidden="true">
+            {action.icon}
+          </span>
+          <span className="ov-action-body">
+            <span className="ov-action-title">{action.title}</span>
+            <span className="ov-action-desc">{action.desc}</span>
+          </span>
+          <RowArrow className="ov-action-arrow" />
+        </Link>
+      ))}
+    </nav>
+  )
+}
+
 /** Highest half-year median across all trend series → {value, period, label}. */
 function trendsPeak(trends) {
   const periods = Array.isArray(trends?.periods) ? trends.periods : []
@@ -167,7 +292,7 @@ function trendsPeak(trends) {
   for (const s of series) {
     const values = Array.isArray(s?.median_price) ? s.median_price : []
     values.forEach((value, i) => {
-      if (fin(value) && (!best || Number(value) > best.value)) {
+      if (isFiniteValue(value) && (!best || Number(value) > best.value)) {
         best = {
           value: Number(value),
           period: periods[i] ?? null,
@@ -184,25 +309,24 @@ function trendsPeak(trends) {
  * line dropped individually when its source is missing or drifts. Returns an
  * array of strings (possibly empty).
  */
-function buildInsights({ clusters, trends, importance, info }) {
+function buildInsights({ clusters, trends, importance, info, sales }) {
   const lines = []
 
   const clusterList = Array.isArray(clusters?.clusters) ? clusters.clusters : []
   const hoodCount = Array.isArray(clusters?.neighborhoods) ? clusters.neighborhoods.length : null
-  const nClusters = fin(clusters?.n_clusters) ? Number(clusters.n_clusters) : null
-  const sales = totalTrainingSales(trends)
+  const nClusters = isFiniteValue(clusters?.n_clusters) ? Number(clusters.n_clusters) : null
   if (hoodCount !== null && nClusters !== null && sales !== null) {
     lines.push(
       `The training record holds ${formatNumber(sales, 0)} sales across ${formatNumber(hoodCount, 0)} neighborhoods, grouped into ${formatNumber(nClusters, 0)} micro-markets.`,
     )
   }
 
-  const priced = clusterList.filter((c) => fin(c?.median_price))
+  const priced = clusterList.filter((c) => isFiniteValue(c?.median_price))
   if (priced.length >= 2) {
     const top = priced.reduce((a, b) => (Number(b.median_price) > Number(a.median_price) ? b : a))
     const bottom = priced.reduce((a, b) => (Number(b.median_price) < Number(a.median_price) ? b : a))
     lines.push(
-      `${capFirst(clusterLabel(top))} leads the micro-markets at a ${formatUsd(top.median_price)} median${fin(top.n_sales) ? ` over ${formatNumber(top.n_sales, 0)} sales` : ''}; ${clusterLabel(bottom)} sits lowest at ${formatUsd(bottom.median_price)}.`,
+      `${capFirst(clusterLabel(top))} leads the micro-markets at a ${formatUsd(top.median_price)} median${isFiniteValue(top.n_sales) ? ` over ${formatNumber(top.n_sales, 0)} sales` : ''}; ${clusterLabel(bottom)} sits lowest at ${formatUsd(bottom.median_price)}.`,
     )
   }
 
@@ -214,21 +338,19 @@ function buildInsights({ clusters, trends, importance, info }) {
     )
   }
 
-  const importanceEntries = Object.entries(importance?.importance ?? {})
-    .filter(([, value]) => fin(value))
-    .sort((a, b) => Number(b[1]) - Number(a[1]))
+  const importanceEntries = sortedImportanceEntries(importance?.importance)
   if (importanceEntries.length > 0) {
     const [name, value] = importanceEntries[0]
     const sample = importance?.metadata?.val_sample_size
     lines.push(
-      `${prettyFeature(name)} leads the price drivers — mean |SHAP| ${Number(value).toFixed(4)}${fin(sample) ? ` over ${formatNumber(sample, 0)} validation rows` : ''}, relative influence rather than dollars.`,
+      `${prettyFeature(name)} leads the price drivers — mean |SHAP| ${Number(value).toFixed(4)}${isFiniteValue(sample) ? ` over ${formatNumber(sample, 0)} validation rows` : ''}, relative influence rather than dollars.`,
     )
   }
 
   const tag = championTag(info?.regression)
   const testMetrics = info?.regression?.test_metrics ?? {}
-  if (tag && fin(testMetrics.r2) && fin(testMetrics.rmsle)) {
-    const coverage = fin(testMetrics.interval_coverage)
+  if (tag && isFiniteValue(testMetrics.r2) && isFiniteValue(testMetrics.rmsle)) {
+    const coverage = isFiniteValue(testMetrics.interval_coverage)
       ? ` Prediction ranges measured ${formatPct(testMetrics.interval_coverage)} coverage against ~80% nominal.`
       : ''
     lines.push(
@@ -239,7 +361,7 @@ function buildInsights({ clusters, trends, importance, info }) {
   const clsAuc =
     info?.headline_metrics?.classification?.val_roc_auc ??
     info?.classification?.val_metrics?.roc_auc
-  if (fin(clsAuc)) {
+  if (isFiniteValue(clsAuc)) {
     lines.push(
       `The sale-speed call scores ROC-AUC ${formatMetric(clsAuc, 4)} on validation — a simulated target, so it reads as consistency with the seeded sale-speed simulation, not a listing forecast.`,
     )
@@ -248,7 +370,8 @@ function buildInsights({ clusters, trends, importance, info }) {
   return lines
 }
 
-/** Skeleton matching the lazy chart grid's shape (2 small + 2 wide cards). */
+/** Skeleton matching the lazy chart grid's shape (2 small + 2 wide cards;
+    the donut head carries no tag/select, so its skeleton head is one line). */
 function ChartGridFallback() {
   return (
     <div className="chart-grid mt-32" aria-hidden="true">
@@ -256,7 +379,7 @@ function ChartGridFallback() {
         <div className={`chart-card${wide ? ' chart-card-wide' : ''}`} key={i}>
           <div className="chart-card-head">
             <span className="skeleton sk-line" style={{ width: 150, margin: 0 }} />
-            <span className="skeleton sk-line" style={{ width: 90, margin: 0 }} />
+            {i > 0 && <span className="skeleton sk-line" style={{ width: 90, margin: 0 }} />}
           </div>
           <PanelSkeleton height={200} />
         </div>
@@ -271,7 +394,7 @@ function ChartGridFallback() {
  * degrade to '—' individually rather than lying; if one source fails, the
  * loaded sources' cells still render and the failures get one shared retry.
  */
-function MetricsRow({ clusters, trends, info }) {
+function MetricsRow({ clusters, trends, info, sales }) {
   if (clusters.loading || trends.loading || info.loading) return <MetricsSkeleton count={8} />
 
   const error = clusters.error || trends.error || info.error
@@ -287,11 +410,10 @@ function MetricsRow({ clusters, trends, info }) {
     )
   }
 
-  const sales = trends.data ? totalTrainingSales(trends.data) : null
   const hoodCount = Array.isArray(clusters.data?.neighborhoods)
     ? clusters.data.neighborhoods.length
     : null
-  const nClusters = fin(clusters.data?.n_clusters) ? Number(clusters.data.n_clusters) : null
+  const nClusters = isFiniteValue(clusters.data?.n_clusters) ? Number(clusters.data.n_clusters) : null
 
   const testMetrics = info.data?.regression?.test_metrics ?? {}
   const testRmsle =
@@ -301,26 +423,14 @@ function MetricsRow({ clusters, trends, info }) {
     info.data?.classification?.val_metrics?.roc_auc
 
   const cells = [
-    { label: 'Training sales', value: sales !== null ? formatNumber(sales, 0) : '—' },
-    { label: 'Neighborhoods', value: hoodCount !== null ? formatNumber(hoodCount, 0) : '—' },
-    { label: 'Micro-markets', value: nClusters !== null ? formatNumber(nClusters, 0) : '—' },
-    {
-      label: 'Model features',
-      value: fin(info.data?.n_features) ? formatNumber(info.data.n_features, 0) : '—',
-    },
-    {
-      label: 'Test R²',
-      value: fin(testMetrics.r2) ? formatMetric(testMetrics.r2, 4) : '—',
-    },
-    { label: 'Test RMSLE', value: fin(testRmsle) ? formatMetric(testRmsle, 4) : '—' },
-    {
-      label: 'Interval coverage',
-      value: fin(testMetrics.interval_coverage) ? formatPct(testMetrics.interval_coverage) : '—',
-    },
-    {
-      label: 'Sale-speed ROC-AUC',
-      value: fin(clsAuc) ? formatMetric(clsAuc, 4) : '—',
-    },
+    { label: 'Training sales', value: formatNumber(sales, 0) },
+    { label: 'Neighborhoods', value: formatNumber(hoodCount, 0) },
+    { label: 'Micro-markets', value: formatNumber(nClusters, 0) },
+    { label: 'Model features', value: formatNumber(info.data?.n_features, 0) },
+    { label: 'Test R²', value: formatMetric(testMetrics.r2, 4) },
+    { label: 'Test RMSLE', value: formatMetric(testRmsle, 4) },
+    { label: 'Interval coverage', value: formatPct(testMetrics.interval_coverage) },
+    { label: 'Sale-speed ROC-AUC', value: formatMetric(clsAuc, 4) },
   ]
 
   return (
@@ -364,13 +474,23 @@ export default function OverviewPage() {
   const featuresFetcher = useCallback((signal) => getFeatures('ames', signal), [])
   const features = useApi(featuresFetcher)
 
+  // Live service readout for the hero strip (GET /metrics) — never cached,
+  // page-owned, signal-bound like the registry fetch.
+  const metricsFetcher = useCallback((signal) => api.metrics(signal), [])
+  const service = useApi(metricsFetcher)
+
+  /* Training-sale total — computed once for the metrics strip, the insight
+     lines, and the disclosures. */
+  const trainingSales = useMemo(
+    () => (trends.data ? totalTrainingSales(trends.data) : null),
+    [trends.data],
+  )
+
   /* Drivers: top entry feeds the section sub ("…leads the ranking."). */
-  const importanceEntries = Object.entries(importance.data?.importance ?? {})
-    .filter(([, value]) => fin(value))
-    .sort((a, b) => Number(b[1]) - Number(a[1]))
+  const importanceEntries = sortedImportanceEntries(importance.data?.importance)
   const topDriver = importanceEntries.length > 0 ? prettyFeature(importanceEntries[0][0]) : null
   const importanceMeta = importance.data?.metadata ?? {}
-  const valSample = fin(importanceMeta.val_sample_size)
+  const valSample = isFiniteValue(importanceMeta.val_sample_size)
     ? formatNumber(importanceMeta.val_sample_size, 0)
     : null
 
@@ -399,21 +519,22 @@ export default function OverviewPage() {
         trends: trends.data,
         importance: importance.data,
         info: info.data,
+        sales: trainingSales,
       })
     : []
   const retryFailedInsights = () => {
     for (const source of insightSources) if (source.error) source.reload()
   }
 
-  const disclosureSales = trends.data ? totalTrainingSales(trends.data) : null
   const trainingYears = `${TRAIN_SALE_WINDOW.start.slice(0, 4)}–${TRAIN_SALE_WINDOW.end.slice(0, 4)}`
 
   return (
     <>
-      {/* 1 · Hero + active model */}
+      {/* 1 · Hero + active model + quick actions */}
       <section className="home-head">
-        <Hero />
+        <Hero service={service} />
         <ActiveModelPanel info={info} />
+        <QuickActions />
       </section>
 
       <hr className="divider" />
@@ -426,7 +547,7 @@ export default function OverviewPage() {
             sealed test split · sale-speed AUC simulated
           </span>
         </div>
-        <MetricsRow clusters={clusters} trends={trends} info={info} />
+        <MetricsRow clusters={clusters} trends={trends} info={info} sales={trainingSales} />
 
         <Suspense fallback={<ChartGridFallback />}>
           <OverviewCharts clusters={clusters} />
@@ -474,7 +595,7 @@ export default function OverviewPage() {
         <div className="section-head">
           <h2 className="section-title">What drives the price</h2>
           <Link className="section-link" to="/model">
-            Full analysis →
+            Full analysis
           </Link>
         </div>
         <p className="section-sub">
@@ -501,7 +622,7 @@ export default function OverviewPage() {
         <div className="section-head">
           <h2 className="section-title">The record, at a glance</h2>
           <Link className="section-link" to="/workflow/02-features">
-            {rawCount !== null ? `All ${formatNumber(rawCount, 0)} fields →` : 'All fields →'}
+            {rawCount !== null ? `All ${formatNumber(rawCount, 0)} fields` : 'All fields'}
           </Link>
         </div>
         {features.loading && <PanelSkeleton height={170} />}
@@ -532,7 +653,7 @@ export default function OverviewPage() {
                   <span>
                     {group.count} field{group.count === 1 ? '' : 's'}
                   </span>
-                  <span className="group-cell-cta">→</span>
+                  <RowArrow className="group-cell-arrow" />
                 </span>
               </Link>
             ))}
@@ -554,7 +675,7 @@ export default function OverviewPage() {
           </p>
           <p className="note">
             All market figures describe{' '}
-            {disclosureSales !== null ? `${formatNumber(disclosureSales, 0)} ` : ''}training sales
+            {trainingSales !== null ? `${formatNumber(trainingSales, 0)} ` : ''}training sales
             from Ames, IA ({trainingYears}) in nominal dollars — not current listings.
           </p>
           <p className="note">
@@ -581,7 +702,7 @@ export default function OverviewPage() {
                   <span className="pipeline-note">{PIPELINE_NOTES[stage.slug]}</span>
                 </span>
                 <span className="pipeline-status status-live">Live</span>
-                <span className="pipeline-chevron">→</span>
+                <RowArrow className="pipeline-arrow" />
               </Link>
             </li>
           ))}

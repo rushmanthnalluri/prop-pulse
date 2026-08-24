@@ -20,6 +20,13 @@ export default function ConfusionMatrix({ matrix, title = 'Sealed test split' })
   const predFast = fp + tp
   const total = tn + fp + fn + tp
 
+  /* Heat encoding: each data cell's fill alpha scales with its share of the
+     largest cell (--cm-i, 0..1), so the matrix reads as a heatmap — mass on
+     the correct diagonal glows amber, errors deepen in danger red. The count
+     numerals stay the primary channel (never color-only). */
+  const maxCell = Math.max(tn, fp, fn, tp, 1)
+  const heat = (count) => ({ '--cm-i': (count / maxCell).toFixed(3) })
+
   const ariaLabel =
     `Confusion matrix, ${title}, ${total} sales: ` +
     `${tn} true negatives (actual slow, predicted slow), ` +
@@ -39,11 +46,11 @@ export default function ConfusionMatrix({ matrix, title = 'Sealed test split' })
         <div className="cm-cell cm-axis cm-axis--total">Total</div>
 
         <div className="cm-cell cm-axis">Actual: slow</div>
-        <div className="cm-cell cm-cell--tn">
+        <div className="cm-cell cm-cell--tn" style={heat(tn)}>
           <strong>{tn}</strong>
           <span>True negative</span>
         </div>
-        <div className="cm-cell cm-cell--fp">
+        <div className="cm-cell cm-cell--fp" style={heat(fp)}>
           <strong>{fp}</strong>
           <span>False positive</span>
         </div>
@@ -52,11 +59,11 @@ export default function ConfusionMatrix({ matrix, title = 'Sealed test split' })
         </div>
 
         <div className="cm-cell cm-axis">Actual: fast</div>
-        <div className="cm-cell cm-cell--fn">
+        <div className="cm-cell cm-cell--fn" style={heat(fn)}>
           <strong>{fn}</strong>
           <span>False negative</span>
         </div>
-        <div className="cm-cell cm-cell--tp">
+        <div className="cm-cell cm-cell--tp" style={heat(tp)}>
           <strong>{tp}</strong>
           <span>True positive</span>
         </div>

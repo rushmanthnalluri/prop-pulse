@@ -82,7 +82,7 @@ function LoadedPanel() {
   const head = profile.data?.head ?? []
 
   return (
-    <div className="loaded-panel">
+    <div className="loaded-panel table-zebra">
       <div className="loaded-header">
         {dataset ? (
           <>
@@ -276,14 +276,14 @@ export default function UploadStage() {
 
   return (
     <div>
-      <div className="page-head">
+      <header className="page-head">
         <span className="kicker">Stage 01 · Intake</span>
         <h1 className="page-title">Upload Dataset</h1>
         <p className="page-desc">
           Bring in raw property records as a CSV — or explore the bundled Ames housing cohort.
           Uploads are validated against the full 81-column Ames schema before they are stored.
         </p>
-      </div>
+      </header>
 
       <hr className="divider" />
 

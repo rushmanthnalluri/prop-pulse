@@ -10,6 +10,12 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, Query
 
+from ml.workflow.profile import (
+    CORRELATION_TOP_CAP,
+    HISTOGRAM_BINS_CAP,
+    SCATTER_MAX_CAP,
+)
+
 from backend.app.api.deps import get_workflow_eda_service
 from backend.app.schemas.workflow import (
     FeaturesOut,
@@ -67,7 +73,7 @@ def dataset_missing(
 def viz_histogram(
     dataset_id: str,
     column: str = Query(...),
-    bins: int = Query(default=30, ge=1, le=200),
+    bins: int = Query(default=30, ge=1, le=HISTOGRAM_BINS_CAP),
     service: WorkflowEdaService = Depends(get_workflow_eda_service),
 ) -> dict[str, Any]:
     """Histogram bins + summary stats for a numeric column (§3.7); 422 unknown/mistyped column."""
@@ -79,7 +85,7 @@ def viz_scatter(
     dataset_id: str,
     x: str = Query(...),
     y: str = Query(...),
-    max_points: int = Query(default=1500, ge=1, le=20000),
+    max_points: int = Query(default=1500, ge=1, le=SCATTER_MAX_CAP),
     service: WorkflowEdaService = Depends(get_workflow_eda_service),
 ) -> dict[str, Any]:
     """Seeded-downsampled scatter points for two numeric columns (§3.7)."""
@@ -101,7 +107,7 @@ def viz_box(
 def viz_correlation(
     dataset_id: str,
     target: str = Query(default="SalePrice"),
-    top: int = Query(default=20, ge=1, le=60),
+    top: int = Query(default=20, ge=1, le=CORRELATION_TOP_CAP),
     service: WorkflowEdaService = Depends(get_workflow_eda_service),
 ) -> dict[str, Any]:
     """Numeric correlation matrix: top ``top`` by |corr with target| + target (§3.7)."""

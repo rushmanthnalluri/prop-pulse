@@ -30,6 +30,8 @@ import NeighborhoodMap from '../components/NeighborhoodMap'
 import NeighborhoodTable from '../components/NeighborhoodTable'
 import { EmptyState, ErrorState, PanelSkeleton } from '../components/StateView'
 import { SkeletonLine } from '../components/shared/Skeleton'
+// Keep after NeighborhoodMap: market.css's leaflet overrides must land later
+// than the leaflet.css that NeighborhoodMap imports (module order = CSS order).
 import '../styles/market.css'
 
 export default function MarketPage() {
@@ -212,33 +214,26 @@ export default function MarketPage() {
         )}
       </section>
 
-      {/* Neighborhood directory — the same clusters payload, so it renders
-          exactly when the map section has data (one shared lifecycle). */}
-      {hasData && (
+      {/* Neighborhood directory — the same clusters payload, so it shares the
+          map section's lifecycle: skeleton while loading, the table once data
+          lands (error/empty render no directory). */}
+      {(hasData || loading) && (
         <>
           <hr className="divider" aria-hidden="true" />
           <section className="section market-directory" aria-label="Neighborhood directory">
             <div className="section-head">
-              <h2 className="section-title">Directory — sort any column</h2>
+              <h2 className="section-title">Directory — search, filter, sort any column</h2>
               <span className="section-note">cluster-level medians · rows link to valuation</span>
             </div>
-            <NeighborhoodTable neighborhoods={neighborhoods} clusterById={clusterById} />
-          </section>
-        </>
-      )}
-      {loading && (
-        <>
-          <hr className="divider" aria-hidden="true" />
-          <section className="section market-directory" aria-label="Neighborhood directory">
-            <div className="section-head">
-              <h2 className="section-title">Directory — sort any column</h2>
-              <span className="section-note">cluster-level medians · rows link to valuation</span>
-            </div>
-            <div className="panel market-table-skeleton" aria-hidden="true">
-              {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
-                <SkeletonLine key={i} width={`${92 - (i % 4) * 7}%`} />
-              ))}
-            </div>
+            {loading ? (
+              <div className="panel market-table-skeleton" aria-hidden="true">
+                {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <SkeletonLine key={i} width={`${92 - (i % 4) * 7}%`} />
+                ))}
+              </div>
+            ) : (
+              <NeighborhoodTable neighborhoods={neighborhoods} clusterById={clusterById} />
+            )}
           </section>
         </>
       )}

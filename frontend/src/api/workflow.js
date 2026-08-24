@@ -4,10 +4,10 @@
  * root-level `/workflow` prefix; every number a stage page renders must come
  * from one of these functions — nothing is hardcoded.
  *
- * Built on `api/client.js` conventions: same `ApiError` class, same 30s
- * timeout (AUD-10), same caller-AbortSignal racing, same offline/timeout
- * message wording. `client.js`'s `request()` is module-private, so the thin
- * wrapper is reimplemented here with two workflow-specific additions:
+ * Built on `api/client.js`: `workflowRequest` is a thin adapter over its
+ * exported `request()` — same `ApiError` class, same 30s timeout (AUD-10),
+ * same caller-AbortSignal racing, same offline/timeout message wording —
+ * with two workflow-specific additions:
  *
  * 1. **Upload transport** (§3.1): raw CSV bytes as the body — no multipart
  *    (python-multipart is absent server-side). `uploadDataset` always sends
@@ -24,7 +24,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { API_URL, ApiError, REQUEST_TIMEOUT_MS } from './client'
+import { ApiError, request } from './client'
 import { usePolling } from '../hooks/usePolling'
 
 /* ------------------------------------------------------------------------- */
@@ -37,6 +37,13 @@ export const UPLOAD_MAX_BYTES = 10 * 1024 * 1024
 /** The three training objectives (§3.9). */
 export const OBJECTIVES = ['regression', 'classification', 'clustering']
 
+/** Display labels for the three training objectives. */
+export const OBJECTIVE_LABELS = {
+  regression: 'Regression',
+  classification: 'Classification',
+  clustering: 'Clustering',
+}
+
 /** Valid `candidates` values per objective for POST …/jobs (§3.9). */
 export const OBJECTIVE_CANDIDATES = {
   regression: ['linear', 'ridge', 'lasso', 'random_forest', 'xgboost'],
@@ -45,44 +52,29 @@ export const OBJECTIVE_CANDIDATES = {
 }
 
 /** Job statuses that mean "still working" (§3.9); anything else is terminal. */
-export const ACTIVE_JOB_STATUSES = new Set(['queued', 'preparing', 'running'])
+const ACTIVE_JOB_STATUSES = new Set(['queued', 'preparing', 'running'])
 
 export const isJobActive = (status) => ACTIVE_JOB_STATUSES.has(status)
 export const isJobTerminal = (status) => status === 'done' || status === 'failed'
 
+/** Job/candidate status → badge modifier class for the status chips. */
+export const JOB_STATUS_CHIP = {
+  queued: 'badge-muted',
+  preparing: 'badge-muted',
+  running: 'badge-accent',
+  pending: 'badge-muted',
+  done: 'badge-success',
+  failed: 'badge-danger',
+}
+
+/** [candidate, result] pairs of a job whose candidate status is 'done'. */
+export function doneCandidateEntries(job) {
+  return Object.entries(job?.results ?? {}).filter(([, r]) => r?.status === 'done')
+}
+
 /* ------------------------------------------------------------------------- */
 /* Error normalization (client.js semantics + the dict-shaped 422)            */
 /* ------------------------------------------------------------------------- */
-
-/** Parse a FastAPI 422 detail list into the stable FieldError[] shape. */
-function extractDetails(payload) {
-  if (!payload || !Array.isArray(payload.detail)) return null
-  return payload.detail.map((item) => {
-    const loc = Array.isArray(item?.loc) ? item.loc.map(String) : []
-    const field = loc.filter((p) => p !== 'body').join('.') || null
-    return {
-      field,
-      loc,
-      msg: typeof item?.msg === 'string' ? item.msg : 'Invalid value',
-      type: typeof item?.type === 'string' ? item.type : undefined,
-    }
-  })
-}
-
-/** Turn a FastAPI error body into a readable message (handles 422 detail lists). */
-function extractDetail(payload, fallback) {
-  if (!payload) return fallback
-  if (typeof payload.detail === 'string') return payload.detail
-  if (Array.isArray(payload.detail)) {
-    return payload.detail
-      .map((item) => {
-        const loc = Array.isArray(item.loc) ? item.loc.filter((p) => p !== 'body').join('.') : ''
-        return loc ? `${loc}: ${item.msg}` : item.msg
-      })
-      .join('; ')
-  }
-  return fallback
-}
 
 /**
  * The workflow upload 422 deviation (§3): `detail` is a dict
@@ -99,65 +91,31 @@ function isWorkflowValidationDetail(payload) {
   )
 }
 
+/** client.js `mapError` hook: preserves the dict-shaped workflow 422 (§3). */
+function workflowMapError(payload, status) {
+  if (status === 422 && isWorkflowValidationDetail(payload)) {
+    const { code, message, report } = payload.detail
+    const error = new ApiError(
+      typeof message === 'string' ? message : 'The dataset failed validation.',
+      422,
+    )
+    /** Upload-validation code, e.g. "corrupt_csv" | "schema_mismatch" (§3.1). */
+    error.code = typeof code === 'string' ? code : 'validation_failed'
+    /** Structured per-check report (missing_columns, n_duplicate_ids, …). */
+    error.report = report ?? null
+    return error
+  }
+  return undefined
+}
+
 async function workflowRequest(path, options = {}) {
-  const { signal: callerSignal, headers = {}, tooLargeMessage, ...rest } = options
-  const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-  const signal = callerSignal ? AbortSignal.any([callerSignal, timeoutSignal]) : timeoutSignal
-  let response
-  try {
-    response = await fetch(`${API_URL}${path}`, {
-      headers: { Accept: 'application/json', ...headers },
-      ...rest,
-      signal,
-    })
-  } catch (error) {
-    if (error?.name === 'AbortError') throw error // caller-initiated cancel; callers ignore it
-    if (error?.name === 'TimeoutError') {
-      throw new ApiError(
-        `Request timed out after ${REQUEST_TIMEOUT_MS / 1000} seconds — the API may be busy or unreachable. Check your connection and try again.`,
-        0,
-      )
-    }
-    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-      throw new ApiError('You appear to be offline. Check your connection and try again.', 0)
-    }
-    throw new ApiError(
-      `Cannot reach the PropPulse API at ${API_URL}. Is the backend running?`,
-      0,
-    )
-  }
-  const text = await response.text()
-  let payload = null
-  if (text) {
-    try {
-      payload = JSON.parse(text)
-    } catch {
-      payload = null
-    }
-  }
-  if (!response.ok) {
-    if (response.status === 413) {
-      throw new ApiError(tooLargeMessage ?? 'The request was too large for the API.', 413)
-    }
-    if (response.status === 422 && isWorkflowValidationDetail(payload)) {
-      const { code, message, report } = payload.detail
-      const error = new ApiError(
-        typeof message === 'string' ? message : 'The dataset failed validation.',
-        422,
-      )
-      /** Upload-validation code, e.g. "corrupt_csv" | "schema_mismatch" (§3.1). */
-      error.code = typeof code === 'string' ? code : 'validation_failed'
-      /** Structured per-check report (missing_columns, n_duplicate_ids, …). */
-      error.report = report ?? null
-      throw error
-    }
-    throw new ApiError(
-      extractDetail(payload, `Request failed with status ${response.status}`),
-      response.status,
-      { details: extractDetails(payload) },
-    )
-  }
-  return payload // null for 204 No Content
+  const { headers = {}, tooLargeMessage, ...rest } = options
+  return request(path, {
+    headers: { Accept: 'application/json', ...headers },
+    tooLargeMessage: tooLargeMessage ?? 'The request was too large for the API.',
+    ...rest,
+    mapError: workflowMapError,
+  })
 }
 
 /** JSON POST convenience wrapper. */
@@ -282,11 +240,6 @@ export function listDatasets(signal) {
   return workflowRequest('/workflow/datasets', { signal })
 }
 
-/** GET /workflow/datasets/{id} → DatasetRecord + `state` (DatasetState). */
-export function getDataset(id, signal) {
-  return workflowRequest(`/workflow/datasets/${encodeURIComponent(id)}`, { signal })
-}
-
 /** GET /workflow/datasets/{id}/state → DatasetState (bare state object). */
 export function getState(id, signal) {
   return workflowRequest(`/workflow/datasets/${encodeURIComponent(id)}/state`, { signal })
@@ -374,12 +327,7 @@ export function getPreprocess(id, signal) {
  * @returns PrepareReport `{config, fingerprint, splits{train,val,test,rule}, steps[], before, after, sample_before, sample_after, leakage_note}`
  */
 export function previewPreprocess(id, config, signal) {
-  return workflowRequest(`/workflow/datasets/${encodeURIComponent(id)}/preprocess/preview`, {
-    method: 'POST',
-    body: JSON.stringify({ config }),
-    headers: { 'Content-Type': 'application/json' },
-    signal,
-  })
+  return postJson(`/workflow/datasets/${encodeURIComponent(id)}/preprocess/preview`, { config }, signal)
 }
 
 /* ------------------------------------------------------------------------- */
@@ -505,7 +453,6 @@ export function useJobPolling(jobId, { intervalMs = 1500, onUpdate } = {}) {
 export const workflowApi = {
   uploadDataset,
   listDatasets,
-  getDataset,
   getState,
   deleteDataset,
   getProfile,

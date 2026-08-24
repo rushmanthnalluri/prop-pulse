@@ -9,7 +9,7 @@
  * note informs rather than alarms.
  */
 import { Link } from 'react-router'
-import { NEIGHBORHOODS } from '../../constants'
+import { NEIGHBORHOODS, clusterColor } from '../../constants'
 import { formatNumber, formatPct, formatUsd, humanizeNote } from '../../format'
 
 export default function MicroMarketCard({ microMarket, neighborhood }) {
@@ -17,6 +17,10 @@ export default function MicroMarketCard({ microMarket, neighborhood }) {
   const pricePerSqft = Number(microMarket.median_price_per_sqft)
   const velocity = Number(microMarket.sale_velocity_30d)
   const match = NEIGHBORHOODS.find((n) => n.value === neighborhood)
+  // Same cluster palette colour as the Price position marker and the market
+  // map — one hue per micro-market across the whole product.
+  const clusterId = Number(microMarket.cluster_id)
+  const swatch = Number.isFinite(clusterId) ? clusterColor(clusterId) : null
 
   return (
     <div className="panel">
@@ -27,7 +31,10 @@ export default function MicroMarketCard({ microMarket, neighborhood }) {
         )}
       </div>
       <div className="panel-body">
-        <p className="mm-label">{microMarket.label}</p>
+        <p className="mm-label">
+          {swatch && <span className="swatch" style={{ background: swatch }} aria-hidden="true" />}
+          {microMarket.label}
+        </p>
         <dl className="kv">
           <div>
             <dt>Median price</dt>
@@ -64,7 +71,24 @@ export default function MicroMarketCard({ microMarket, neighborhood }) {
         {microMarket.note && <p className="note mm-note">{humanizeNote(microMarket.note)}</p>}
       </div>
       <div className="panel-foot">
-        <Link to="/market">Explore this market →</Link>
+        <Link to="/market" className="foot-link">
+          Explore this market
+          <svg
+            className="foot-link-arrow"
+            width="12"
+            height="12"
+            viewBox="0 0 14 14"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M2.5 7h9" />
+            <path d="M8 3.5 11.5 7 8 10.5" />
+          </svg>
+        </Link>
       </div>
     </div>
   )

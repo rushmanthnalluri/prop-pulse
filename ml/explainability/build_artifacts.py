@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-from ml.explainability.explainer import BACKGROUND_SIZE, RegressionExplainer
+from ml.explainability.explainer import RegressionExplainer
 from ml.paths import (
     DATASET_VERSION,
     FEATURE_LIST_PATH,

@@ -3,14 +3,10 @@
    Page-scoped styles for MissingStage.jsx + components/workflow/
    MissingTable.jsx. Imported AFTER styles.css by the page so equal-
    specificity rules win. Tokens come from styles.css only — never redefined
-   here. Metrics, the chart card, the repair table and the coverage bars are
-   all shared vocabulary (.metrics, .chart-card, .table, .coverage-*); this
-   file carries only what the shared system does not.
+   here. Metrics, the chart card and the coverage bars are shared vocabulary
+   (.metrics, .chart-card, .coverage-*); the repair table opts into the
+   shared .table-zebra idiom (styles.css).
    ========================================================================== */
-
-/* ProvenanceBanner directly under the page head — tighten the rhythm. */
-.wfm-banner-slot { margin-top: -14px; }
-.wfm-banner-slot + .section { padding-top: 22px; }
 
 /* Blocking alert: columns with gaps but no documented NA policy (the
    pipeline would raise at stage 06). Mono per-column lines inside the
@@ -23,7 +19,12 @@
 .wfm-blocking-list li { margin: 4px 0; }
 .wfm-blocking-list .mono { font-size: 12px; }
 
-/* Repair table: the policy-table name sits under the treatment badge. */
+/* Repair table (MissingTable's scroll frame, capped at 60vh with
+   a sticky header): zebra/hover come from the shared .table-zebra idiom
+   (styles.css); the sticky-header separator is folded into the base
+   .table-sticky rule. */
+
+/* The policy-table name sits under the treatment badge. */
 .wfm-policy {
   display: block;
   font-size: 11px;

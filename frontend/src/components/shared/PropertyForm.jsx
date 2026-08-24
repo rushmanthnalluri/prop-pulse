@@ -19,8 +19,9 @@
  * ranges. Server 422s map to fields via the structured `fieldErrorMap`
  * (ApiError.details) — the flattened-message parse remains only as the
  * fallback for service-layer 422s whose detail is a plain string. The error
- * summary auto-focuses the first invalid field and force-opens the advanced
- * <details> when the error lives inside it.
+ * summary auto-focuses the first invalid field, force-opens the advanced
+ * <details> when the error lives inside it, and each listed issue is a
+ * click-to-focus jump to its field.
  *
  * External value injection: `prefill` merges validated URL-param values
  * (the ?neighborhood= handshake generalized to the full payload, SPEC §7.7);
@@ -103,11 +104,7 @@ export default function PropertyForm({
     if (Object.keys(known).length === 0) return
     setErrors((prev) => ({ ...prev, ...known }))
     setShowSummary(true)
-    const first = FIELD_ORDER.find((name) => known[name])
-    if (first && ADVANCED_NAMES.has(first) && detailsRef.current) {
-      detailsRef.current.open = true
-    }
-    if (first) inputRefs.current[first]?.focus()
+    focusIssue(FIELD_ORDER.find((name) => known[name]))
   }, [serverError])
 
   const setValue = (name, value) => {
@@ -156,30 +153,48 @@ export default function PropertyForm({
     setErrors(nextErrors)
     if (Object.keys(nextErrors).length > 0) {
       setShowSummary(true)
-      const first = FIELD_ORDER.find((name) => nextErrors[name])
-      if (first && ADVANCED_NAMES.has(first) && detailsRef.current) {
-        detailsRef.current.open = true
-      }
-      if (first) inputRefs.current[first]?.focus()
+      focusIssue(FIELD_ORDER.find((name) => nextErrors[name]))
       return
     }
     setShowSummary(false)
     onSubmit(buildPayload(values))
   }
 
+  // Focuses the offending field, force-opening the advanced <details> when
+  // the field lives inside it — shared by the submit handler's first-invalid
+  // focus, the server-422 effect, and error-summary clicks.
+  const focusIssue = (name) => {
+    if (ADVANCED_NAMES.has(name) && detailsRef.current) {
+      detailsRef.current.open = true
+    }
+    inputRefs.current[name]?.focus()
+  }
+
   const warns = trainWarns(values)
-  const summaryIssues = FIELD_ORDER.filter((name) => errors[name]).map(
-    (name) => `${LABELS[name]}: ${errors[name]}`,
-  )
+  const summaryIssues = FIELD_ORDER.filter((name) => errors[name]).map((name) => ({
+    name,
+    label: LABELS[name],
+    message: errors[name],
+  }))
 
   return (
     <form className="valuation-form" onSubmit={handleSubmit} noValidate>
       {showSummary && summaryIssues.length > 0 && (
         <div className="alert alert-error" role="alert">
           <span className="alert-title">Check the highlighted inputs</span>
-          {summaryIssues.slice(0, 6).map((issue) => (
-            <div key={issue}>{issue}</div>
-          ))}
+          <ul className="summary-list">
+            {summaryIssues.slice(0, 6).map((issue) => (
+              <li key={issue.name}>
+                <button
+                  type="button"
+                  className="link-quiet summary-issue"
+                  onClick={() => focusIssue(issue.name)}
+                >
+                  {issue.label}: {issue.message}
+                </button>
+              </li>
+            ))}
+          </ul>
           {summaryIssues.length > 6 && <div>…and {summaryIssues.length - 6} more</div>}
         </div>
       )}

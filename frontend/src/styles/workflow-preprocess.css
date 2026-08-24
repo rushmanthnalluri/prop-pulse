@@ -3,8 +3,8 @@
    Page-scoped styles for PreprocessStage + BeforeAfterPanel. Imported AFTER
    styles/workflow-train.css (whose .wf-flow / .wf-step / .wf-leakage base
    rules this page reuses) so equal-specificity rules below win. Tokens from
-   styles.css only — hairlines over boxes, no shadows, 4/6/8 radii, nothing
-   below 10px; user-facing errors/hints ≥ 11px (see styles.css .field-error).
+   styles.css only — hairlines over boxes, 4/6/8 radii, nothing below 10px;
+   user-facing errors/hints ≥ 11px (see styles.css .field-error).
    ========================================================================== */
 
 /* Pipeline-flow node status line — mono microcopy + 6px status dot. Every
@@ -34,6 +34,57 @@
 .wf-flow-node { transition: border-color var(--dur-hover); }
 .wf-flow-node:hover { border-color: var(--border-strong); }
 
+/* Step cards (the per-step <details> rows) keep the same border hover. */
+.wf-steps .wf-step { transition: border-color var(--dur-hover), background var(--dur-hover); }
+.wf-steps .wf-step[open] { border-color: var(--border-strong); }
+
+/* --------------------------------------------------------------------------
+   PreprocessConfig — the outlier-rule toggle reads as a selectable card row
+   (the standalone .wf-check negative-margin trick from workflow-train.css is
+   reset here); the Advanced <details> is framed as a quiet inset panel.
+   -------------------------------------------------------------------------- */
+
+.wf-config .wf-check {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  transition: border-color var(--dur-hover), background var(--dur-hover);
+}
+.wf-config .wf-check:hover { border-color: var(--border-strong); background: var(--raised); }
+/* Checked state tints the border (progressive enhancement via :has()). */
+.wf-config .wf-check:has(input:checked) { border-color: var(--accent-border); }
+/* Keyboard focus rings the whole card, not just the 15px native checkbox. */
+.wf-config .wf-check:has(input:focus-visible) { border-color: var(--accent); }
+/* While a run is in flight the toggle card locks like the inputs do. */
+.wf-config .wf-check:has(input:disabled) { opacity: 0.55; cursor: default; }
+.wf-config .wf-check:has(input:disabled):hover {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.wf-config .wf-advanced {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 12px 14px;
+  margin: 0;
+}
+.wf-config .wf-advanced > summary {
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text-2);
+  transition: color var(--dur-hover);
+}
+.wf-config .wf-advanced > summary:hover { color: var(--text); }
+.wf-config .wf-advanced[open] > summary {
+  color: var(--text);
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
 /* Before / after: delta-metric row, then the two sample panels. */
 .wfpp-beforeafter .metrics { margin-bottom: 20px; }
 .wfpp-delta-arrow { color: var(--text-3); font-size: 15px; }
@@ -50,6 +101,8 @@
 /* The flush table-scroll (.borderless) sits directly under .panel-head;
    round only the panel's own corners and clip the table's last row. */
 .wfpp-sample { overflow: hidden; }
+
+/* Sample tables opt into the shared .table-zebra idiom (styles.css). */
 
 /* --------------------------------------------------------------------------
    Responsive (blueprint §10)

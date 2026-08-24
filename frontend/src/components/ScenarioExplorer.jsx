@@ -185,6 +185,11 @@ export default function ScenarioExplorer({ basePayload, basePrice }) {
         <div className="lever-stack">
           {levers.map((lever) => {
             const bounds = leverBounds(lever.name, basePayload)
+            // Filled-track portion for the slider (pure CSS var — no JS motion).
+            const fillPct =
+              bounds.max > bounds.min
+                ? ((values[lever.name] - bounds.min) / (bounds.max - bounds.min)) * 100
+                : 0
             return (
               <div className="lever" key={lever.name}>
                 <div className="lever-head">
@@ -192,6 +197,11 @@ export default function ScenarioExplorer({ basePayload, basePrice }) {
                     {lever.label}
                     {lever.unit && <span className="field-unit"> ({lever.unit})</span>}
                   </label>
+                  <span
+                    className={`lever-value${touched[lever.name] ? ' lever-value--touched' : ''}`}
+                  >
+                    {formatPlainValue(lever, values[lever.name])}
+                  </span>
                 </div>
                 <div className="lever-controls">
                   <input
@@ -201,6 +211,7 @@ export default function ScenarioExplorer({ basePayload, basePrice }) {
                     max={bounds.max}
                     step={bounds.step}
                     value={values[lever.name]}
+                    style={{ '--fill': `${fillPct}%` }}
                     onChange={(event) => handleChange(lever.name, Number(event.target.value))}
                   />
                   <input

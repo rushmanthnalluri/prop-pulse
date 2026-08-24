@@ -1,12 +1,8 @@
 """Shared FastAPI dependencies — accessors for lifespan-loaded app state."""
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
-
 from fastapi import Request
 
-from backend.app.services.cluster_service import ClusterService
 from backend.app.services.monitoring_service import MonitoringService
 from backend.app.services.prediction_service import PredictionService
 from backend.app.services.workflow import (
@@ -18,12 +14,9 @@ from backend.app.services.workflow import (
 
 __all__ = [
     "get_prediction_service",
-    "get_cluster_service",
     "get_monitoring_service",
-    "get_champion",
     "model_version_payload",
     "model_version_string",
-    "get_workflow_data_dir",
     "get_workflow_dataset_service",
     "get_workflow_eda_service",
     "get_workflow_job_service",
@@ -36,19 +29,9 @@ def get_prediction_service(request: Request) -> PredictionService:
     return request.app.state.prediction_service
 
 
-def get_cluster_service(request: Request) -> ClusterService:
-    """Micro-market cluster service (loaded at startup)."""
-    return request.app.state.cluster_service
-
-
 def get_monitoring_service(request: Request) -> MonitoringService:
     """Request-metrics + drift-summary service (loaded at startup)."""
     return request.app.state.monitoring_service
-
-
-def get_champion(request: Request) -> dict[str, Any]:
-    """Parsed ``models/champion.json``."""
-    return request.app.state.champion
 
 
 def model_version_payload(request: Request) -> dict[str, str]:
@@ -71,26 +54,21 @@ def model_version_string(request: Request) -> str:
 # ---------------------------------------------------------------------------
 
 
-def get_workflow_data_dir(request: Request) -> Path:
-    """The configured data directory (upload storage root lives beneath it)."""
-    return request.app.state.settings.resolved_data_dir
-
-
-def get_workflow_dataset_service(request: Request) -> WorkflowDatasetService:
+def get_workflow_dataset_service() -> WorkflowDatasetService:
     """Workflow dataset lifecycle service (constructed per request)."""
     return WorkflowDatasetService()
 
 
-def get_workflow_eda_service(request: Request) -> WorkflowEdaService:
+def get_workflow_eda_service() -> WorkflowEdaService:
     """Workflow EDA dispatch service (constructed per request)."""
     return WorkflowEdaService()
 
 
-def get_workflow_job_service(request: Request) -> WorkflowJobService:
+def get_workflow_job_service() -> WorkflowJobService:
     """Workflow job service (per request; first construction runs the orphan sweep)."""
     return WorkflowJobService()
 
 
-def get_workflow_predict_service(request: Request) -> WorkflowPredictService:
+def get_workflow_predict_service() -> WorkflowPredictService:
     """Sandbox prediction service (constructed per request)."""
     return WorkflowPredictService()

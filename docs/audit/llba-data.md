@@ -141,13 +141,13 @@ Status vocabulary per audit plan: PASS / PASS WITH CONCERN / FAIL / NOT EXECUTAB
 
 ## 6. Verified claims (independent recomputation)
 
-- Splits **945/338/175** ✔ (raw time-split 947/338/175; 2 partial-sale outliers removed: Ids 524, 1299 — matches committed outliers_report.json byte-for-byte).
-- 1460 raw rows = 1458 processed + 2 trimmed ✔; 81 raw cols ✔; 85 processed cols ✔; zero NaNs/empty strings with `keep_default_na=False` ✔.
-- Split integrity: years {2006-2008}/{2009}/{2010} disjoint; zero cross-split Id overlap ✔.
-- Leakage guards: LotFrontage medians fitted on trimmed train only — val imputations match train medians exactly (65 rows) ✔; outlier rules train-only ✔; simulator stats train-only ✔.
-- DOM simulation: noise truly seeded per (seed, Id) — shuffle-invariant and reproducible ✔; flag `days<=30` consistent in fresh + committed data ✔; train fast-sale rate 0.2529 ≈ SPEC §14's ≈0.25 ✔.
-- Reproducibility: fresh CLI run byte-identical (md5) for all 3 CSVs + schema.json + outliers_report.json ✔ (matches ADR-3 addendum claim).
-- DOM_PROVIDER=csv adapter: all strict-validation and coverage behaviors verified; 30/30 tests/data pass ✔.
+- Splits **945/338/175** (raw time-split 947/338/175; 2 partial-sale outliers removed: Ids 524, 1299 — matches committed outliers_report.json byte-for-byte).
+- 1460 raw rows = 1458 processed + 2 trimmed; 81 raw cols; 85 processed cols; zero NaNs/empty strings with `keep_default_na=False`.
+- Split integrity: years {2006-2008}/{2009}/{2010} disjoint; zero cross-split Id overlap.
+- Leakage guards: LotFrontage medians fitted on trimmed train only — val imputations match train medians exactly (65 rows); outlier rules train-only; simulator stats train-only.
+- DOM simulation: noise truly seeded per (seed, Id) — shuffle-invariant and reproducible; flag `days<=30` consistent in fresh + committed data; train fast-sale rate 0.2529 ≈ SPEC §14's ≈0.25.
+- Reproducibility: fresh CLI run byte-identical (md5) for all 3 CSVs + schema.json + outliers_report.json (matches ADR-3 addendum claim).
+- DOM_PROVIDER=csv adapter: all strict-validation and coverage behaviors verified; 30/30 tests/data pass.
 
 ## 7. Test-coverage gaps (not defects)
 

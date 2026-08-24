@@ -19,6 +19,9 @@ import { ErrorState } from '../StateView'
 import BusyButton from '../shared/BusyButton'
 import { SkeletonLine } from '../shared/Skeleton'
 import { useWorkflow } from '../../pages/workflow/WorkflowShell'
+// Picker's refined states live in the upload sheet (dataset theme) — loaded
+// here because the picker renders on every workflow page, not just stage 01.
+import '../../styles/workflow-upload.css'
 
 function ChevronIcon() {
   return (
@@ -148,6 +151,24 @@ export default function DatasetPicker() {
                         >
                           {record.source}
                         </span>
+                        {/* Active record: a check glyph at the row's trailing edge —
+                            the wash/bar alone would be a colour-only signal. */}
+                        {active && (
+                          <span className="wf-ds-active-mark" aria-hidden="true">
+                            <svg
+                              width="12"
+                              height="12"
+                              viewBox="0 0 12 12"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="1.5"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M2.25 6.25 4.75 8.75 9.75 3.25" />
+                            </svg>
+                          </span>
+                        )}
                       </span>
                       <span className="wf-ds-meta mono">
                         {formatNumber(record.n_rows, 0)} × {formatNumber(record.n_cols, 0)}
@@ -200,7 +221,7 @@ export default function DatasetPicker() {
               to={`/workflow/01-upload?dataset=${datasetId}`}
               onClick={() => setOpen(false)}
             >
-              Upload a new CSV →
+              Upload a new CSV
             </Link>
           </div>
         </div>

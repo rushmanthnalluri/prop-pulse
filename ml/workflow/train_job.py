@@ -132,7 +132,12 @@ def assert_sandbox_output(path: Path) -> Path:
     """
     root = datasets.WORKFLOW_MODELS_ROOT.resolve()
     resolved = Path(path).resolve()
-    if os.path.commonpath([str(root), str(resolved)]) != str(root):
+    try:
+        contained = os.path.commonpath([str(root), str(resolved)]) == str(root)
+    except ValueError:
+        # Different drives (Windows): outside the sandbox root by definition.
+        contained = False
+    if not contained:
         raise RuntimeError(
             f"sandbox output root escapes {root}: {path} — writes outside "
             "models/workflow/ are a review-blocker (§4.1)"
@@ -175,6 +180,9 @@ def run_job(
     candidates: list[str],
 ) -> int:
     """Run one training job end-to-end, maintaining ``status.json``. Returns the exit code."""
+    # Dedupe up front (order preserved) so progress.total and the results map
+    # match the wave train_objective actually runs (it dedupes internally).
+    candidates = list(dict.fromkeys(candidates))
     try:
         job_dir = assert_sandbox_output(job_dir_for(dataset_id, job_id))
     except (ValueError, UnknownDataset) as exc:

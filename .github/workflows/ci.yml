@@ -1,9 +1,13 @@
 # PropPulse CI (SPEC §11/§12).
-# - python:   pinned dev environment on Python 3.12 + strict pip-audit gate
-#             + the full test suite
-# - frontend: install + npm audit gate + production build of the Vite app
-# - docker:   static validation of the compose files — base alone and merged
-#             with docker-compose.alt-ports.yml (no builds/pushes/secrets)
+# - python:       pinned dev environment on Python 3.12 + strict pip-audit
+#                 gate + the full test suite
+# - frontend:     install + npm audit gate + ESLint + production build of the
+#                 Vite app
+# - docker:       static validation of the compose files — base alone and
+#                 merged with docker-compose.alt-ports.yml (no builds/pushes/
+#                 secrets)
+# - docker-build: builds both images and smoke-tests the backend container
+#                 (GET /health must return 200; no pushes/secrets)
 name: CI
 
 on:
@@ -70,6 +74,11 @@ jobs:
       - name: Audit dependencies
         run: npm audit --audit-level=high
 
+      # ESLint gate (npm run lint -> eslint .): fails the job on lint errors
+      # before the slower production build runs.
+      - name: Lint
+        run: npm run lint
+
       - name: Build
         run: npm run build
 
@@ -93,3 +102,45 @@ jobs:
       # the default ports are occupied; must stay mergeable with the base.
       - name: Validate merged alt-ports compose configuration
         run: docker compose -f docker-compose.yml -f docker-compose.alt-ports.yml config -q
+
+  # Real image builds (ubuntu-latest ships docker preinstalled) plus a runtime
+  # smoke test of the backend container: run it, poll GET /health until the
+  # champion artifacts finish loading at startup (bounded warm-up budget of
+  # ~120s), dump container logs on failure, and always tear the container
+  # down. Builds only — nothing is pushed.
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same build commands as docker/README.md; context is the repo root so
+      # ml/, backend/, models/ and the required data files are included.
+      - name: Build backend image
+        run: docker build -f docker/backend.Dockerfile -t proppulse-backend:ci .
+
+      - name: Build frontend image
+        run: docker build -f docker/frontend.Dockerfile -t proppulse-frontend:ci .
+
+      - name: Start backend container
+        run: docker run -d --name proppulse-backend-ci -p 8000:8000 proppulse-backend:ci
+
+      # /health only answers once uvicorn is up and the model artifacts are
+      # loaded; poll (2s interval, 60 tries) instead of a fixed sleep so the
+      # gate is as fast as the warm-up allows but bounded at ~120s.
+      - name: Smoke-test backend health
+        run: |
+          for i in $(seq 1 60); do
+            status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || true)
+            if [ "$status" = "200" ]; then
+              echo "backend healthy after $((i * 2))s"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "backend did not return 200 from /health within 120s — container logs:"
+          docker logs proppulse-backend-ci
+          exit 1
+
+      - name: Remove backend container
+        if: always()
+        run: docker rm -f proppulse-backend-ci

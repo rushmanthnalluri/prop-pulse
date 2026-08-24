@@ -26,7 +26,7 @@ export default function VizStage() {
 
   return (
     <div>
-      <div className="page-head">
+      <header className="page-head">
         <span className="kicker">Stage 05 · Records</span>
         <h1 className="page-title">Visualization</h1>
         <p className="page-desc">
@@ -35,9 +35,11 @@ export default function VizStage() {
           plot-ready bins, points, and matrices, never the raw frame.
         </p>
         <p className="page-meta">{metaParts.join(' · ')}</p>
-      </div>
+      </header>
 
-      <div className="wfv-banner-slot">
+      <hr className="divider" />
+
+      <div className="wf-banner-slot">
         <ProvenanceBanner
           provenance={{ dataset_name: dataset?.name ?? datasetId }}
           label="Charts aggregate the active dataset — switch it from the dataset chip above."

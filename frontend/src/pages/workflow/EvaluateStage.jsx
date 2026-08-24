@@ -22,7 +22,7 @@ import { EmptyState, ErrorState, PanelSkeleton } from '../../components/StateVie
 import ComparisonTable from '../../components/workflow/ComparisonTable'
 import EvaluationWorkspace from '../../components/workflow/EvaluationWorkspace'
 import ProvenanceBanner from '../../components/workflow/ProvenanceBanner'
-import { formatDateTime } from '../../format'
+import { datasetRowsMeta, formatDateTime } from '../../format'
 import '../../styles/confusion-matrix.css'
 import '../../styles/wf-cluster.css'
 import '../../styles/wf-comparison.css'
@@ -39,7 +39,7 @@ function evaluableJobs(jobs) {
 
 /** First successfully-trained candidate name of a job (submission order). */
 function firstDoneCandidate(job) {
-  const entry = Object.entries(job?.results ?? {}).find(([, r]) => r?.status === 'done')
+  const entry = wf.doneCandidateEntries(job)[0]
   return entry ? entry[0] : null
 }
 
@@ -94,10 +94,10 @@ export default function EvaluateStage() {
   if (loading && !jobs) {
     return (
       <>
-        <div className="page-head">
+        <header className="page-head">
           <span className="kicker">Stage 08 · Modelling</span>
           <h1 className="page-title">Model Evaluation</h1>
-        </div>
+        </header>
         <div className="section">
           <PanelSkeleton height={260} />
         </div>
@@ -132,13 +132,11 @@ export default function EvaluateStage() {
     )
   }
 
-  const doneCandidates = Object.entries(selectedJob?.results ?? {})
-    .filter(([, r]) => r?.status === 'done')
-    .map(([name]) => name)
+  const doneCandidates = wf.doneCandidateEntries(selectedJob).map(([name]) => name)
 
   return (
     <>
-      <div className="page-head">
+      <header className="page-head">
         <span className="kicker">Stage 08 · Modelling</span>
         <h1 className="page-title">Model Evaluation</h1>
         <p className="page-desc">
@@ -149,19 +147,19 @@ export default function EvaluateStage() {
         </p>
         <p className="page-meta">
           {[
-            dataset ? `${dataset.name} · ${dataset.n_rows} rows` : null,
+            dataset ? datasetRowsMeta(dataset) : null,
             `${candidates.length} completed job${candidates.length === 1 ? '' : 's'}`,
           ]
             .filter(Boolean)
             .join(' · ')}
         </p>
-      </div>
+      </header>
 
       <hr className="divider" />
 
       <div className="section">
         <div className="section-head">
-          <span className="section-title">Candidate</span>
+          <h2 className="section-title">Candidate</h2>
           <span className="section-note">completed jobs only</span>
         </div>
         <div className="panel">
@@ -217,7 +215,7 @@ export default function EvaluateStage() {
       {objective && (
         <div className="section">
           <div className="section-head">
-            <span className="section-title">The verdict — {objective} validation split</span>
+            <h2 className="section-title">The verdict — {objective} validation split</h2>
             <span className="section-note">latest successful result per candidate</span>
           </div>
           <ComparisonTable
@@ -233,9 +231,9 @@ export default function EvaluateStage() {
 
       <div className="section">
         <div className="section-head">
-          <span className="section-title">
+          <h2 className="section-title">
             Evaluation — <span className="mono">{selectedCandidate}</span>
-          </span>
+          </h2>
           <span className="section-note mono">{selectedJobId}</span>
         </div>
         {models?.provenance && (

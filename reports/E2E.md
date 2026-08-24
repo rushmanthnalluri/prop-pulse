@@ -82,10 +82,16 @@
 > (`frontend/src/styles/workflow-evaluate.css`) and `UploadStage.handleUpload`
 > has a synchronous interlock ref against double `requestSubmit()`. The fixme
 > repros were converted to plain passing tests and `dashboard.spec.js` grew
-> (pinned-estimate compare ×2, model health, 404): the suite is now **49
-> tests / 4 spec files, 0 fixme/skip** (`dashboard` 12, `audit-blackbox` 11,
-> `frontend-fixes` 10, `workflow` 16). Last full run 2026-08-18: **all
-> passed** (`e2e/test-results/.last-run.json`).
+> (pinned-estimate compare ×2, model health, 404).
+>
+> **Status update (2026-08-24):** the suite is now **66 tests / 6 spec
+> files** (`dashboard` 12, `audit-blackbox` 11, `frontend-fixes` 10,
+> `workflow` 16, `hardening-a11y` 11, `hardening-responsive` 6). Full run
+> 2026-08-24: **all 66 passed** (6.7 min, workers 1 / retries 0, backend
+> :8200 spawned by the specs' `ensureBackend`, frontend :5300 manual vite
+> dev server per this doc). The same run's helper consolidation
+> (`ensureBackend`/`killPort` shared, `fillValuationForm`/`pinChromeForShot`
+> in `helpers/ui.js`) passed unchanged.
 >
 > Everything below this note describes earlier runs and is kept for history.
 
@@ -114,7 +120,7 @@
 > ellipsis truncation (`styles.css`) — names wrap again (AUD-24b). Everything
 > below this note describes the pre-rebuild run and is kept for history.
 
-**Date:** 2026-08-08 · **Agent:** playwright-e2e · **Status:** ✅ 27/27 tests passing (3 spec files)
+**Date:** 2026-08-08 · **Agent:** playwright-e2e · **Status:** 27/27 tests passing (3 spec files)
 
 > **UI-refresh reconciliation (2026-08-08):** the suite was re-run against the
 > refreshed UI and reconciled where the UI legitimately changed. Suite is now
@@ -189,13 +195,13 @@ the suite therefore requires restarting the backend.
 
 | # | Scenario | What it asserts | Result | Duration |
 |---|----------|-----------------|--------|----------|
-| 1 | **Valuation flow** (`/`) | Header health indicator shows `API connected`; empty state first; form filled (NridgHt, 2Story, 4 bd, 2.5+1 ba, 2200 sqft, 2003, qual 8); result card shows estimated price matching `/\$[\d,]+/`, price-range band with ≥2 dollar bounds, probability matching `/\d+(\.\d+)?%/`, non-empty micro-market label, **exactly 5** top-factor rows | ✅ pass | 5.0s |
-| 2 | **Valuation result extras** (new) | Confidence note visible; market-position strip renders **3** $/sqft markers; comps card (POST `/market/comps`) shows **5 rows**, scope line, percentile line, and the historical-training-data note; scenario explorer renders **5** sliders, moving Overall quality 8→9 produces a signed delta line (`+$…`, via POST `/predict/price`), and **Reset scenarios** clears it | ✅ pass | 5.0s |
-| 3 | **Prefill flow** (new) | `/?neighborhood=StoneBr` pre-selects StoneBr in the form (not the default, so it proves the wiring); `/?neighborhood=NoSuchHood` is ignored and falls back to the NAmes default | ✅ pass | 2.8s |
-| 4 | **Validation error state** | `gr_liv_area = 50` → API 422 surfaced in UI `role="alert"` mentioning the field name (`gr_liv_area: Input should be greater than or equal to 300`); no result card rendered | ✅ pass | 3.2s |
-| 5 | **Market map** (`/market-map`) | `.leaflet-container` renders; **25** SVG circle markers (≥20 required); popup shows micro-market label + median price `/\$[\d,]+/`, the **velocity caveat caption**, and a **"Value a home here"** link matching `/^\/\?neighborhood=[A-Za-z]+$/`; the **Price trends by micro-market** section renders its subtitle ("Training data, 2006–2008 (includes the 2008 downturn).") and ≥2 recharts lines (4 clusters today) | ✅ pass | 6.2s |
-| 6 | **Model insights** (`/model-insights`) | Champion cards show `ridge v1` + `random_forest v1`; classifier card hint carries the folded-in `operating threshold`; model-version line shows `ridge_v1 + random_forest_v1 · features 9b0f8ba4201c`; SHAP importance chart renders **20** bars (≥10 required); drift panel shows the documented `No drift report yet` empty state (backend `drift.status = no_data`; the test accepts the PSI card when a report exists); `Drift status` stat card present | ✅ pass | 3.6s |
-| 7 | **API-down state** (LAST) | Test kills the backend on :8100 itself, then: header flips to `API offline`; valuation submit shows `role="alert"` with `Cannot reach the PropPulse API`; test asserts the kill really happened | ✅ pass | 6.7s |
+| 1 | **Valuation flow** (`/`) | Header health indicator shows `API connected`; empty state first; form filled (NridgHt, 2Story, 4 bd, 2.5+1 ba, 2200 sqft, 2003, qual 8); result card shows estimated price matching `/\$[\d,]+/`, price-range band with ≥2 dollar bounds, probability matching `/\d+(\.\d+)?%/`, non-empty micro-market label, **exactly 5** top-factor rows | PASS | 5.0s |
+| 2 | **Valuation result extras** (new) | Confidence note visible; market-position strip renders **3** $/sqft markers; comps card (POST `/market/comps`) shows **5 rows**, scope line, percentile line, and the historical-training-data note; scenario explorer renders **5** sliders, moving Overall quality 8→9 produces a signed delta line (`+$…`, via POST `/predict/price`), and **Reset scenarios** clears it | PASS | 5.0s |
+| 3 | **Prefill flow** (new) | `/?neighborhood=StoneBr` pre-selects StoneBr in the form (not the default, so it proves the wiring); `/?neighborhood=NoSuchHood` is ignored and falls back to the NAmes default | PASS | 2.8s |
+| 4 | **Validation error state** | `gr_liv_area = 50` → API 422 surfaced in UI `role="alert"` mentioning the field name (`gr_liv_area: Input should be greater than or equal to 300`); no result card rendered | PASS | 3.2s |
+| 5 | **Market map** (`/market-map`) | `.leaflet-container` renders; **25** SVG circle markers (≥20 required); popup shows micro-market label + median price `/\$[\d,]+/`, the **velocity caveat caption**, and a **"Value a home here"** link matching `/^\/\?neighborhood=[A-Za-z]+$/`; the **Price trends by micro-market** section renders its subtitle ("Training data, 2006–2008 (includes the 2008 downturn).") and ≥2 recharts lines (4 clusters today) | PASS | 6.2s |
+| 6 | **Model insights** (`/model-insights`) | Champion cards show `ridge v1` + `random_forest v1`; classifier card hint carries the folded-in `operating threshold`; model-version line shows `ridge_v1 + random_forest_v1 · features 9b0f8ba4201c`; SHAP importance chart renders **20** bars (≥10 required); drift panel shows the documented `No drift report yet` empty state (backend `drift.status = no_data`; the test accepts the PSI card when a report exists); `Drift status` stat card present | PASS | 3.6s |
+| 7 | **API-down state** (LAST) | Test kills the backend on :8100 itself, then: header flips to `API offline`; valuation submit shows `role="alert"` with `Cannot reach the PropPulse API`; test asserts the kill really happened | PASS | 6.7s |
 
 The other two specs: `audit-blackbox.spec.js` (11 tests — DOM↔API trace-truth,
 extreme/min inputs, noise-fallback badges, submit race, mid-load navigation,

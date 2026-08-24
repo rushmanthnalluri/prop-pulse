@@ -101,16 +101,25 @@ function extractDetail(payload, fallback) {
   if (Array.isArray(payload.detail)) {
     return payload.detail
       .map((item) => {
-        const loc = Array.isArray(item.loc) ? item.loc.filter((p) => p !== 'body').join('.') : ''
-        return loc ? `${loc}: ${item.msg}` : item.msg
+        const loc = Array.isArray(item?.loc) ? item.loc.filter((p) => p !== 'body').join('.') : ''
+        const msg = typeof item?.msg === 'string' ? item.msg : 'Invalid value'
+        return loc ? `${loc}: ${msg}` : msg
       })
       .join('; ')
   }
   return fallback
 }
 
-async function request(path, options = {}) {
-  const { signal: callerSignal, ...rest } = options
+/**
+ * Shared transport: timeout + caller-abort racing, JSON parsing, and the error
+ * normalization described above. `options` extends the fetch init with
+ * `signal`, plus two per-surface hooks: `tooLargeMessage` overrides the 413
+ * wording, and `mapError(payload, status)` may return an ApiError (thrown
+ * as-is) or a message string (wrapped with the status) to pre-empt the
+ * default error mapping — returning undefined falls through to the defaults.
+ */
+export async function request(path, options = {}) {
+  const { signal: callerSignal, tooLargeMessage, mapError, ...rest } = options
   // AUD-10: every request times out after REQUEST_TIMEOUT_MS; a caller-supplied
   // signal (unmount cleanup) races with the timeout via AbortSignal.any.
   const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
@@ -151,8 +160,12 @@ async function request(path, options = {}) {
     if (response.status === 413) {
       // CONTRACT §0: bodies over 65,536 bytes are rejected; legit prediction
       // payloads are < 1 KiB, so reaching this means a client bug.
-      throw new ApiError('The request was too large for the API (limit 65,536 bytes).', 413)
+      throw new ApiError(tooLargeMessage ?? 'The request was too large for the API (limit 65,536 bytes).', 413)
     }
+    // Per-surface escape hatch (e.g. the workflow client's dict-shaped 422).
+    const mapped = mapError?.(payload, response.status)
+    if (mapped instanceof ApiError) throw mapped
+    if (typeof mapped === 'string') throw new ApiError(mapped, response.status)
     throw new ApiError(
       extractDetail(payload, `Request failed with status ${response.status}`),
       response.status,
@@ -190,11 +203,6 @@ function cachedGet(path) {
     if (sessionCache.get(path) === promise) sessionCache.delete(path)
   })
   return promise
-}
-
-/** Drop all cached static GETs (e.g. after a known server restart). */
-export function clearApiCache() {
-  sessionCache.clear()
 }
 
 /**
@@ -236,18 +244,6 @@ export const api = {
    */
   predictPrice: (body, signal) =>
     request('/predict/price', { method: 'POST', body: JSON.stringify(body), signal }),
-
-  /**
-   * POST /predict/sale-probability → `{ probability, sells_within_30_days,
-   * threshold, confidence, model_version }` (no regressor, no SHAP). ~144 ms.
-   * The target is SIMULATED (ADR-3) — pair with the simulated-target caveat.
-   */
-  predictSaleProbability: (body, signal) =>
-    request('/predict/sale-probability', {
-      method: 'POST',
-      body: JSON.stringify(body),
-      signal,
-    }),
 
   /**
    * GET /model/info → champion metadata: `{ regression, classification,

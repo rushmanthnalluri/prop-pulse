@@ -6,7 +6,7 @@
 >
 > Scope: **CSS-only.** No DOM, no content, no behaviour change — text-identity
 > E2E assertions (toHaveText/toContainText) are unaffected. Full regression:
-> build ✓, lint ✓, E2E — see §4.
+> build PASS, lint PASS, E2E — see §4.
 
 ## Verdict
 
@@ -54,13 +54,13 @@ and Apple's system motion curve.
 
 ## 4. Verification
 
-- `npm run build` — ✓ (15.8s, no CSS/Lint breakage)
-- `npm run lint` — ✓ (eslint clean)
-- Playwright E2E full suite — ✓ **49/49 passed (5.7m)** via
+- `npm run build` — PASS (15.8s, no CSS/Lint breakage)
+- `npm run lint` — PASS (eslint clean)
+- Playwright E2E full suite — **49/49 passed (5.7m)** via
   `cd e2e && npx playwright test`. Includes the workflow comparison trace-truth
   fix (`workflow.spec.js` test 07 — asserts the "best" chip on the server-flagged
   row instead of assuming a clean sandbox).
-- §5 top-notch pass re-verified (2026-08-11): build ✓ · lint ✓ · **E2E 49/49 ✓**
+- §5 top-notch pass re-verified (2026-08-11): build PASS · lint PASS · **E2E 49/49 PASS**
   (the gating-test 404 flake from the prior run is confirmed transient — see
   §5 notes).
 

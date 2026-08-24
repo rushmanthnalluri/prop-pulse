@@ -61,6 +61,8 @@ const CATEGORY_SLOTS = 4
 const CORRELATION_TOP = 20
 const SCATTER_MAX_POINTS = 1500
 const WIDE_CATEGORY_GROUPS = 12
+/* Anchor-strip sections, in page order (scrollspy + nav render from this). */
+const VIZ_SECTION_IDS = ['distributions', 'correlations', 'categories', 'relationships']
 
 /** Ames-shaped defaults, always filtered against the live column lists — an
     uploaded dataset without them simply falls through to its own columns. */
@@ -286,7 +288,6 @@ function HistogramChart({ payload, reduced }) {
 
 function HistogramCard({ datasetId, initialColumn, columns, stdOf, reduced }) {
   const [column, setColumn] = useState(initialColumn)
-  useEffect(() => setColumn(initialColumn), [initialColumn])
 
   const fetcher = useCallback(
     (signal) => viz.histogram(datasetId, { column, bins: HISTOGRAM_BINS }, signal),
@@ -322,7 +323,7 @@ function HistogramCard({ datasetId, initialColumn, columns, stdOf, reduced }) {
       {loading && !payload && <PanelSkeleton height={168} />}
       {!loading && error && !payload && <CardError error={error} onRetry={reload} />}
       {payload && !empty && (
-        <div className={loading ? 'wfv-dim' : undefined}>
+        <div className={loading ? 'dim-stale' : undefined}>
           <HistogramChart payload={payload} reduced={reduced} />
         </div>
       )}
@@ -417,6 +418,7 @@ function CorrelationMatrix({ payload }) {
     <>
       <div
         className="heat-scroll"
+        tabIndex={0}
         role="img"
         aria-label={`Correlation matrix of the top ${Math.max(0, n - 1)} numeric fields by absolute correlation with ${target}`}
       >
@@ -499,7 +501,7 @@ function CorrelationSection({ datasetId, target, reduced }) {
         <ErrorState error={error} onRetry={reload} title="Couldn't load the correlation matrix" />
       )}
       {payload && !empty && (
-        <div className={loading ? 'wfv-dim' : undefined}>
+        <div className={loading ? 'dim-stale' : undefined}>
           <CorrelationMatrix payload={payload} />
           <InfluenceChart payload={payload} reduced={reduced} />
         </div>
@@ -624,7 +626,7 @@ function CategoryCard({ datasetId, column, target, reduced }) {
       {loading && !payload && <PanelSkeleton height={168} />}
       {!loading && error && !payload && <CardError error={error} onRetry={reload} />}
       {payload && !empty && (
-        <div className={loading ? 'wfv-dim' : undefined}>
+        <div className={loading ? 'dim-stale' : undefined}>
           <CategoryChart payload={payload} reduced={reduced} />
         </div>
       )}
@@ -764,7 +766,7 @@ function ScatterCard({ datasetId, columns, initialX, initialY, reduced }) {
       {loading && !payload && <PanelSkeleton height={280} />}
       {!loading && error && !payload && <CardError error={error} onRetry={reload} />}
       {payload && !empty && (
-        <div className={loading ? 'wfv-dim' : undefined}>
+        <div className={loading ? 'dim-stale' : undefined}>
           <ScatterPlot payload={payload} reduced={reduced} />
         </div>
       )}
@@ -843,6 +845,27 @@ export default function VizExplorer({ datasetId }) {
   }, [stats.loading, stats.data])
   const stdOf = useCallback((name) => (stdMap ? (stdMap.get(name) ?? null) : null), [stdMap])
 
+  /* Scrollspy for the sticky .viz-nav: the link whose section crosses the
+     reading band (25%–30% of the viewport) gets .is-active + aria-current.
+     Sections unmount while the column lists reload (skeleton gate below), so
+     the observer re-arms whenever the loading/error state flips. */
+  const [activeSection, setActiveSection] = useState('distributions')
+  useEffect(() => {
+    if (features.loading || features.error) return undefined
+    const sections = VIZ_SECTION_IDS.map((id) => document.getElementById(id)).filter(Boolean)
+    if (sections.length === 0) return undefined
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) setActiveSection(entry.target.id)
+        }
+      },
+      { rootMargin: '-25% 0px -70% 0px' },
+    )
+    for (const section of sections) observer.observe(section)
+    return () => observer.disconnect()
+  }, [features.loading, features.error])
+
   // Gate on loading (not just first paint): a dataset switch keeps the old
   // columns in `features.data` while the new list is in flight — rendering
   // those against the new dataset would flash spurious 422 alerts.
@@ -868,10 +891,16 @@ export default function VizExplorer({ datasetId }) {
   return (
     <>
       <nav className="viz-nav" aria-label="Chart sections">
-        <a href="#distributions">Distributions</a>
-        <a href="#correlations">Correlations</a>
-        <a href="#categories">Categories</a>
-        <a href="#relationships">Relationships</a>
+        {VIZ_SECTION_IDS.map((id) => (
+          <a
+            key={id}
+            href={`#${id}`}
+            className={activeSection === id ? 'is-active' : undefined}
+            aria-current={activeSection === id ? 'location' : undefined}
+          >
+            {id[0].toUpperCase() + id.slice(1)}
+          </a>
+        ))}
       </nav>
 
       <VizSection

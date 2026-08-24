@@ -156,6 +156,14 @@ def _resolve_artifact(path_str: str) -> Any:
 def create_app(settings: Settings | None = None) -> FastAPI:
     """Build the FastAPI app; artifacts load during the lifespan startup."""
     settings = settings or get_settings()
+    # Root logger at LOG_LEVEL governs every app logger (backend.*, ml.*).
+    # Uvicorn's own loggers (uvicorn / uvicorn.error / uvicorn.access) are NOT
+    # configured here: the uvicorn CLI applies its own dictConfig after app
+    # import, giving them dedicated handlers with propagate=False — so nothing
+    # double-logs through this root handler — but pinning them to INFO unless
+    # --log-level is passed. The container CMD (docker/backend.Dockerfile)
+    # passes --log-level derived from the same LOG_LEVEL env var, keeping
+    # LOG_LEVEL the single 12-factor control for app and server logs alike.
     logging.basicConfig(
         level=getattr(logging, settings.log_level.upper(), logging.INFO),
         format="%(levelname)s %(name)s: %(message)s",

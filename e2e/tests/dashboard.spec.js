@@ -45,62 +45,27 @@
  * Portfolio screenshots land in docs/screenshots/ (full page, 1440x900).
  */
 import { test, expect } from '@playwright/test'
-import { execFile } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { ensureBackend } from '../helpers/backend.js'
-
-/** E2E-owned backend port (started externally; the LAST scenario kills it). */
-const BACKEND_PORT = 8200
+import { ensureBackend, killPort, BACKEND_PORT } from '../helpers/backend.js'
+import { fillValuationForm, pinChromeForShot } from '../helpers/ui.js'
 
 const SCREENSHOTS = fileURLToPath(new URL('../../docs/screenshots/', import.meta.url))
 const shot = async (page, name) => {
   // Full-page captures stitch scroll positions, which makes the sticky sidebar
   // and sticky result rail float mid-page — pin them for the shot only.
-  await page.addStyleTag({
-    content: '.pipeline-sidebar, .predict-result { position: static !important; }',
-  })
+  await pinChromeForShot(page)
   await page.screenshot({ path: `${SCREENSHOTS}${name}.png`, fullPage: true })
 }
 
-/** Fill the core valuation form with a realistic, in-range property. */
-async function fillValuationForm(page) {
-  await page.getByLabel('Neighborhood').selectOption('NridgHt')
-  await page.getByLabel('House style').selectOption('2Story')
-  await page.getByLabel('Bedrooms').fill('4')
-  await page.getByLabel('Full baths', { exact: true }).fill('2')
-  await page.getByLabel('Half baths', { exact: true }).fill('1')
-  await page.getByLabel('Basement full baths').fill('1')
-  await page.getByLabel('Living area (sq ft)').fill('2200')
-  await page.getByLabel('Lot area (sq ft)').fill('11000')
-  await page.getByLabel('Basement area (sq ft)').fill('1200')
-  await page.getByLabel('Year built').fill('2003')
-  await page.getByLabel(/Overall quality/).fill('8')
-  await page.getByLabel(/Overall condition/).fill('5')
-  await page.getByLabel('Garage (cars)').fill('2')
-  await page.getByLabel('Fireplaces', { exact: true }).fill('1')
-}
-
-/** Force-stop whatever process is LISTENING on the given TCP port (Windows). */
-function killPort(port) {
-  return new Promise((resolve) => {
-    execFile('netstat', ['-ano'], (err, stdout) => {
-      if (err) return resolve(false)
-      const pids = new Set(
-        String(stdout)
-          .split(/\r?\n/)
-          .filter((line) => line.includes(`:${port}`) && line.includes('LISTENING'))
-          .map((line) => line.trim().split(/\s+/).pop())
-          .filter(Boolean),
-      )
-      if (pids.size === 0) return resolve(false)
-      let pending = pids.size
-      for (const pid of pids) {
-        execFile('taskkill', ['/PID', pid, '/F'], () => {
-          if (--pending === 0) resolve(true)
-        })
-      }
-    })
-  })
+/**
+ * The realistic, in-range property filled by the shared form fill. 14 fields —
+ * no `bsmt_half_bath`: docs/audit/docs-truth.md:115 pins the exact prediction
+ * from this payload.
+ */
+const PROPERTY = {
+  neighborhood: 'NridgHt', house_style: '2Story', bedrooms: 4, full_bath: 2, half_bath: 1,
+  bsmt_full_bath: 1, gr_liv_area: 2200, lot_area: 11000, total_bsmt_sf: 1200,
+  year_built: 2003, overall_qual: 8, overall_cond: 5, garage_cars: 2, fireplaces: 1,
 }
 
 // Self-heal: this spec's tests read live API data and it runs right after the
@@ -168,7 +133,7 @@ test('valuation flow: form → price, range, probability, micro-market, 5 factor
   ).toBeVisible()
   await shot(page, 'home-empty')
 
-  await fillValuationForm(page)
+  await fillValuationForm(page, PROPERTY)
   await page.getByRole('button', { name: 'Estimate value' }).click()
 
   const rail = page.locator('.valuation-rail')
@@ -200,7 +165,7 @@ test('valuation flow: form → price, range, probability, micro-market, 5 factor
 
 test('valuation result: confidence badge, price position, comps, scenario explorer', async ({ page }) => {
   await page.goto('/valuation')
-  await fillValuationForm(page)
+  await fillValuationForm(page, PROPERTY)
   await page.getByRole('button', { name: 'Estimate value' }).click()
 
   const rail = page.locator('.valuation-rail')
@@ -244,7 +209,7 @@ test('valuation result: confidence badge, price position, comps, scenario explor
 
 test('pinned estimate: pin, zero delta, cheaper re-estimate shows negative delta, remove', async ({ page }) => {
   await page.goto('/valuation')
-  await fillValuationForm(page)
+  await fillValuationForm(page, PROPERTY)
   await page.getByRole('button', { name: 'Estimate value' }).click()
 
   const rail = page.locator('.valuation-rail')
@@ -284,7 +249,7 @@ test('pinned estimate: pin, zero delta, cheaper re-estimate shows negative delta
 
 test('pinned estimate persists across reload and compares against the next estimate', async ({ page }) => {
   await page.goto('/valuation')
-  await fillValuationForm(page)
+  await fillValuationForm(page, PROPERTY)
   await page.getByRole('button', { name: 'Estimate value' }).click()
 
   const rail = page.locator('.valuation-rail')
@@ -482,7 +447,9 @@ test('API-down state: valuation submit shows a reachable error (LAST — stops b
   await expect(page.locator('.api-status--down').first()).toHaveText('API offline')
   await page.getByRole('button', { name: 'Estimate value' }).click() // default form is valid
 
+  // Scoped to main — the same copy also lands in the error toast (Notifications).
   const error = page
+    .locator('main')
     .getByRole('alert')
     .filter({ hasText: 'Cannot reach the PropPulse API' })
   await expect(error).toBeVisible()

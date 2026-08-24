@@ -16,7 +16,7 @@
  * Kept dependency-free of @playwright/test so it can run anywhere (the health
  * poll is a plain deadline loop, not `expect.poll`).
  */
-import { spawn } from 'node:child_process'
+import { execFile, spawn } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -28,7 +28,7 @@ export const FRONTEND_ORIGIN = 'http://localhost:5300'
 export const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url))
 
 /** True once /health returns 200, false on deadline (kept polling). */
-export async function waitForHealth(timeoutMs = 180_000) {
+async function waitForHealth(timeoutMs = 180_000) {
   const deadline = Date.now() + timeoutMs
   while (Date.now() < deadline) {
     try {
@@ -69,4 +69,27 @@ export async function ensureBackend() {
   if (!(await waitForHealth())) {
     throw new Error(`E2E backend failed to become healthy on ${BACKEND_ORIGIN}`)
   }
+}
+
+/** Force-stop whatever process is LISTENING on the given TCP port (Windows). */
+export function killPort(port) {
+  return new Promise((resolve) => {
+    execFile('netstat', ['-ano'], (err, stdout) => {
+      if (err) return resolve(false)
+      const pids = new Set(
+        String(stdout)
+          .split(/\r?\n/)
+          .filter((line) => line.includes(`:${port}`) && line.includes('LISTENING'))
+          .map((line) => line.trim().split(/\s+/).pop())
+          .filter(Boolean),
+      )
+      if (pids.size === 0) return resolve(false)
+      let pending = pids.size
+      for (const pid of pids) {
+        execFile('taskkill', ['/PID', pid, '/F'], () => {
+          if (--pending === 0) resolve(true)
+        })
+      }
+    })
+  })
 }

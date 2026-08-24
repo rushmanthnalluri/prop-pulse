@@ -13,7 +13,7 @@ From the repo root:
 ```
 
 Configuration comes from env vars / `.env` (see `.env.example`: `MODEL_DIR`,
-`DATA_DIR`, `API_HOST`, `API_PORT`, `PREDICTION_LOG_PATH`, ...); relative paths
+`DATA_DIR`, `PREDICTION_LOG_PATH`, ...); relative paths
 resolve against the repo root (`backend/app/config.py`).
 
 ## Routing choice

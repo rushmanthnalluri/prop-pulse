@@ -25,7 +25,6 @@ from __future__ import annotations
 import json
 import logging
 import time
-from pathlib import Path
 from typing import Any
 
 import joblib
@@ -90,7 +89,7 @@ def load_model_frame(
     raw = load_split(split)
     stats = load_neighborhood_stats()
     frame = build_feature_frame(raw, stats=stats)
-    features: list[str] = json.loads(FEATURE_LIST_PATH.read_text())["features"]
+    features: list[str] = json.loads(FEATURE_LIST_PATH.read_text(encoding="utf-8"))["features"]
     X = frame[features]
     y_dollar = raw[TARGET_COLUMN].astype(float)
     y_log = pd.Series(np.log1p(y_dollar), name=f"log1p_{TARGET_COLUMN}")

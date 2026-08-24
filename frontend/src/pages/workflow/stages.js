@@ -29,6 +29,12 @@ export const WORKFLOW_STAGES = [
 /** First stage; also the fallback redirect target for /workflow. */
 export const DEFAULT_STAGE = '01-upload'
 
+/** localStorage key for the §6.2 client layer ({dataset_id, last_stage, visited}). */
+export const WORKFLOW_STORAGE_KEY = 'proppulse:workflow'
+
+/** Stage link preserving the active dataset (links appending &job= stay manual). */
+export const stageHref = (slug, datasetId) => `/workflow/${slug}?dataset=${datasetId}`
+
 /** Server-side dataset id grammar (§4.9) — used to validate ?dataset= params. */
 export const DATASET_ID_RE = /^(ames|ds_[0-9a-f]{8})$/
 

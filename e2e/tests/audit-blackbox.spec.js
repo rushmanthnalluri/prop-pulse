@@ -33,42 +33,18 @@
  * Evidence screenshots land in docs/audit/evidence/.
  */
 import { test, expect } from '@playwright/test'
-import { execFile, spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { ensureBackend } from '../helpers/backend.js'
+import { ensureBackend, killPort, BACKEND_PORT, REPO_ROOT } from '../helpers/backend.js'
+import { fillValuationForm, pinChromeForShot } from '../helpers/ui.js'
 // Production formatting code — used here ONLY to compare the rendered DOM
 // against the intercepted API JSON with the exact same formatting rules.
 import { formatUsd, formatPct, formatNumber, prettyFeature, humanizeNote } from '../../frontend/src/format.js'
 
-/** E2E-owned ports (see e2e/playwright.config.js). */
-const BACKEND_PORT = 8200
-const FRONTEND_ORIGIN = 'http://localhost:5300'
-
-const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url))
 const EVIDENCE = fileURLToPath(new URL('../../docs/audit/evidence/', import.meta.url))
 const GARBAGE = /\bNaN\b|\bundefined\b|\bnull\b/
 const fin = (value) => Number.isFinite(Number(value))
-
-/** Fill the 15 core controls with an explicit, in-range property. */
-async function fillCore(page, v) {
-  await page.getByLabel('Neighborhood').selectOption(v.neighborhood)
-  await page.getByLabel('House style').selectOption(v.house_style)
-  await page.getByLabel('Bedrooms').fill(String(v.bedrooms))
-  await page.getByLabel('Full baths', { exact: true }).fill(String(v.full_bath))
-  await page.getByLabel('Half baths', { exact: true }).fill(String(v.half_bath))
-  await page.getByLabel('Basement full baths').fill(String(v.bsmt_full_bath))
-  await page.getByLabel('Basement half baths').fill(String(v.bsmt_half_bath))
-  await page.getByLabel('Living area (sq ft)').fill(String(v.gr_liv_area))
-  await page.getByLabel('Lot area (sq ft)').fill(String(v.lot_area))
-  await page.getByLabel('Basement area (sq ft)').fill(String(v.total_bsmt_sf))
-  await page.getByLabel('Year built').fill(String(v.year_built))
-  await page.getByLabel(/Overall quality/).fill(String(v.overall_qual))
-  await page.getByLabel(/Overall condition/).fill(String(v.overall_cond))
-  await page.getByLabel('Garage (cars)').fill(String(v.garage_cars))
-  await page.getByLabel('Fireplaces', { exact: true }).fill(String(v.fireplaces))
-}
 
 /** Submit the form and return the parsed /predict JSON actually received. */
 async function submitAndCapture(page) {
@@ -77,36 +53,6 @@ async function submitAndCapture(page) {
     page.getByRole('button', { name: 'Estimate value' }).click(),
   ])
   return response.json()
-}
-
-/** Pin fixed/sticky chrome for stitched full-page captures (cosmetic only). */
-async function pinForShot(page) {
-  await page.addStyleTag({
-    content: '.pipeline-sidebar, .predict-result { position: static !important; }',
-  })
-}
-
-/** Force-stop whatever process is LISTENING on the given TCP port (Windows). */
-function killPort(port) {
-  return new Promise((resolve) => {
-    execFile('netstat', ['-ano'], (err, stdout) => {
-      if (err) return resolve(false)
-      const pids = new Set(
-        String(stdout)
-          .split(/\r?\n/)
-          .filter((line) => line.includes(`:${port}`) && line.includes('LISTENING'))
-          .map((line) => line.trim().split(/\s+/).pop())
-          .filter(Boolean),
-      )
-      if (pids.size === 0) return resolve(false)
-      let pending = pids.size
-      for (const pid of pids) {
-        execFile('taskkill', ['/PID', pid, '/F'], () => {
-          if (--pending === 0) resolve(true)
-        })
-      }
-    })
-  })
 }
 
 const REALISTIC = {
@@ -125,7 +71,7 @@ test.beforeAll(async () => {
 
 test('trace-truth: DOM renders exactly the intercepted /predict JSON', async ({ page }) => {
   await page.goto('/valuation')
-  await fillCore(page, REALISTIC)
+  await fillValuationForm(page, REALISTIC)
   const json = await submitAndCapture(page)
 
   const rail = page.locator('.valuation-rail')
@@ -242,7 +188,7 @@ test('trace-truth: DOM renders exactly the intercepted /predict JSON', async ({ 
 
 test('extreme max property (8 bd, qual 10, 6000 sqft, …) renders sanely', async ({ page }) => {
   await page.goto('/valuation')
-  await fillCore(page, {
+  await fillValuationForm(page, {
     neighborhood: 'NoRidge', house_style: '2Story', bedrooms: 8, full_bath: 4, half_bath: 2,
     bsmt_full_bath: 3, bsmt_half_bath: 2, gr_liv_area: 6000, lot_area: 200000,
     total_bsmt_sf: 4000, year_built: 2026, overall_qual: 10, overall_cond: 10,
@@ -260,13 +206,13 @@ test('extreme max property (8 bd, qual 10, 6000 sqft, …) renders sanely', asyn
   await expect(rail.locator('.result-price')).toHaveText(formatUsd(json.estimated_price))
   expect((await rail.innerText()).match(GARBAGE)).toBeNull()
 
-  await pinForShot(page)
+  await pinChromeForShot(page)
   await page.screenshot({ path: `${EVIDENCE}blackbox-e2e-extreme-max.png`, fullPage: true })
 })
 
 test('min-everything property (0 bd, 300 sqft, 1870, qual 1) renders sanely', async ({ page }) => {
   await page.goto('/valuation')
-  await fillCore(page, {
+  await fillValuationForm(page, {
     neighborhood: 'MeadowV', house_style: '1Story', bedrooms: 0, full_bath: 0, half_bath: 0,
     bsmt_full_bath: 0, bsmt_half_bath: 0, gr_liv_area: 300, lot_area: 500,
     total_bsmt_sf: 0, year_built: 1870, overall_qual: 1, overall_cond: 1,
@@ -295,7 +241,7 @@ test('noise neighborhoods CollgCr/NAmes/Timber show the fallback badge; StoneBr 
     await expect(rail.getByText(/sits between clusters/)).toBeVisible()
   }
   // Screenshot evidence of the badge (Timber still on screen).
-  await pinForShot(page)
+  await pinChromeForShot(page)
   await rail.screenshot({ path: `${EVIDENCE}blackbox-e2e-fallback-badge.png` })
 
   // Control: a clustered neighborhood must NOT show the badge.
@@ -309,7 +255,7 @@ test('race: 5 rapid submits (abort-supersede) settle to one consistent result', 
   const pageErrors = []
   page.on('pageerror', (e) => pageErrors.push(String(e)))
   await page.goto('/valuation')
-  await fillCore(page, REALISTIC)
+  await fillValuationForm(page, REALISTIC)
 
   const responses = []
   page.on('response', (r) => {
@@ -366,7 +312,7 @@ test('mid-load page switching (market → model → valuation) leaves no errors'
 test('mobile viewport 390x844: usable layout, no horizontal overflow', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/valuation')
-  await fillCore(page, REALISTIC)
+  await fillValuationForm(page, REALISTIC)
   await submitAndCapture(page)
 
   const rail = page.locator('.valuation-rail')
@@ -377,13 +323,13 @@ test('mobile viewport 390x844: usable layout, no horizontal overflow', async ({ 
   )
   expect(overflow).toBeLessThanOrEqual(1)
 
-  await pinForShot(page)
+  await pinChromeForShot(page)
   await page.screenshot({ path: `${EVIDENCE}blackbox-e2e-mobile-390.png`, fullPage: true })
 })
 
 test('reload mid-session: empty hero returns, URL-param prefill keeps the form working', async ({ page }) => {
   await page.goto('/valuation')
-  await fillCore(page, REALISTIC)
+  await fillValuationForm(page, REALISTIC)
   await submitAndCapture(page)
   await expect(page.locator('.valuation-rail .result-price')).toHaveText(/\$[\d,]+/)
 
@@ -441,46 +387,29 @@ test('neighborhood select lists exactly the 25 geo-CSV neighborhoods; unknown re
 
 test('backend down → error + Try again → backend restart → full recovery (LAST)', async ({ page }) => {
   test.setTimeout(240_000)
-  const killed = await killPort(BACKEND_PORT)
+  await killPort(BACKEND_PORT)
   // The scenario is "backend down → recovery". A backend that was already
-  // down (killed === false) is still exactly the state this test needs to
-  // exercise the down-UI; only the respawn below must always run.
+  // down is still exactly the state this test needs to exercise the down-UI;
+  // the shared ensureBackend below brings it back up either way.
   await page.waitForTimeout(1000)
 
   await page.goto('/valuation')
   await expect(page.locator('.api-status--down').first()).toHaveText('API offline')
   await page.getByRole('button', { name: 'Estimate value' }).click()
 
+  // Scoped to main — the same copy also lands in the error toast (Notifications).
   const error = page
+    .locator('main')
     .getByRole('alert')
     .filter({ hasText: 'Cannot reach the PropPulse API' })
   await expect(error).toBeVisible()
   const tryAgain = page.getByRole('button', { name: 'Try again' })
   await expect(tryAgain).toBeVisible()
 
-  // Restart the backend exactly like a user would (same command as README/E2E.md).
-  spawn(
-    path.join(REPO_ROOT, '.venv', 'Scripts', 'python.exe'),
-    ['-m', 'uvicorn', 'backend.app.main:app', '--port', String(BACKEND_PORT)],
-    {
-      cwd: REPO_ROOT,
-      env: { ...process.env, CORS_ORIGINS: FRONTEND_ORIGIN },
-      detached: true,
-      stdio: 'ignore',
-    },
-  ).unref()
-  await expect
-    .poll(
-      async () => {
-        try {
-          return (await fetch(`http://localhost:${BACKEND_PORT}/health`)).status
-        } catch {
-          return 0
-        }
-      },
-      { timeout: 180_000, intervals: [1000, 2000, 3000] },
-    )
-    .toBe(200)
+  // Restart the backend exactly like a user would (same command as
+  // README/E2E.md, via the shared helper — it respawns only if :8200 is down,
+  // then waits for health).
+  await ensureBackend()
 
   // "Try again" re-submits the kept payload and the result renders.
   await tryAgain.click()

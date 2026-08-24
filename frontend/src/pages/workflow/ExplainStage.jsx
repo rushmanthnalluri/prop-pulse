@@ -17,7 +17,9 @@ import * as wf from '../../api/workflow'
 import { useApi } from '../../api/useApi'
 import { formatDateTime } from '../../format'
 import { EmptyState, ErrorState, PanelSkeleton } from '../../components/StateView'
+import FindCard from '../../components/workflow/FindCard'
 import { useWorkflow } from './WorkflowShell'
+import { IconArrowRight, IconBars, IconBook, IconGauge, IconTrophy } from './icons'
 import '../../styles/workflow-bridge.css'
 
 export default function ExplainStage() {
@@ -39,9 +41,7 @@ export default function ExplainStage() {
   const { data: regressionJob, loading, error, reload } = useApi(fetchTeaser)
 
   const doneCandidates = regressionJob
-    ? Object.entries(regressionJob.results ?? {})
-        .filter(([, r]) => r?.status === 'done')
-        .map(([name]) => name)
+    ? wf.doneCandidateEntries(regressionJob).map(([name]) => name)
     : []
 
   return (
@@ -98,7 +98,8 @@ export default function ExplainStage() {
                 className="btn btn-secondary btn-sm"
                 onClick={() => goToStage('08-evaluate')}
               >
-                Open importance in stage 08 →
+                Open importance in stage 08
+                <IconArrowRight />
               </button>
             </div>
           </div>
@@ -137,34 +138,22 @@ export default function ExplainStage() {
             find:
           </p>
           <div className="wf-find-grid">
-            <div className="wf-find-card">
-              <span className="wf-find-title">The champions</span>
-              <p className="wf-find-body">
-                Which models won selection — regression, classification, clustering —
-                and the rationale for each pick.
-              </p>
-            </div>
-            <div className="wf-find-card">
-              <span className="wf-find-title">Performance &amp; uncertainty</span>
-              <p className="wf-find-body">
-                Validation and test metrics, confusion matrices, and the
-                champion-vs-runner-up bootstrap — stated even when not decisive.
-              </p>
-            </div>
-            <div className="wf-find-card">
-              <span className="wf-find-title">Global SHAP drivers</span>
-              <p className="wf-find-body">
-                Mean |SHAP| importance across every model feature — the champion&rsquo;s
-                global drivers of price.
-              </p>
-            </div>
-            <div className="wf-find-card">
-              <span className="wf-find-title">Methodology &amp; caveats</span>
-              <p className="wf-find-body">
-                How the champions were trained and judged — the leakage-safe protocol
-                and its limits, stated plainly.
-              </p>
-            </div>
+            <FindCard Icon={IconTrophy} title="The champions">
+              Which models won selection — regression, classification, clustering —
+              and the rationale for each pick.
+            </FindCard>
+            <FindCard Icon={IconGauge} title="Performance &amp; uncertainty">
+              Validation and test metrics, confusion matrices, and the
+              champion-vs-runner-up bootstrap — stated even when not decisive.
+            </FindCard>
+            <FindCard Icon={IconBars} title="Global SHAP drivers">
+              Mean |SHAP| importance across every model feature — the champion&rsquo;s
+              global drivers of price.
+            </FindCard>
+            <FindCard Icon={IconBook} title="Methodology &amp; caveats">
+              How the champions were trained and judged — the leakage-safe protocol
+              and its limits, stated plainly.
+            </FindCard>
           </div>
           <p className="wf-bridge-note">
             Honest split: champion explainability (SHAP, test metrics) lives on /model;
@@ -172,7 +161,8 @@ export default function ExplainStage() {
             no test numbers exist in the workbench.
           </p>
           <Link className="btn btn-primary wf-bridge-cta" to="/model">
-            Open Model Insights →
+            Open Model Insights
+            <IconArrowRight />
           </Link>
         </div>
       </section>

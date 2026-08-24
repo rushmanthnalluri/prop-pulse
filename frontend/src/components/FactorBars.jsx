@@ -33,7 +33,7 @@ export default function FactorBars({ factors }) {
           <EmptyState kicker="No explanation" title="Explanation unavailable for this estimate">
             <p className="empty-state-detail">
               The valuation itself is unaffected — see global drivers on{' '}
-              <Link to="/model">Model Insights →</Link>
+              <Link to="/model">Model Insights</Link>
             </p>
           </EmptyState>
         ) : (

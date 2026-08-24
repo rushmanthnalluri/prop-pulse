@@ -40,7 +40,7 @@ contrast (backdrop deepened, text/status brightened; the amber accent ramp is un
 | `--slate` | `#6E8FA0` | chart second series; map cluster-position marker |
 
 One-offs (same as reference): `#3A403B` negative donut segment
-(`chartTheme.CHART_PALETTE.negativeSegment` — same value as `--border-strong`);
+(same value as `--border-strong`);
 `rgba(217,166,63,0.24)` text selection; `rgba(217,166,63,0.4)` badge/banner/bench
 borders; `rgba(217,166,63,0.05)` champion-row + cm tp/tn tint; `rgba(217,166,63,0.06)`
 bench-banner/alert-warn bg; `rgba(198,93,85,0.45)` alert-error border;
@@ -248,14 +248,13 @@ dark-track variant for non-primary buttons. Focus: global amber outline (below).
 | Tooltip | `tooltipProps` | bg `#1B1F1C`, 1px `#363D37`, radius 6, padding 10, mono 12px, no color chips, `boxShadow: 'none'`; cursor fill 0.04 wash |
 | Legend | `legendProps` | 9px rect swatches, mono 11px text-2 (multi-series only) |
 | Animation | `getAnimationProps(reduced)` | 450ms ease-out; 0ms under reduced motion (`CHART_ANIMATION_MS`) |
-| Heights | `CHART_HEIGHT` | 200 / 320 / 340 = `.chart-wrap` / `.chart-wrap-tall` / `.h-340` |
+| Heights | CSS classes | 200 / 320 / 340 = `.chart-wrap` / `.chart-wrap-tall` / `.h-340` |
 
 Palette (`CHART_PALETTE`): accent `#D9A63F` / fill 0.55 · slate `#6E8FA0` / 0.45 · neutral
-`#8A9189` / 0.4 · danger `#C65D55` / 0.55 · `negativeSegment` `#3A403B` · grid/tick/text values
-as tokens. `MODEL_COLORS` pins logistic_regression grey / random_forest slate /
-gradient_boosting amber (never reassigned); workbench candidates map onto theme hues only
-(xgboost amber, random_forest slate, baselines grey — D46). `DONUT_COLORS` = accent +
-negative segment; the home donut instead uses `clusterColor()` for micro-market identity (D14).
+`#8A9189` / 0.4 · danger `#D36B62` / 0.55 · grid/tick/text values
+as tokens. Workbench candidates map onto theme hues only
+(xgboost amber, random_forest slate, baselines grey — D46).
+The home donut uses `clusterColor()` for micro-market identity (D14).
 
 Per-type as implemented: histograms = amber bars (`accentFill` + 1px accent stroke, radius 1.5)
 + `#EBECE8` 1.5px smoothed outline; missing-values = danger bars 320px; influence/importance =
@@ -300,7 +299,7 @@ flip); boxplot SVG chrome
 - **Loading**: layout-matched `.skeleton` blocks (flat `--raised` bg + opacity pulse,
   reduced-motion safe) — panel lines, metric strips, 200px chart frames; `role="status"` on busy lines.
 - **Busy**: `BusyButton` = disabled + 12px spinner + verb label; stale content dims
-  (`.rail-stack--dim`, `.result-panel--busy`, `.wf-dimmed`, `.wfv-dim`) with `aria-busy`.
+  (shared `.dim-stale` utility) with `aria-busy`.
 - **Error**: shared `ErrorState` (alert language + "Try again" btn-sm) per async unit;
   `.alert-error` with `role="alert"`; in-card compact alerts on viz cards; shell-level
   down/degraded banners; route `ErrorBoundary` crash box with Reload/Back actions.

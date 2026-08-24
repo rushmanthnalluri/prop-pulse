@@ -8,7 +8,7 @@
  * dollar impacts (CONTRACT §1.7).
  */
 import { useMemo } from 'react'
-import { formatNumber, prettyFeature } from '../../format'
+import { formatNumber, prettyFeature, sortedImportanceEntries } from '../../format'
 import DriverBars from '../shared/DriverBars'
 import ChartA11yTable from '../shared/ChartA11yTable'
 
@@ -32,9 +32,7 @@ function humanizeAggregation(aggregation) {
 
 export default function GlobalDrivers({ payload }) {
   const rows = useMemo(() => {
-    return Object.entries(payload?.importance ?? {})
-      .filter(([, value]) => Number.isFinite(Number(value)))
-      .sort((a, b) => Number(b[1]) - Number(a[1]))
+    return sortedImportanceEntries(payload?.importance)
       .slice(0, TOP_N)
       .map(([feature, weight], index) => ({
         rank: index + 1,
@@ -52,7 +50,15 @@ export default function GlobalDrivers({ payload }) {
   }
 
   return (
-    <>
+    <div className="insights-drivers">
+      {/* Ledger column head — mirrors the .driver-row--numbered grid tracks
+          (insights.css keeps the two in lockstep across breakpoints). Screen
+          readers get the same labels from the ChartA11yTable columns below. */}
+      <div className="insights-drivers-head" aria-hidden="true">
+        <span />
+        <span>Feature</span>
+        <span className="insights-drivers-head-num">Mean |SHAP|</span>
+      </div>
       <DriverBars importance={payload?.importance} top={TOP_N} numbered />
       <ChartA11yTable
         caption={`Top ${rows.length} of ${totalFeatures || '—'} model features by mean absolute SHAP value`}
@@ -73,6 +79,6 @@ export default function GlobalDrivers({ payload }) {
         {totalFeatures || '—'} model features — relative influence on the
         log-price prediction, not dollar impacts.
       </p>
-    </>
+    </div>
   )
 }

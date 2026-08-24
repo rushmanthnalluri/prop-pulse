@@ -1,34 +1,127 @@
 /* ==========================================================================
-   ML Workbench — stage 01 Upload Dataset (blueprint §8.2)
-   Page-scoped styles for UploadStage + UploadDropzone + ValidationReport.
-   The dropzone, loaded panel, metrics, tables, alerts and buttons are the
-   shared styles.css vocabulary (.upload-drop, .loaded-panel, .metrics,
-   .table, .alert); only stage-specific pieces live here. Tokens are never
-   redefined; hairlines over boxes; no shadows/gradients; radius 4/6/8 only.
+   ML Workbench — stage 01 Upload Dataset (blueprint §8.2) + DatasetPicker
+   shell chrome. Imported by UploadStage AND by components/workflow/
+   DatasetPicker.jsx (the picker renders on every workflow page), so every
+   rule below is strictly component-scoped (.upload-drop / .wfu-* /
+   .loaded-panel / .wf-ds-*) and cannot leak into unrelated pages. Tokens are
+   never redefined; hairlines over boxes; radius 4/6/8 only; tables opt into
+   the shared .table-zebra idiom (styles.css). Base
+   picker/dropzone layout lives in workflow.css and styles.css — this sheet
+   layers only the refined states on top (ancestor-scoped so they win
+   regardless of stylesheet order); anything the base already says verbatim
+   is said once, there, not duplicated here.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   Dropzone — states the shared .upload-drop doesn't cover
+   Dropzone — quiet surface at rest, a half-step accent on hover/focus, and
+   the committed "catch" state on drag-over (solid border, inner hairline,
+   inverted icon tile)
    -------------------------------------------------------------------------- */
 
-/* Mid-upload lock: selection is frozen while the POST is in flight. */
-.upload-drop.is-disabled { opacity: 0.6; cursor: default; }
-.upload-drop.is-disabled:hover { border-color: var(--border-strong); background: none; }
+/* Resting state reads as a quiet surface card so the dashed hairline has
+   something to sit on; states below layer the accent language over it. */
+.upload-drop {
+  background: var(--card-sheen), var(--surface);
+  transition:
+    border-color var(--dur-hover),
+    background var(--dur-hover),
+    box-shadow var(--dur-hover);
+}
+/* Hover/focus is the half-step: the border warms toward the accent and the
+   tile tints, but the full accent border is reserved for the file overhead. */
+.upload-drop:hover,
+.upload-drop:focus-within {
+  border-color: var(--accent-border);
+  background: linear-gradient(180deg, var(--accent-wash) 0%, rgba(217, 166, 63, 0.02) 100%),
+    var(--surface);
+}
+/* Drag-over is the committed state: the dash becomes a solid accent outline
+   with an inner hairline so the zone visibly "catches" the file. */
+.upload-drop.is-dragover {
+  border-color: var(--accent);
+  border-style: solid;
+  background: linear-gradient(180deg, var(--accent-wash) 0%, rgba(217, 166, 63, 0.03) 100%),
+    var(--surface);
+  box-shadow: inset 0 0 0 1px var(--accent-border);
+}
 
-/* Client-side pre-check failure (extension / empty / size) — one inline line. */
-.wfu-drop-error { font-size: 12.5px; color: var(--danger); margin: 8px 0 0; }
+/* Affordance tile above the title (UploadDropzone renders the SVG). */
+.upload-drop-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--raised);
+  color: var(--accent);
+  transition:
+    border-color var(--dur-hover),
+    background var(--dur-hover),
+    color var(--dur-hover);
+}
+.upload-drop:hover .upload-drop-icon,
+.upload-drop:focus-within .upload-drop-icon {
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+/* The catch: the tile inverts to solid amber — the zone's strongest signal. */
+.upload-drop.is-dragover .upload-drop-icon {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* The chosen filename reads as an accent pill; the empty state keeps the
+   same line height so selecting a file never shifts the zone. */
+.upload-drop-filename { min-height: 22px; }
+.upload-drop-filename:not(:empty) {
+  padding: 1px 8px;
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-sm);
+  background: var(--accent-wash);
+}
+
+/* Mid-upload lock: the dash solidifies and the zone dims while the POST is
+   in flight (the icon tile carries the spinner, rendered by the component). */
+.upload-drop.is-disabled { opacity: 0.6; cursor: not-allowed; border-style: solid; }
+.upload-drop.is-disabled:hover,
+.upload-drop.is-disabled:focus-within {
+  border-color: var(--border-strong);
+  background: var(--card-sheen), var(--surface);
+  box-shadow: none;
+}
+.upload-drop.is-disabled .upload-drop-icon { border-color: var(--border); background: var(--raised); }
+
+/* Client-side pre-check failure (extension / empty / size) — one inline line
+   with a leading alert glyph, so the error never reads as colour-only. */
+.wfu-drop-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--danger);
+  margin: 8px 0 0;
+}
+.wfu-drop-error svg { flex-shrink: 0; margin-top: 2.5px; }
 
 /* --------------------------------------------------------------------------
-   Validation report — per-check rows inside the alert (§3.1/§6.3-01)
+   Validation report — per-check rows inside the alert (§3.1/§6.3-01).
+   PASS rows stay quiet; WARN/FAIL rows take a leading status edge (the
+   alert language's severity-rides-the-leading-edge idiom, row scale).
    -------------------------------------------------------------------------- */
 
 .wfu-report-slot { margin-top: 16px; }
-.wfu-report--ok { border-color: var(--accent-border); background: var(--accent-wash); }
+.wfu-report--ok {
+  border-color: var(--accent-border);
+  background: linear-gradient(180deg, var(--accent-wash) 0%, rgba(217, 166, 63, 0.03) 100%);
+}
 
 .wfu-checks {
-  list-style: none;
   margin: 10px 0 0;
-  padding: 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   background: var(--surface);
@@ -41,17 +134,24 @@
   padding: 8px 12px;
   border-top: 1px solid var(--border);
   font-size: 12.5px;
+  transition: background var(--dur-hover);
 }
 .wfu-check:first-child { border-top: none; }
+.wfu-check:hover { background: var(--raised); }
+.wfu-check--warn { box-shadow: inset 2px 0 0 rgba(217, 166, 63, 0.55); }
+.wfu-check--fail { box-shadow: inset 2px 0 0 rgba(211, 107, 98, 0.6); }
 /* Status badge sits centered against the baseline-aligned text row; the
-   PASS/WARN/FAIL colours come from the shared .badge-* modifiers. */
+   fixed width keeps PASS/WARN/FAIL in a clean column. Colours come from the
+   shared .badge-* modifiers. */
 .wfu-check-status {
   flex-shrink: 0;
   align-self: center;
+  min-width: 46px;
+  text-align: center;
 }
 .wfu-check-code {
   flex-shrink: 0;
-  min-width: 128px;
+  min-width: 136px;
   font-size: 11px;
   letter-spacing: 0.07em;
   text-transform: uppercase;
@@ -72,11 +172,66 @@
 .wfu-report-list li { margin: 3px 0; }
 
 /* --------------------------------------------------------------------------
+   Loaded panel — columns/preview tables: zebra/hover via the shared
+   .table-zebra idiom; the sticky-header separator lives in the base
+   .table-sticky rule (styles.css).
+   -------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------
    Loaded panel — Remove-file inline confirm (never window.confirm)
    -------------------------------------------------------------------------- */
 
 .wfu-remove-confirm { margin: 0 0 18px; }
 .wfu-remove-error { color: var(--danger); font-size: 12.5px; margin: 8px 0 0; }
+
+/* --------------------------------------------------------------------------
+   DatasetPicker — refined states layered over workflow.css's base (which
+   already owns chip/panel/item layout, hovers, and the active wash + bar).
+   -------------------------------------------------------------------------- */
+
+/* An open chip warms to the accent border — the control and its panel read
+   as one connected layer. */
+.wf-ds .wf-ds-chip[aria-expanded='true'] { border-color: var(--accent-border); }
+/* The shape meta never wraps inside the chip — the name (ellipsis-capable)
+   absorbs narrow widths instead of the chip growing a second line. */
+.wf-ds .wf-ds-chip-meta { white-space: nowrap; }
+
+/* Entrance for the floating panel — the global prefers-reduced-motion rule
+   collapses this to an instant swap. */
+.wf-ds .wf-ds-panel { animation: wf-ds-in 0.18s var(--ease-out); transform-origin: top right; }
+@keyframes wf-ds-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Trailing check glyph on the active record (the component renders it only
+   there) — the wash + leading bar are no longer the only active signals. */
+.wf-ds-active-mark {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  color: var(--accent);
+}
+
+/* The confirm row's commit button is the destructive action — it reads
+   danger, not neutral-secondary. */
+.wf-ds .wf-ds-confirm-actions .btn:first-child {
+  border-color: rgba(211, 107, 98, 0.45);
+  color: var(--danger);
+}
+.wf-ds .wf-ds-confirm-actions .btn:first-child:hover:not([disabled]) {
+  background: var(--danger-dim);
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* Footer link reads as quiet prose, amber on hover like every prose link. */
+.wf-ds .wf-ds-foot a { color: var(--text-2); transition: color var(--dur-hover); }
+.wf-ds .wf-ds-foot a:hover { color: var(--accent); }
+
+/* Thin scrollbar for the dataset list, matching the table-scroll idiom. */
+.wf-ds-list { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
 
 /* --------------------------------------------------------------------------
    Tables — schema identifiers keep their exact case in preview headers

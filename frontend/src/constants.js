@@ -96,6 +96,12 @@ export function clusterColor(id) {
   if (!Number.isInteger(n) || n < 0) return '#6e7c8b'
   return CLUSTER_COLORS[n % CLUSTER_COLORS.length]
 }
+
+/** Cluster display label, mirroring ClusterCard/TrendsChart fallbacks. */
+export const clusterLabel = (cluster) =>
+  typeof cluster?.label === 'string' && cluster.label
+    ? cluster.label
+    : `Cluster ${cluster?.cluster_id ?? '?'}`
 export const QUALITY_WITH_NONE = ['Ex', 'Gd', 'TA', 'Fa', 'Po', 'None']
 export const QUALITY_NO_PO = ['Ex', 'Gd', 'TA', 'Fa']
 export const BSMT_QUAL = ['Ex', 'Gd', 'TA', 'Fa', 'None']

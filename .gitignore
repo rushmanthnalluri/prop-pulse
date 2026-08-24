@@ -20,6 +20,9 @@ mlruns/
 logs/
 *.log
 
+# --- Workflow uploads (runtime user data, ml/workflow -> data/uploads/<id>/) ---
+data/uploads/
+
 # --- Node / frontend ---
 node_modules/
 frontend/dist/

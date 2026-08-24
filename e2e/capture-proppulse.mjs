@@ -96,4 +96,4 @@ await mctx.close();
 
 await browser.close();
 console.log('console errors:', consoleErrors.length ? consoleErrors : 'none');
-console.log('done →', OUT);
+console.log('done:', OUT);

@@ -17,7 +17,6 @@ Run from the repo root: ``.venv/Scripts/python.exe -m pytest backend/tests -q``.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import joblib
 import numpy as np

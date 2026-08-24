@@ -1,16 +1,23 @@
 /* ==========================================================================
-   ML Workbench — stage 03 Descriptive Statistics (blueprint §8.4)
-   Page-scoped styles for StatsStage.jsx. Imported AFTER styles.css by the
-   page so equal-specificity rules win. Tokens come from styles.css only —
-   never redefined here. The stats table itself is entirely shared vocabulary
-   (.table-scroll.scroll-68 + .table.table-sticky + .sticky-col + num/dim/
-   accent cell modifiers); this file carries only what the shared system
-   does not.
+   ML Workbench — stage 03 Descriptive Statistics (blueprint §8.4) + the
+   stage-07 jobs chrome (JobStatus / JobsList / TrainPanel import this sheet
+   directly — TrainStage's own stylesheets are owned elsewhere, so every
+   stage-07 rule below is scoped under .wf-jobstatus / .wf-jobs / .wf-trainpanel
+   and cannot leak). Imported AFTER styles.css so equal-specificity rules
+   win; tokens come from styles.css only — never redefined here. Tables opt
+   into the shared .table-zebra idiom (styles.css).
    ========================================================================== */
 
-/* ProvenanceBanner directly under the page head — tighten the rhythm. */
-.wfs-banner-slot { margin-top: -14px; }
-.wfs-banner-slot + .section { padding-top: 22px; }
+/* --------------------------------------------------------------------------
+   Stats table (.table-scroll.scroll-68 + .table-sticky + .sticky-col) —
+   zebra/hover come from the shared .table-zebra idiom (styles.css); the
+   sticky-header separator is folded into the base .table-sticky rule. The
+   sticky first column must stay opaque to cover scrolled-under cells, so its
+   zebra step is the solid equivalent of 2% white over --bg.
+   -------------------------------------------------------------------------- */
+
+.scroll-68 .table tbody tr:nth-child(even) .sticky-col { background: #101211; }
+.scroll-68 .table tbody tr:hover .sticky-col { background: var(--raised); }
 
 /* Footnote stack under the stats table: the target's own note (verbatim
    from the payload) + the missing-values cross-link (blueprint §8.4). */
@@ -23,3 +30,60 @@
 
 /* CTA inside the no-numeric-fields empty state. */
 .wfs-empty-cta { margin-top: 16px; }
+
+/* --------------------------------------------------------------------------
+   Stage 07 — JobStatus live panel (base layout in workflow-train.css; the
+   rules below layer the refined states on top, ancestor-scoped so they win
+   regardless of stylesheet order).
+   -------------------------------------------------------------------------- */
+
+/* Candidate rows: the list bleeds 8px into the panel padding so the hover
+   fill and row hairlines span one continuous column. */
+.wf-jobstatus .wf-jobrows { margin: 14px -8px 0; }
+.wf-jobstatus .wf-jobrow {
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+  transition: background var(--dur-hover);
+}
+.wf-jobstatus .wf-jobrow:hover { background: var(--raised); }
+.wf-jobstatus .wf-jobrow-metrics { font-variant-numeric: tabular-nums; }
+
+/* --------------------------------------------------------------------------
+   Stage 07 — JobsList history table (wrapper gains .wf-jobs). Zebra skips
+   the active row so its accent wash stays clean; the active row gets a
+   leading accent bar instead of a heavier fill.
+   -------------------------------------------------------------------------- */
+
+.wf-jobs .table tbody tr:nth-child(even):not(.wf-row-active) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+.wf-jobs .table tbody tr:hover:not(.wf-row-active) td { background: var(--raised); }
+.wf-jobs .table tbody tr.wf-row-active td { background: var(--accent-wash); }
+.wf-jobs .table tbody tr.wf-row-active:hover td { background: rgba(217, 166, 63, 0.09); }
+.wf-jobs .table tbody tr.wf-row-active td:first-child { box-shadow: inset 2px 0 0 var(--accent); }
+
+/* --------------------------------------------------------------------------
+   Stage 07 — TrainPanel candidate picker: each candidate becomes a bordered
+   card; the label fills the card so the whole tile stays clickable. The
+   checked tint uses :has() — a progressive enhancement that simply falls
+   back to the plain card in older engines.
+   -------------------------------------------------------------------------- */
+
+.wf-trainpanel .wf-candidates > li {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  transition: border-color var(--dur-hover), background var(--dur-hover);
+}
+.wf-trainpanel .wf-candidates > li:hover {
+  border-color: var(--border-strong);
+  background: var(--raised);
+}
+.wf-trainpanel .wf-candidates > li:has(input:checked) {
+  border-color: var(--accent-border);
+  background: var(--accent-wash);
+}
+/* Reset the standalone .wf-check negative-margin trick (workflow-train.css)
+   inside the cards — the label is the card's content, not a floating row. */
+.wf-trainpanel .wf-candidates .wf-check { margin: 0; padding: 12px; height: 100%; }
+.wf-trainpanel .wf-candidates .wf-check:hover { background: none; }

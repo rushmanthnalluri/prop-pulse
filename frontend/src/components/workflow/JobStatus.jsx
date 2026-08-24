@@ -12,17 +12,46 @@
  */
 import { useEffect, useRef } from 'react'
 import { Link } from 'react-router'
-import { isJobTerminal, useJobPolling } from '../../api/workflow'
+import { JOB_STATUS_CHIP, isJobTerminal, useJobPolling } from '../../api/workflow'
 import { ErrorState, PanelSkeleton } from '../StateView'
 import { formatMetric, formatNumber } from '../../format'
+// Live-panel refinements (progress gradient, row hovers) — loaded here
+// because TrainStage's own stylesheets are owned outside this component.
+import '../../styles/workflow-stats.css'
 
-const STATUS_CHIP = {
-  queued: 'badge-muted',
-  preparing: 'badge-muted',
-  running: 'badge-accent',
-  pending: 'badge-muted',
-  done: 'badge-accent',
-  failed: 'badge-danger',
+/**
+ * Leading status glyph per candidate row — the CI-job-list idiom: shape +
+ * colour + the text badge together, never colour alone. Inline SVG,
+ * currentColor, one 1.5 stroke; the colour comes from the modifier class.
+ */
+function StatusGlyph({ status }) {
+  const s = status ?? 'pending'
+  let body
+  if (s === 'done') {
+    body = <path d="M4.6 8.6l2.3 2.3L11.4 5.4" />
+  } else if (s === 'failed') {
+    body = <path d="M5 5l6 6M11 5l-6 6" />
+  } else if (s === 'running') {
+    body = <circle cx="8" cy="8" r="3.2" fill="currentColor" stroke="none" />
+  } else {
+    body = <circle cx="8" cy="8" r="5.2" />
+  }
+  return (
+    <span className={`wf-jobrow-ico wf-jobrow-ico--${s}`} aria-hidden="true">
+      <svg
+        viewBox="0 0 16 16"
+        width="14"
+        height="14"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {body}
+      </svg>
+    </span>
+  )
 }
 
 /** Headline validation metric per objective (§3.9 result shapes). */
@@ -80,58 +109,81 @@ export default function JobStatus({ jobId, datasetId, onTerminal }) {
   const done = Number(progress.done) || 0
   const pct = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0
   const results = job.results && typeof job.results === 'object' ? job.results : {}
+  const resultEntries = Object.entries(results)
+  // Queued/preparing: no totals reported yet — the track breathes until the
+  // worker's first progress write, so an empty 0% bar never reads as stalled.
+  const awaiting = total === 0 && active
 
   return (
-    <div className="panel wf-jobstatus" aria-live="polite">
+    <div className="panel wf-jobstatus">
       <div className="panel-head">
         <span className="panel-title">
           Job <span className="mono">{job.job_id}</span>
         </span>
-        <span className={`badge ${STATUS_CHIP[job.status] ?? 'badge-muted'}`}>
+        {/* Status transitions are the one live announcement: the meta line's
+            elapsed seconds rewrite every poll, so an aria-live region around
+            the whole panel would flood screen readers. */}
+        <span
+          className={`badge ${JOB_STATUS_CHIP[job.status] ?? 'badge-muted'}`}
+          aria-live="polite"
+          aria-atomic="true"
+        >
           {active && <span className="wf-pulse-dot" aria-hidden="true" />}
           {job.status}
         </span>
       </div>
       <div className="panel-body">
         <div
-          className="wf-progress"
+          className={`wf-jobprogress${awaiting ? ' wf-jobprogress--awaiting' : ''}`}
           role="progressbar"
           aria-valuenow={done}
           aria-valuemin={0}
           aria-valuemax={total || 1}
           aria-label={`Training progress — ${done} of ${total} candidates`}
         >
-          <div className="wf-progress-fill" style={{ width: `${pct}%` }} />
+          <div className="wf-jobprogress-fill" style={{ width: `${pct}%` }} />
         </div>
         <p className="wf-jobstatus-meta mono">
           {done}/{total} candidates
+          {total > 0 ? ` · ${pct}%` : ''}
           {progress.current ? ` · running: ${progress.current}` : ''}
           {` · ${formatNumber(progress.elapsed_s, 0)}s elapsed`}
           {job.objective ? ` · ${job.objective}` : ''}
         </p>
 
-        <ul className="wf-jobrows">
-          {Object.entries(results).map(([name, result]) => (
-            <li className="wf-jobrow" key={name}>
-              <span className="mono wf-jobrow-name">{name}</span>
-              <span className={`badge ${STATUS_CHIP[result?.status] ?? 'badge-muted'}`}>
-                {result?.status ?? 'pending'}
-              </span>
-              <span className="wf-jobrow-metrics mono">
-                {result?.status === 'done' && headline(job.objective, result.val_metrics)}
-                {result?.status === 'done' && result.train_seconds != null && (
-                  <span className="dim"> · {formatNumber(result.train_seconds, 1)}s</span>
+        {resultEntries.length === 0 && active && (
+          <p className="note wf-jobstatus-waiting">
+            Candidate rows appear here as the worker reports each fit.
+          </p>
+        )}
+        {resultEntries.length > 0 && (
+          <ul className="wf-jobrows">
+            {resultEntries.map(([name, result]) => (
+              <li className="wf-jobrow" key={name}>
+                <StatusGlyph status={result?.status} />
+                <span className="mono wf-jobrow-name">{name}</span>
+                <span className={`badge ${JOB_STATUS_CHIP[result?.status] ?? 'badge-muted'}`}>
+                  {result?.status ?? 'pending'}
+                </span>
+                <span className="wf-jobrow-metrics mono">
+                  {result?.status === 'done' && headline(job.objective, result.val_metrics)}
+                  {result?.status === 'done' && result.train_seconds != null && (
+                    <span className="dim">
+                      {headline(job.objective, result.val_metrics) ? ' · ' : ''}
+                      {formatNumber(result.train_seconds, 1)}s
+                    </span>
+                  )}
+                </span>
+                {result?.status === 'failed' && result.error && (
+                  <details className="wf-jobrow-error">
+                    <summary>error</summary>
+                    <p className="mono">{result.error}</p>
+                  </details>
                 )}
-              </span>
-              {result?.status === 'failed' && result.error && (
-                <details className="wf-jobrow-error">
-                  <summary>error</summary>
-                  <p className="mono">{result.error}</p>
-                </details>
-              )}
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        )}
 
         {job.status === 'failed' && job.error && (
           <div className="alert alert-error mt-12" role="alert">
@@ -143,7 +195,7 @@ export default function JobStatus({ jobId, datasetId, onTerminal }) {
           <p className="note mt-12">
             Job complete.{' '}
             <Link to={`/workflow/08-evaluate?dataset=${datasetId}&job=${job.job_id}`}>
-              Open stage 08 — evaluation →
+              Open stage 08 — evaluation
             </Link>
           </p>
         )}

@@ -9,7 +9,7 @@
  *                 parent (e.g. a submit pipeline):
  *                 <BusyButton busy={submitting} busyLabel="Estimating…">Estimate value</BusyButton>
  *   Self-managed — pass an async `onClick`; the button goes busy until the
- *                 returned promise settles (restored in `finally`):
+ *                 returned promise settles (restored when it settles):
  *                 <BusyButton onClick={async () => reload()} busyLabel="Retrying…">Retry</BusyButton>
  *
  * `busyLabel` is required copy — the verb phrase shown while busy.
@@ -37,7 +37,11 @@ export default function BusyButton({
     // need the controlled `busy` prop instead.
     if (selfManaged && result && typeof result.then === 'function') {
       setInternalBusy(true)
-      result.finally(() => setInternalBusy(false))
+      // then(clear, clear), not .finally(clear): .finally returns a derived
+      // promise that re-rejects, so a caller who let a rejection propagate
+      // would trigger an unhandled rejection here on top of their own.
+      const clear = () => setInternalBusy(false)
+      result.then(clear, clear)
     }
   }
 
@@ -50,7 +54,7 @@ export default function BusyButton({
   return (
     <button
       type={type}
-      className={className}
+      className={busy ? `${className} is-busy` : className}
       disabled={disabled || busy}
       aria-busy={busy || undefined}
       onClick={handleClick}

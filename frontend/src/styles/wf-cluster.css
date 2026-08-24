@@ -17,27 +17,45 @@
   margin-top: 16px;
 }
 .wf-cluster-card {
+  min-width: 0; /* mono stat values never push the grid track out on phones */
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 12px 14px;
-  transition: border-color var(--dur-hover);
+  transition:
+    border-color var(--dur-hover),
+    background-color var(--dur-hover);
 }
-.wf-cluster-card:hover { border-color: var(--border-strong); }
+.wf-cluster-card:hover {
+  border-color: var(--border-strong);
+  background: var(--raised); /* token-sanctioned hover fill */
+}
+/* Swatch + label read as one flex row, optically centred. */
+.wf-cluster-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 .wf-cluster-swatch {
   display: inline-block;
   width: 10px;
   height: 10px;
   border-radius: 2px;
   margin-right: 8px;
+  flex-shrink: 0;
   vertical-align: baseline;
 }
+.wf-cluster-head .wf-cluster-swatch { margin-right: 0; } /* gap carries the rhythm */
 .wf-cluster-label { font-size: 13px; font-weight: 600; text-transform: capitalize; }
+/* Stat grid separates from the head with a hairline — card reads as
+   header + body, not a loose list. */
 .wf-cluster-stats {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 6px 12px;
   margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
 }
 .wf-cluster-stats dt {
   font-family: var(--font-mono);
@@ -53,4 +71,5 @@
   height: 8px;
   border-radius: 50%;
   margin-right: 6px;
+  vertical-align: -1px; /* optically centred against the mono numeral */
 }

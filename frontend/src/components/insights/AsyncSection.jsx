@@ -24,7 +24,7 @@ export default function AsyncSection({
   }
   if (!data) return null
   return (
-    <div aria-busy={loading || undefined} className={loading ? 'insights-stale' : undefined}>
+    <div aria-busy={loading || undefined} className={loading ? 'dim-stale' : undefined}>
       {children(data)}
     </div>
   )

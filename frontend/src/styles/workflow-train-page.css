@@ -23,8 +23,11 @@
 
 /* Candidate detail panel (reference .model-detail). */
 .wftp-inspect .metrics { margin-bottom: 18px; }
+/* Best-params dump closes the panel body as a footnote line. */
 .wftp-inspect-params {
   margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
   overflow-wrap: anywhere;
 }
 .wftp-inspect-actions {

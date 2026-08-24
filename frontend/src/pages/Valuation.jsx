@@ -32,8 +32,8 @@ import { useSearchParams } from 'react-router'
 import { api } from '../api/client'
 import { useApi } from '../api/useApi'
 import { useLocalStorage } from '../hooks/useLocalStorage'
-import { LAST_VALUATION_KEY, NEIGHBORHOODS } from '../constants'
-import { formatDateTime, formatMetric, formatNumber, formatPct } from '../format'
+import { LAST_VALUATION_KEY } from '../constants'
+import { formatDateTime, formatMetric, formatPct } from '../format'
 import { useToast } from '../components/Toast'
 import BusyButton from '../components/shared/BusyButton'
 import useReducedMotion from '../components/shared/useReducedMotion'
@@ -45,6 +45,7 @@ import MicroMarketCard from '../components/valuation/MicroMarketCard'
 import {
   FORM_DEFAULTS,
   parseUrlValues,
+  payloadSummary,
   payloadToFormValues,
   payloadToParams,
 } from '../components/valuation/formConfig'
@@ -81,9 +82,10 @@ export default function ValuationPage() {
   // once, additive — omitted when unavailable, never hardcoded).
   const fetchModelInfo = useCallback((signal) => api.modelInfo(signal), [])
   const { data: modelInfo } = useApi(fetchModelInfo)
-  const testMae = Number(modelInfo?.regression?.test_metrics?.mae)
+  // mae/r2 pass through raw — ResultHero and ConfidenceNote re-wrap and re-guard.
+  const testMae = modelInfo?.regression?.test_metrics?.mae
   const intervalCoverage = Number(modelInfo?.regression?.test_metrics?.interval_coverage)
-  const testR2 = Number(modelInfo?.regression?.test_metrics?.r2)
+  const testR2 = modelInfo?.regression?.test_metrics?.r2
 
   const metaParts = useMemo(() => {
     if (!modelInfo) return []
@@ -157,17 +159,7 @@ export default function ValuationPage() {
   }
 
   // "Restore last valuation" — only when the URL carries no valuation state.
-  const restoreSummary = useMemo(() => {
-    if (!lastPayload || typeof lastPayload !== 'object') return null
-    const parts = []
-    const hood = NEIGHBORHOODS.find((n) => n.value === lastPayload.neighborhood)
-    if (hood) parts.push(hood.label)
-    const area = Number(lastPayload.gr_liv_area)
-    if (Number.isFinite(area)) parts.push(`${formatNumber(area, 0)} sq ft`)
-    const built = Number(lastPayload.year_built)
-    if (Number.isFinite(built)) parts.push(`built ${built}`)
-    return parts.length > 0 ? parts.join(' · ') : null
-  }, [lastPayload])
+  const restoreSummary = useMemo(() => payloadSummary(lastPayload), [lastPayload])
   const showRestore = !prefill && restoreSummary !== null && !restoreDismissed
   const restoreLast = () => {
     setSeed({ values: payloadToFormValues(lastPayload) })
@@ -265,6 +257,21 @@ export default function ValuationPage() {
 
           {!state.loading && !result && (
             <div className="result-panel">
+              <svg
+                className="rail-empty-icon"
+                width="26"
+                height="26"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M3.5 3.5h7.3l9.7 9.7-7.3 7.3-9.7-9.7V3.5z" />
+                <circle cx="8.2" cy="8.2" r="1.4" />
+              </svg>
               <span className="result-kicker">Awaiting input</span>
               <span className="result-verdict result-verdict-idle" aria-hidden="true">
                 —
@@ -287,7 +294,7 @@ export default function ValuationPage() {
 
           {result && (
             <div
-              className={`rail-stack${state.loading || state.error ? ' rail-stack--dim' : ''}`}
+              className={`rail-stack${state.loading || state.error ? ' dim-stale' : ''}`}
               aria-busy={state.loading}
             >
               <ResultHero result={result} coverage={intervalCoverage} mae={testMae} r2={testR2} />

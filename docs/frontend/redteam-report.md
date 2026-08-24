@@ -262,8 +262,8 @@ Strongest audit pass after trust:
 - **Tables**: `aria-sort` on sortable headers (verified `ascending` after click); the
   comps expander has `aria-expanded` + a real accessible name; chart data tables are
   present for screen readers.
-- **Contrast** (computed): `--text-3` on `--bg` 4.91:1 ✓; accent on white 5.22:1 ✓;
-  white on accent 5.22:1 ✓; **`--warn` on `--warn-dim` ≈ 4.05:1 — below the 4.5:1 AA
+- **Contrast** (computed): `--text-3` on `--bg` 4.91:1 (AA pass); accent on white 5.22:1 (AA pass);
+  white on accent 5.22:1 (AA pass); **`--warn` on `--warn-dim` ≈ 4.05:1 — below the 4.5:1 AA
   floor** for the 11px badge text ("SIMULATED TARGET", "REDUCED CONFIDENCE" — the honesty
   badges, of all things). P2: darken `--warn` one step (≈ `#8f5a0c`).
 - Reduced motion: global CSS compression + `useReducedMotion` feeding recharts, smooth

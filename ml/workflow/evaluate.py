@@ -22,7 +22,6 @@ machinery never computes one (§7 explicit omission).
 from __future__ import annotations
 
 import json
-import logging
 from pathlib import Path
 from typing import Any
 
@@ -36,8 +35,6 @@ from ml.clustering.dataset import FEATURE_COLUMNS
 from ml.paths import RANDOM_SEED
 from ml.training.common import regression_metrics, residual_interval
 from ml.training.train_classification import classification_metrics
-
-logger = logging.getLogger(__name__)
 
 __all__ = [
     "CURVE_MAX_POINTS",

@@ -9,11 +9,9 @@ persisted ``val_predictions.csv`` arrays.
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-import numpy as np
 import pandas as pd
 import pytest
 

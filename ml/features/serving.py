@@ -204,9 +204,7 @@ def _parse_sale_date(value: Any) -> tuple[int, int]:
     Accepts ``datetime.date``/``datetime.datetime`` or an ISO ``YYYY-MM-DD``
     (or ``YYYY-MM``) string.
     """
-    if isinstance(value, dt.datetime):
-        return value.year, value.month
-    if isinstance(value, dt.date):
+    if isinstance(value, dt.date):  # dt.datetime is a subclass of dt.date
         return value.year, value.month
     if isinstance(value, str):
         parts = value.strip().split("-")

@@ -25,8 +25,6 @@ Safety (§4):
 from __future__ import annotations
 
 import json
-import logging
-import os
 import re
 from pathlib import Path
 from typing import Any, Callable
@@ -39,8 +37,6 @@ from ml.features.pipeline import build_feature_frame
 from ml.features.stats import NeighborhoodStats
 from ml.features.serving import serving_payload_to_raw
 from ml.workflow.datasets import get_record, sandbox_dir
-
-logger = logging.getLogger(__name__)
 
 __all__ = [
     "CandidateNotReadyError",
@@ -91,8 +87,14 @@ _CACHE: dict[tuple[str, float], Any] = {}
 
 def _cached(path: Path, loader: Callable[[Path], Any]) -> Any:
     path = Path(path)
-    key = (str(path.resolve()), path.stat().st_mtime)
+    resolved = str(path.resolve())
+    key = (resolved, path.stat().st_mtime)
     if key not in _CACHE:
+        # Drop stale entries for the same path (older mtimes) — after a
+        # re-prepare/retrain the superseded artifacts (models included) must
+        # not accumulate for the life of the API process (§4.4).
+        for stale in [k for k in _CACHE if k[0] == resolved]:
+            del _CACHE[stale]
         _CACHE[key] = loader(path)
     return _CACHE[key]
 

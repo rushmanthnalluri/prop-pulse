@@ -1,0 +1,300 @@
+/* ==========================================================================
+   App-shell upgrades (Layout.jsx) — every rule hangs off a .shell-* class;
+   styles.css owns the base shell (.pipeline-sidebar, .pipeline-stepper,
+   .api-status…). shell.css is imported by Layout.jsx, which main.jsx pulls
+   in after styles.css, so equal-specificity overrides resolve here; where a
+   base rule must be beaten outright the selector carries an extra class.
+   No raw hex theme colours — every colour resolves a design token. All
+   motion rides --dur-hover / --ease-apple and is neutralised by the global
+   prefers-reduced-motion block in styles.css.
+   ========================================================================== */
+
+/* Keep the sidebar's own scroll from chaining into the page. */
+.shell-root .pipeline-sidebar { overscroll-behavior: contain; }
+
+/* --------------------------------------------------------------------------
+   Brand row — plain wrapper on desktop; ≤900px it becomes the top bar's
+   first row: brand left, in-flow status chip right (replaces the base
+   absolutely-positioned compact dot at a magic-number offset).
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  .shell-brandrow {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid var(--border);
+  }
+  .shell-brandrow .sidebar-brand {
+    flex: 1;
+    min-width: 0;
+    padding: 13px 16px;
+    border-bottom: none; /* the row carries the hairline */
+  }
+  .shell-brandrow .api-status-compact {
+    position: static; /* beats styles.css `position: absolute; top: 31px` */
+    align-self: center;
+    flex-shrink: 0;
+    gap: 7px;
+    margin-right: 14px;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    color: var(--text-2);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Section captions — quiet trailing hairline sections the rail (desktop;
+   captions are hidden inside the ≤900px strip, see .shell-navwrap below).
+   -------------------------------------------------------------------------- */
+
+.shell-caption {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.shell-caption::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* --------------------------------------------------------------------------
+   Product-nav icons — 18px currentColor glyphs; the active item tints its
+   icon amber to match the step-num accent the pipeline group already had.
+   -------------------------------------------------------------------------- */
+
+.shell-nav-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.pipeline-stepper li.is-active .shell-nav-icon { color: var(--accent); }
+
+/* --------------------------------------------------------------------------
+   Sidebar footer — labelled dataset fact + service-status card. The pill
+   keeps styles.css typography; the card adds the hairline well, a state
+   halo on the dot (shape + label + halo, never colour alone), a quiet
+   re-check affordance and the last-checked timestamp.
+   -------------------------------------------------------------------------- */
+
+.shell-foot-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+.shell-foot-caption {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.shell-foot-fact .sidebar-dataset { color: var(--text-2); }
+
+.shell-status-card {
+  margin-top: 8px;
+  padding: 9px 11px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card-sheen), var(--bg);
+}
+.shell-status-pill { width: 100%; }
+.api-status--up.shell-status-pill .api-status-dot { box-shadow: 0 0 0 3px var(--success-dim); }
+.api-status--degraded.shell-status-pill .api-status-dot { box-shadow: 0 0 0 3px var(--accent-dim); }
+.api-status--down.shell-status-pill .api-status-dot { box-shadow: 0 0 0 3px var(--danger-dim); }
+.shell-status-recheck {
+  width: 13px;
+  height: 13px;
+  margin-left: auto;
+  flex-shrink: 0;
+  opacity: 0.45;
+  transition: opacity var(--dur-hover);
+}
+.shell-status-pill:hover .shell-status-recheck,
+.shell-status-pill:focus-visible .shell-status-recheck { opacity: 1; }
+.shell-status-meta {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-3);
+}
+
+/* --------------------------------------------------------------------------
+   Collapse toggle + collapsed rail (desktop only). The rail never uses
+   display:none on nav labels — it clips them, so link accessible names (and
+   the e2e getByRole name queries) survive collapsing.
+   -------------------------------------------------------------------------- */
+
+.shell-collapse {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 2px 10px 12px;
+  padding: 7px 10px;
+  background: none;
+  border: none;
+  border-radius: var(--radius);
+  color: var(--text-3);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background var(--dur-hover), color var(--dur-hover);
+}
+.shell-collapse:hover { background: var(--raised); color: var(--text); }
+.shell-collapse-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  transition: transform var(--dur-hover);
+}
+@media (max-width: 900px) {
+  .shell-collapse { display: none; }
+}
+
+@media (min-width: 901px) {
+  .shell-root .pipeline-sidebar { transition: width 0.18s var(--ease-apple); }
+  .shell-root--collapsed .pipeline-sidebar { width: 64px; }
+
+  .shell-root--collapsed .sidebar-brand {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  /* Clipped, not removed — accessible names survive the rail. */
+  .shell-root--collapsed .brand-text,
+  .shell-root--collapsed .shell-caption,
+  .shell-root--collapsed .pipeline-stepper .step-label,
+  .shell-root--collapsed .shell-status-label,
+  .shell-root--collapsed .shell-status-meta,
+  .shell-root--collapsed .shell-collapse-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .shell-root--collapsed .pipeline-stepper a {
+    position: relative; /* contain the clipped label */
+    justify-content: center;
+    gap: 0;
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .shell-root--collapsed .shell-foot-fact { display: none; }
+  .shell-root--collapsed .sidebar-footer {
+    align-items: center;
+    padding: 12px 8px 14px;
+  }
+  .shell-root--collapsed .shell-status-card {
+    margin-top: 0;
+    padding: 0;
+    border: none;
+    background: none;
+  }
+  .shell-root--collapsed .shell-status-pill {
+    width: auto;
+    padding: 5px;
+    border-radius: var(--radius);
+  }
+  .shell-root--collapsed .shell-status-pill:hover { background: var(--raised); }
+  .shell-root--collapsed .shell-status-recheck { display: none; }
+  .shell-root--collapsed .shell-collapse {
+    position: relative; /* contain the clipped label */
+    justify-content: center;
+    margin-left: 8px;
+    margin-right: 8px;
+  }
+  .shell-root--collapsed .shell-collapse-icon { transform: rotate(180deg); }
+}
+
+/* --------------------------------------------------------------------------
+   ≤900px: ONE merged horizontal nav strip (pipeline stages, hairline,
+   product pages) inside .shell-navwrap — Layout's scroll-centring effect
+   targets this wrapper. Captions drop out; items become ≥40px one-row touch
+   targets; the right-edge fade is the "more items" affordance (mask alpha
+   channel only — the #000 is not a theme colour).
+   -------------------------------------------------------------------------- */
+
+.shell-navwrap {
+  /* Desktop: plain column that absorbs the aside's free vertical space,
+     keeping the footer pinned to the bottom exactly as before. */
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .shell-navwrap {
+    flex-direction: row;
+    align-items: stretch;
+    overflow-x: auto;
+    padding: 6px 0 8px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent);
+  }
+  .shell-navwrap .shell-caption { display: none; }
+  .shell-navwrap .pipeline-stepper {
+    flex: 0 0 auto;
+    overflow: visible; /* the wrapper scrolls, not each nav */
+    padding-bottom: 0;
+  }
+  .shell-nav--product {
+    border-left: 1px solid var(--border);
+    margin-left: 4px;
+    padding-left: 4px;
+  }
+  .pipeline-stepper.shell-nav a {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 9px 13px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   API banners — leading severity glyph beside the copy.
+   -------------------------------------------------------------------------- */
+
+.shell-banner-msg {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.shell-banner-icon {
+  width: 15px;
+  height: 15px;
+  flex-shrink: 0;
+  color: var(--danger);
+}
+.error-banner--warn .shell-banner-icon { color: var(--accent); }
+
+/* --------------------------------------------------------------------------
+   Page-transition fade — styles.css defines the content-in keyframes; this
+   rule applies the entrance to every direct child of <main> so all pages
+   fade as one on route mount. `backwards` fill only (transforms drop after
+   the entrance, so sticky descendants are safe), and the global
+   prefers-reduced-motion block zeroes it.
+   -------------------------------------------------------------------------- */
+
+.app-body main > * { animation: content-in 0.32s var(--ease-out) backwards; }

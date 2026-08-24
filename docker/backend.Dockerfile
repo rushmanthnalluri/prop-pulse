@@ -61,15 +61,28 @@ USER appuser
 ENV MODEL_DIR=models \
     DATA_DIR=data \
     MLFLOW_TRACKING_URI="" \
-    API_HOST=0.0.0.0 \
-    API_PORT=8000 \
-    VITE_API_URL=http://localhost:8000 \
     LOG_LEVEL=INFO \
     PREDICTION_LOG_PATH=logs/predictions.jsonl \
     DRIFT_PSI_THRESHOLD=0.2
 
 EXPOSE 8000
 
-# The image binds 0.0.0.0 (required inside a container); API_HOST above is the
-# settings default, the flag is authoritative.
-CMD ["python", "-m", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# The image binds 0.0.0.0 (required inside a container) via the CMD's --host
+# flag — no app setting reads a host/port var, the flags are authoritative.
+#
+# `sh -c "exec ..."` form: JSON exec-form cannot expand $LOG_LEVEL, so a shell
+# does it; `exec` replaces the shell, keeping uvicorn as PID 1 so SIGTERM still
+# reaches it directly. --log-level puts uvicorn's own loggers (uvicorn /
+# uvicorn.error / uvicorn.access) on the same LOG_LEVEL that
+# logging.basicConfig (backend/app/main.py) applies to the root logger for the
+# app loggers — uvicorn's dictConfig gives its loggers dedicated handlers with
+# propagate=False, so nothing double-logs and LOG_LEVEL stays the single
+# 12-factor control. Uvicorn's CLI accepts only lowercase level names
+# (click.Choice is case-sensitive), hence the `tr` pipe; the :-INFO fallback
+# covers an empty/unset override. --timeout-graceful-shutdown 10 lets in-flight
+# requests drain for up to 10s after SIGTERM before the worker exits.
+# Deliberately NO --proxy-headers: nothing in the app reads client IP (no IP
+# logging or rate limiting — backend/app/monitoring/middleware.py), no proxy
+# fronts uvicorn in compose (the browser calls the backend directly), and
+# uvicorn would only trust X-Forwarded-* from 127.0.0.1 by default anyway.
+CMD ["sh", "-c", "exec python -m uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --log-level \"$(printf '%s' \"${LOG_LEVEL:-INFO}\" | tr '[:upper:]' '[:lower:]')\" --timeout-graceful-shutdown 10"]

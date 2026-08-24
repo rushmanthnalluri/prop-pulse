@@ -36,7 +36,11 @@ const CHECK_LABELS = {
 }
 
 const STATUS_TEXT = { pass: 'PASS', warn: 'WARN', fail: 'FAIL' }
-const STATUS_BADGE = { pass: 'badge-accent', warn: 'badge-warn', fail: 'badge-danger' }
+/* Pass rides the success ramp — the reference previously badged PASS with
+   badge-accent, which is the identical amber as badge-warn (warn IS --accent),
+   so the two non-fatal statuses were indistinguishable short of reading the
+   word. Green/amber/red keeps the mono text-badge idiom and separates them. */
+const STATUS_BADGE = { pass: 'badge-success', warn: 'badge-warn', fail: 'badge-danger' }
 const STATUS_LABEL = { pass: 'passed', warn: 'warning', fail: 'failed' }
 
 function CheckRows({ checks }) {

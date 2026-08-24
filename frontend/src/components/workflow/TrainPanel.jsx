@@ -9,6 +9,8 @@
  */
 import BusyButton from '../shared/BusyButton'
 import { OBJECTIVE_CANDIDATES } from '../../api/workflow'
+// Candidate-card refinements — loaded here (same reason as JobStatus).
+import '../../styles/workflow-stats.css'
 
 // eslint-disable-next-line react-refresh/only-export-components -- description map shared with the stage-07 inspection panel (PreprocessConfig fractionsValid pattern)
 export const CANDIDATE_INFO = {
@@ -39,10 +41,11 @@ export default function TrainPanel({
 }) {
   const candidates = OBJECTIVE_CANDIDATES[objective] ?? []
   const noneSelected = selected.length === 0
+  const locked = disabled || starting
 
   return (
     <div className="wf-trainpanel">
-      <ul className="wf-candidates">
+      <ul className={`wf-candidates${locked ? ' wf-candidates--locked' : ''}`}>
         {candidates.map((name) => (
           <li key={name}>
             <label className="wf-check">
@@ -50,7 +53,7 @@ export default function TrainPanel({
                 type="checkbox"
                 className="check-input bench-check"
                 checked={selected.includes(name)}
-                disabled={disabled || starting}
+                disabled={locked}
                 onChange={() => onToggle(name)}
               />
               <span>
@@ -77,6 +80,9 @@ export default function TrainPanel({
         >
           Start training
         </BusyButton>
+        <span className="field-hint wf-selection-count" aria-live="polite">
+          {selected.length}/{candidates.length} selected
+        </span>
         <span className="field-hint">
           {COST_HINTS[objective]} · one job at a time, server-wide · progress below is real,
           polled from the job status file.

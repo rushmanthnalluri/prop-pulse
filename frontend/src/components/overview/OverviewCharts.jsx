@@ -26,7 +26,6 @@ import {
   ComposedChart,
   Legend,
   Line,
-  LineChart,
   Pie,
   PieChart,
   ResponsiveContainer,
@@ -38,37 +37,28 @@ import { Link } from 'react-router'
 import { api } from '../../api/client'
 import { useApi } from '../../api/useApi'
 import { workflowApi } from '../../api/workflow'
-import { NEIGHBORHOODS, clusterColor } from '../../constants'
-import { formatNumber, formatUsd, formatYear, prettyFeature } from '../../format'
+import { NEIGHBORHOODS, clusterColor, clusterLabel } from '../../constants'
+import { formatNumber, formatUsd, formatYear, isFiniteValue, prettyFeature } from '../../format'
 import { EmptyState, ErrorState, PanelSkeleton } from '../StateView'
 import ChartA11yTable from '../shared/ChartA11yTable'
+import TrendsChart from '../shared/TrendsChart'
 import useReducedMotion from '../shared/useReducedMotion'
 import {
   CHART_PALETTE,
   cartesianGridProps,
   getAnimationProps,
+  kTick,
   legendProps,
   tooltipProps,
   xAxisProps,
   yAxisProps,
 } from '../shared/chartTheme'
 
-const fin = (value) => Number.isFinite(Number(value))
-
 /** The bundled workbench record the EDA cards describe (bundled default, §3.1). */
 const BUNDLED_DATASET = 'ames'
 
-/** Compact "$180k" axis tick. */
-const kTick = (value) => `$${Math.round(Number(value) / 1000)}k`
-
 /** Thin long x-axes to ~7 labels (blueprint §6 maxTicksLimit). */
 const labelInterval = (length) => Math.max(0, Math.ceil(length / 7) - 1)
-
-/** Cluster display label, mirroring ClusterCard/TrendsChart fallbacks. */
-const clusterLabel = (cluster) =>
-  typeof cluster?.label === 'string' && cluster.label
-    ? cluster.label
-    : `Cluster ${cluster?.cluster_id ?? '?'}`
 
 /**
  * Single-row tooltip for the histogram: the bars and the smoothed outline
@@ -98,7 +88,7 @@ function MarketDonut({ clusters }) {
   const slices = useMemo(() => {
     const list = Array.isArray(data?.clusters) ? data.clusters : []
     return list
-      .filter((c) => fin(c?.n_sales) && Number(c.n_sales) > 0)
+      .filter((c) => isFiniteValue(c?.n_sales) && Number(c.n_sales) > 0)
       .map((c) => ({ id: c?.cluster_id, name: clusterLabel(c), value: Number(c.n_sales) }))
   }, [data])
 
@@ -113,7 +103,6 @@ function MarketDonut({ clusters }) {
     <div className="chart-card">
       <div className="chart-card-head">
         <h3>Sales by micro-market</h3>
-        {total > 0 && <span className="chart-tag">{formatNumber(total, 0)} clustered sales</span>}
       </div>
       {loading && <PanelSkeleton height={200} />}
       {!loading && error && (
@@ -152,7 +141,7 @@ function MarketDonut({ clusters }) {
                   {...getAnimationProps(reduced)}
                 >
                   {slices.map((slice) => (
-                    <Cell key={slice.name} fill={clusterColor(slice.id)} />
+                    <Cell key={slice.id ?? slice.name} fill={clusterColor(slice.id)} />
                   ))}
                 </Pie>
                 <Tooltip
@@ -168,6 +157,13 @@ function MarketDonut({ clusters }) {
                 />
               </PieChart>
             </ResponsiveContainer>
+            {/* Sale total inside the ring (the card head stays clean; the
+                figure is also in the a11y table below). Caption stays one
+                short word — the ring's inner chord is ~90px. */}
+            <div className="ov-donut-center" aria-hidden="true">
+              <span className="ov-donut-total">{formatNumber(total, 0)}</span>
+              <span className="ov-donut-caption">sales</span>
+            </div>
           </div>
           <ChartA11yTable
             caption="Clustered sales per micro-market"
@@ -236,7 +232,7 @@ function FieldHistogram() {
   const rows = useMemo(() => {
     const bins = Array.isArray(data?.bins) ? data.bins : []
     return bins
-      .filter((b) => fin(b?.x0) && fin(b?.x1) && fin(b?.count))
+      .filter((b) => isFiniteValue(b?.x0) && isFiniteValue(b?.x1) && isFiniteValue(b?.count))
       .map((b) => ({
         tick: field.tick(b.x0),
         range: `${field.range(b.x0)} – ${field.range(b.x1)}`,
@@ -363,8 +359,8 @@ function PriceByField() {
   const rows = useMemo(() => {
     const groups = Array.isArray(data?.groups) ? data.groups : []
     return groups
-      .filter((g) => g?.value != null && fin(g?.agg_value))
-      .map((g) => ({ name: String(g.value), median: Number(g.agg_value), n: fin(g?.n) ? Number(g.n) : null }))
+      .filter((g) => g?.value != null && isFiniteValue(g?.agg_value))
+      .map((g) => ({ name: String(g.value), median: Number(g.agg_value), n: isFiniteValue(g?.n) ? Number(g.n) : null }))
   }, [data])
 
   return (
@@ -453,114 +449,27 @@ function TrendsCard() {
   // Signal-free: api.getTrends is session-cached and shared with the page's
   // warm-up call — one promise, no abortable duplicate (see Overview.jsx).
   const fetcher = useCallback(() => api.getTrends(), [])
-  const { data, loading, error, reload } = useApi(fetcher)
-  const reduced = useReducedMotion()
-
-  const { rows, lines, firstPeriod, lastPeriod } = useMemo(() => {
-    const periods = Array.isArray(data?.periods) ? data.periods : []
-    const rawSeries = Array.isArray(data?.series) ? data.series : []
-    const lines = rawSeries.map((s, index) => ({
-      key:
-        typeof s?.label === 'string' && s.label ? s.label : `Cluster ${s?.cluster ?? index}`,
-      color: clusterColor(s?.cluster),
-      values: Array.isArray(s?.median_price) ? s.median_price : [],
-    }))
-    const rows = periods.map((period, i) => {
-      const row = { period }
-      for (const line of lines) {
-        const value = line.values[i]
-        // null / non-finite points are real gaps — never interpolated.
-        row[line.key] = fin(value) ? Number(value) : null
-      }
-      return row
-    })
-    return {
-      rows,
-      lines,
-      firstPeriod: periods[0] ?? null,
-      lastPeriod: periods[periods.length - 1] ?? null,
-    }
-  }, [data])
-
-  const note = typeof data?.note === 'string' && data.note ? data.note : null
-  const empty =
-    rows.length === 0 ||
-    lines.length === 0 ||
-    lines.every((line) => line.values.every((v) => !fin(v)))
-
-  const a11yColumns = useMemo(
-    () => [
-      { key: 'period', label: 'Period' },
-      ...lines.map((line) => ({ key: line.key, label: line.key, format: formatUsd })),
-    ],
-    [lines],
-  )
-
   return (
-    <div className="chart-card chart-card-wide">
-      <div className="chart-card-head">
-        <h3>Price trends by micro-market</h3>
-        {firstPeriod && lastPeriod && (
+    <TrendsChart
+      fetcher={fetcher}
+      title="Price trends by micro-market"
+      renderTag={({ firstPeriod, lastPeriod }) =>
+        firstPeriod && lastPeriod ? (
           <span className="chart-tag">
             Median sale price · {firstPeriod}–{lastPeriod}
           </span>
-        )}
-      </div>
-      {loading && <PanelSkeleton height={200} />}
-      {!loading && error && (
-        <ErrorState title="Couldn't load price trends" error={error} onRetry={reload} />
-      )}
-      {!loading && !error && empty && (
-        <EmptyState
-          kicker="No trend data"
-          title="No trend series available"
-          detail="The API returned no usable median-price series."
-        />
-      )}
-      {!loading && !error && !empty && (
-        <>
-          <div
-            className="chart-wrap"
-            role="img"
-            aria-label={`Line chart of median sale price per micro-market, half-year periods ${firstPeriod} to ${lastPeriod}`}
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={rows} margin={{ top: 8, right: 16, bottom: 4, left: 8 }}>
-                <CartesianGrid {...cartesianGridProps} />
-                <XAxis dataKey="period" {...xAxisProps} />
-                <YAxis {...yAxisProps} tickFormatter={kTick} width={56} domain={['auto', 'auto']} />
-                <Tooltip
-                  {...tooltipProps}
-                  formatter={(value, name) => [formatUsd(value), name]}
-                />
-                <Legend
-                  {...legendProps}
-                  formatter={(value) => <span className="capitalize">{value}</span>}
-                />
-                {lines.map((line) => (
-                  <Line
-                    key={line.key}
-                    type="monotone"
-                    dataKey={line.key}
-                    stroke={line.color}
-                    strokeWidth={1.8}
-                    dot={{ r: 2 }}
-                    connectNulls={false}
-                    {...getAnimationProps(reduced)}
-                  />
-                ))}
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-          <ChartA11yTable
-            caption="Median sale price per micro-market by half-year, USD — em-dash marks a half-year with no sales"
-            columns={a11yColumns}
-            rows={rows}
-          />
-          {note && <p className="note ov-note-block">{note}</p>}
-        </>
-      )}
-    </div>
+        ) : null
+      }
+      ariaLabel={({ firstPeriod, lastPeriod }) =>
+        `Line chart of median sale price per micro-market, half-year periods ${firstPeriod} to ${lastPeriod}`
+      }
+      errorTitle="Couldn't load price trends"
+      skeletonHeight={200}
+      margin={{ top: 8, right: 16, bottom: 4, left: 8 }}
+      strokeWidth={1.8}
+      dot={{ r: 2 }}
+      noteClassName="note ov-note-block"
+    />
   )
 }
 

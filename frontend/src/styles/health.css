@@ -2,6 +2,9 @@
    Model Health page (SPEC §5.5) — page-specific styles.
    Tokens and shared primitives come from styles.css; text floor per the
    canonical policy at .field-error there (≥10px; hints/errors ≥11px).
+   Refinement stays inside the flat/hairline language (MASTER.md §5): raised
+   surface bands, accent/status tints and tabular numerals — no gradients,
+   no card shadows.
    ========================================================================== */
 
 /* Refresh row: per-fetch freshness stamps + manual refresh button. */
@@ -16,11 +19,14 @@
 .health-refresh-meta {
   font-family: var(--font-mono);
   font-size: 11px;
+  line-height: 1.7;
   color: var(--text-3);
   display: flex;
   align-items: center;
   flex-wrap: wrap;
 }
+.health-refresh .btn { flex-shrink: 0; }
+.health-btn-icon { flex-shrink: 0; }
 /* Subtle in-flight indicator for background polls — reserves its slot with
    visibility so polls never shift the row's layout. It trails the meta text
    so the meta stays flush with the left gridline (WP-7c). */
@@ -50,13 +56,125 @@
 /* Section-local spacing helpers. */
 .health-section-alert { margin-top: 14px; }
 .health-section-note { margin-top: 12px; }
-.health-block { margin-top: 16px; }
+.health-block { margin-top: 18px; }
+/* Micro-label chrome matching the global section-title / table-header cut. */
 .health-block-label {
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
   color: var(--text-3);
   margin-bottom: 8px;
 }
 .health-traffic-table { margin-top: 16px; }
+
+/* Stat band: the framed metric strip that leads the Service status and Live
+   traffic sections — card sheen + hairline frame; the global .metrics grid
+   and hairline column separators do the interior work. */
+.health-statband {
+  background: var(--card-sheen), var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px 14px;
+}
+.health-statband .metric { padding-top: 3px; padding-bottom: 3px; }
+/* Badge-bearing metric values (the status band, and the drift panel's
+   Retraining / Sample size) centre against the 24px numerals so each row
+   reads on one line. */
+.health-statband--status .metric-value,
+.health-drift-panel .metric-value {
+  display: flex;
+  align-items: center;
+  min-height: 28px;
+}
+
+/* Status dots inside the headline badges — shape + colour + text, so state
+   is never carried by colour alone. Scoped to status badges; the dense PSI
+   table and feature-chip badges stay undotted. */
+.health-statband .badge,
+.health-drift-panel .panel-head .badge,
+.health-drift-panel .metric-value .badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.health-badge-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+/* Drift report panels: the shared .panel-head--raised band (styles.css) +
+   mono snapshot footer. */
+.health-drift-panel .panel-foot {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.01em;
+}
+
+/* PSI threshold scale — the visual twin of the printed warn/drift thresholds:
+   a fill to the served PSI, ticked at warn and drift. Status colour (stable /
+   warn / drift) matches the metric value tone; the numbers stay on screen, so
+   the bar is never the only carrier of meaning. */
+.health-psi {
+  display: block;
+  position: relative;
+  height: 4px;
+  max-width: 180px;
+  margin-top: 9px;
+  margin-bottom: 2px;
+  background: var(--raised);
+  border-radius: 2px;
+}
+.health-psi-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 2px;
+  background: var(--success);
+  transition: width var(--dur-emphasis);
+}
+.health-psi--warn .health-psi-fill { background: var(--warn); }
+.health-psi--bad .health-psi-fill { background: var(--danger); }
+.health-psi-tick {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+}
+.health-psi-tick--warn { background: var(--warn); opacity: 0.55; }
+.health-psi-tick--drift { background: var(--danger); opacity: 0.8; }
+
+/* Zebra striping for the dense traffic / PSI tables comes from the shared
+   .table-zebra idiom (styles.css) — a barely-there tint that speeds row
+   scanning; the hover fill (--raised) out-specifies the zebra there. */
+
+/* Share-of-traffic micro bar in the traffic table's Share column. Track uses
+   --border so it stays visible across default / zebra / hover row fills. */
+.health-share {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.health-share-track {
+  width: 46px;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.health-share-fill {
+  display: block;
+  height: 100%;
+  border-radius: 2px;
+  background: var(--accent);
+  transition: width var(--dur-emphasis);
+}
 
 /* Unit suffix inside a large metric value ("38 ms"). */
 .health-unit {
@@ -69,32 +187,66 @@
    config facts from the served snapshot, the operator CLI hint, and a
    teaching preview of what the panel will report once traffic is scored.
    No PSI values are ever invented. */
+.health-empty-icon {
+  width: 38px;
+  height: 38px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  background: var(--accent-wash);
+  border: 1px solid var(--accent-border);
+  border-radius: var(--radius-lg);
+}
+/* The served status token inside the kicker ("Drift status — no_data"). */
+.health-empty-status { color: var(--accent); }
 .health-empty-facts {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 6px 20px;
-  margin-top: 16px;
+  gap: 8px;
+  width: fit-content;
+  margin: 18px auto 0;
+}
+.health-empty-facts > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 7px;
+  padding: 5px 11px;
   font-family: var(--font-mono);
   font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-2);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.health-empty-facts b {
+  font-weight: 500;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-3);
 }
-.health-empty-facts b { font-weight: 500; color: var(--text-2); }
-.health-empty-cli { margin-top: 16px; font-size: 12.5px; color: var(--text-3); }
+.health-empty-cli {
+  margin: 16px auto 0;
+  max-width: 520px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--text-3);
+}
 .health-empty-cli code {
-  font-family: var(--font-mono);
   font-size: 11.5px;
   background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
   padding: 3px 8px;
   color: var(--text-2);
   white-space: nowrap;
 }
 .health-empty-what {
   max-width: 460px;
-  margin: 18px auto 0;
-  padding-top: 14px;
+  margin: 20px auto 0;
+  padding-top: 16px;
   border-top: 1px solid var(--border);
   text-align: left;
 }
@@ -120,7 +272,7 @@
   width: 5px;
   height: 5px;
   border-radius: 2px;
-  background: rgba(217, 166, 63, 0.4);
+  background: var(--accent-border);
 }
 .health-empty-cta {
   display: flex;
@@ -128,28 +280,48 @@
   gap: 10px;
   margin-top: 20px;
 }
-.health-empty-report { margin-top: 16px; }
+.health-empty-report { margin-top: 18px; }
 
-/* "What this page monitors" methodology rows. */
+/* "What this page monitors" methodology rows — hairline list with quiet
+   chrome icons; hover lift matches the .pipeline-row / .row-item idiom. */
 .monitor-list { border-top: 1px solid var(--border); }
 .monitor-row {
   display: grid;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: 200px 1fr;
   gap: 4px 24px;
-  padding: 12px 0;
+  padding: 15px 8px;
+  margin: 0 -8px;
   border-bottom: 1px solid var(--border);
+  transition: background var(--dur-hover);
 }
-.monitor-label { font-size: 12.5px; font-weight: 600; color: var(--text); }
+.monitor-row:hover { background: var(--surface); }
+.monitor-label {
+  display: flex;
+  align-items: center;
+  align-self: start;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  padding-top: 2px;
+}
+.monitor-label svg { color: var(--text-3); flex-shrink: 0; }
 .monitor-row p { font-size: 13px; color: var(--text-2); max-width: 720px; }
 .monitor-row code {
-  font-family: var(--font-mono);
   font-size: 11px;
   background: var(--raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
   padding: 1px 5px;
 }
 
 @media (max-width: 640px) {
   .monitor-row { grid-template-columns: 1fr; }
+}
+
+/* Narrow screens: the share micro-bars drop so the traffic table keeps its
+   numbers on-width without inner scrolling. */
+@media (max-width: 520px) {
+  .health-share-track { display: none; }
 }

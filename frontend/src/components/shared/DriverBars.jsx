@@ -11,14 +11,11 @@
  *                rank ("01"…), used by Model Insights' top-20 ledger list.
  *                Adds the `driver-row--numbered` modifier class for grid room.
  */
-import { prettyFeature } from '../../format'
+import { prettyFeature, sortedImportanceEntries } from '../../format'
 import { EmptyState } from '../StateView'
 
 export default function DriverBars({ importance, top = 5, numbered = false }) {
-  const entries = Object.entries(importance ?? {})
-    .filter(([, value]) => Number.isFinite(Number(value)))
-    .sort((a, b) => Number(b[1]) - Number(a[1]))
-    .slice(0, top)
+  const entries = sortedImportanceEntries(importance).slice(0, top)
 
   if (entries.length === 0) {
     return (
@@ -45,7 +42,8 @@ export default function DriverBars({ importance, top = 5, numbered = false }) {
             <span className="driver-name" title={name}>
               {prettyFeature(name)}
             </span>
-            <div className="driver-track">
+            {/* Decorative — the mono value at the right carries the number. */}
+            <div className="driver-track" aria-hidden="true">
               <div className="driver-fill" style={{ width: `${pct}%` }} />
             </div>
             <span className="driver-value">{Number(value).toFixed(4)}</span>

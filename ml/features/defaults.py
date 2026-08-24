@@ -19,7 +19,7 @@ from typing import Any, Sequence
 
 import pandas as pd
 
-from ml.paths import DATASET_VERSION, FEATURE_DEFAULTS_PATH, PROCESSED_DIR
+from ml.paths import DATASET_VERSION, FEATURE_DEFAULTS_PATH
 
 logger = logging.getLogger(__name__)
 

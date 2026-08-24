@@ -11,6 +11,10 @@
  * of ml/data/clean.py) — this component only maps them to badge labels. No
  * client-side sorting: the payload order is the meaningful one (blueprint
  * §5 — wide tables scroll, they do not sort).
+ *
+ * The 19-row repair table is tall enough to warrant a scroll cap: the frame
+ * gets `.scroll-60` (60vh) and the table `.table-sticky`, so the header row
+ * stays pinned while the affected columns scroll under it.
  */
 import { formatNumber } from '../../format'
 
@@ -25,8 +29,8 @@ const TREATMENTS = {
 export default function MissingTable({ columns }) {
   if (!columns || columns.length === 0) return null
   return (
-    <div className="table-scroll" tabIndex={0}>
-      <table className="table">
+    <div className="table-scroll scroll-60 table-zebra" tabIndex={0}>
+      <table className="table table-sticky">
         <thead>
           <tr>
             <th scope="col">Column</th>
@@ -56,7 +60,7 @@ export default function MissingTable({ columns }) {
                 </td>
                 <td>
                   <span className="coverage">
-                    <span className="coverage-track">
+                    <span className="coverage-track" aria-hidden="true">
                       <span
                         className="coverage-fill"
                         style={{ '--w': `${coverage}%` }}

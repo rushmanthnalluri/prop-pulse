@@ -33,7 +33,7 @@ from fastapi.testclient import TestClient
 from backend.app.config import Settings
 from backend.app.main import create_app
 from backend.app.schemas.responses import ModelImportanceResponse, ModelInfoResponse
-from backend.app.security import MAX_BODY_BYTES, SECURITY_HEADERS
+from backend.app.security import SECURITY_HEADERS
 from backend.app.services.monitoring_service import MonitoringService
 from backend.app.services.prediction_service import PredictionService
 from backend.tests.test_api import MINIMAL_PAYLOAD

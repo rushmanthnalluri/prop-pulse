@@ -5,6 +5,20 @@
    Imported from pages/Valuation.jsx (after the shared stylesheet, so equal-
    specificity overrides win). Hairlines over shadows; nothing below 10px;
    user-facing errors/hints ≥ 11px (see styles.css .field-error).
+
+   Polish pass: the estimate panel is the page's one elevated surface (it is
+   sticky, so it legitimately floats over the rail scrolling beneath — the
+   token system's single shadow role), the gauges gain track hairlines and a
+   slider-thumb marker cap, form fieldsets signal the active group on
+   :focus-within, and the dense lists (factor rows, scenario levers, comp
+   rows) sit on a consistent hairline rhythm with quiet hover feedback.
+
+   Premium pass 2: validation messages lead with an aria-hidden glyph (state
+   never rides on colour alone), optional core fields carry a mono tag, the
+   error summary's issues are click-to-focus jumps, scenario sliders show a
+   filled track up to the thumb with a glanceable value chip per lever, the
+   micro-market label wears its cluster-palette swatch (one hue per cluster
+   product-wide), and the pinned-delta figure gets a directional arrow.
    ========================================================================== */
 
 /* Layout: the shared .predict-grid (1.25fr/0.75fr, gap 36px, one column
@@ -21,18 +35,26 @@
   flex-direction: column;
   gap: 16px;
 }
+/* Rail panels pick up the chart-card idiom: the hairline deepens on hover —
+   quiet feedback that reads the surface as one unit. */
+.valuation-rail .panel {
+  transition: border-color var(--dur-hover);
+}
+.valuation-rail .panel:hover {
+  border-color: var(--border-strong);
+}
 .rail-stack {
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0; /* same shrink allowance inside the rail (flex item of it) */
-  transition: opacity 0.15s ease;
+  /* Fade BOTH ways: the transition lives here permanently so un-dimming
+     eases back too (the shared .dim-stale only carries it while applied). */
+  transition: opacity var(--dur-hover);
 }
-/* Dimmed stale result — while re-estimating and after a failed re-submit
-   (the previous estimate is kept, never wiped). */
-.rail-stack--dim {
-  opacity: 0.55;
-}
+/* Dimmed stale result — the shared .dim-stale (styles.css) applies while
+   re-estimating and after a failed re-submit (the previous estimate is
+   kept, never wiped). */
 .rail-error-note {
   display: block;
   margin-top: 6px;
@@ -42,8 +64,22 @@
 .rail-empty-actions {
   margin-top: 2px;
 }
+/* Awaiting-input placeholder: the empty-state idiom (dashed hairline over
+   the page backdrop) instead of a solid panel chrome for a panel with no
+   content yet. */
+.valuation-rail > .result-panel:not(.result-panel--estimate) {
+  border-style: dashed;
+  border-color: var(--border-strong);
+  background: transparent;
+}
+/* Quiet price-tag emblem above the "Awaiting input" kicker. */
+.rail-empty-icon {
+  color: var(--text-3);
+}
 
-/* Restore-last-valuation bar (SPEC §5.2.2: URL params win, else this). */
+/* Restore-last-valuation bar (SPEC §5.2.2: URL params win, else this). The
+   inset amber edge is the system's "highlighted row" mark (sidebar active
+   item) — a saved state, not an alert. */
 .restore-bar {
   display: flex;
   align-items: center;
@@ -51,6 +87,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+  box-shadow: inset 2px 0 0 var(--accent);
   padding: 10px 14px;
   margin-bottom: 16px;
 }
@@ -68,29 +105,64 @@
 .restore-dismiss {
   background: none;
   border: none;
-  padding: 0 2px;
+  padding: 2px 6px;
   font-size: 15px;
   line-height: 1.2;
   color: var(--text-3);
   cursor: pointer;
   border-radius: var(--radius-sm);
+  transition: color var(--dur-hover), background var(--dur-hover);
 }
 .restore-dismiss:hover {
   color: var(--text);
+  background: var(--raised);
 }
 
 /* Form — reference §8.10: fieldsets with mono uppercase legends come from
-   styles.css (.predict-fieldset/.predict-fields); below is page-specific. */
+   styles.css (.predict-fieldset/.predict-fields); below is page-specific.
+   The fieldset hairline deepens on hover and turns amber while one of its
+   controls holds focus — the active group reads at a glance in a long form. */
 .valuation-form .alert {
   margin-bottom: 16px;
 }
+.valuation-form .predict-fieldset {
+  transition: border-color var(--dur-hover);
+}
+.valuation-form .predict-fieldset:hover {
+  border-color: var(--border-strong);
+}
+.valuation-form .predict-fieldset > legend {
+  color: var(--text-2);
+  transition: color var(--dur-hover);
+}
+.valuation-form .predict-fieldset:focus-within {
+  border-color: var(--accent-border);
+}
+.valuation-form .predict-fieldset:focus-within > legend {
+  color: var(--accent);
+}
+.valuation-form details.fieldset {
+  transition: border-color var(--dur-hover);
+}
+.valuation-form details.fieldset:focus-within {
+  border-color: var(--accent-border);
+}
 /* Submit row: primary first, quiet secondaries after, note line under —
-   the reference's button placement logic. */
+   the reference's button placement logic. The hairline above closes the
+   field column so the actions read as the form's footer. */
 .submit-row {
   display: flex;
   align-items: center;
   gap: 10px;
   flex-wrap: wrap;
+  margin-top: 2px;
+  padding-top: 18px;
+  border-top: 1px solid var(--border);
+}
+/* The one primary action on the page earns a wider stance. */
+.submit-row .btn-primary {
+  padding-left: 22px;
+  padding-right: 22px;
 }
 .submit-note {
   margin-top: 10px;
@@ -101,6 +173,65 @@
   font-size: 11px;
   color: var(--warn);
 }
+/* Error/warn messages lead with a small glyph (icon + text — the state never
+   rides on border/text colour alone, WCAG 1.4.1). Scoped to the valuation
+   form so other consumers of the global classes keep their plain layout. */
+.valuation-form .field-error,
+.valuation-form .field-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  line-height: 1.45;
+}
+.field-msg-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+/* "Optional" tag on the three non-required core fields — marking the
+   exception instead of peppering every required label with an asterisk. */
+.field-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 1px 5px;
+  margin-left: 7px;
+  white-space: nowrap;
+}
+/* Error summary: each issue is a click-to-focus jump to its field, styled
+   as the jump-link it is (underlined at rest); hover lifts a raised fill. */
+.summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+}
+.summary-issue {
+  display: block;
+  width: 100%;
+  font: inherit;
+  text-align: left;
+  color: var(--text-2);
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  /* Reads as the jump-link it is at rest, not only on hover. */
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  transition:
+    background var(--dur-hover),
+    color var(--dur-hover);
+}
+.summary-issue:hover {
+  background: var(--raised);
+  color: var(--text);
+}
 .check-field {
   flex-direction: row;
   align-items: center;
@@ -110,8 +241,12 @@
 .adv-intro {
   margin-bottom: 12px;
 }
+/* Advanced override groups separate on a hairline instead of whitespace
+   alone — five titled groups in one <details> need the extra structure. */
 .adv-group + .adv-group {
-  margin-top: 18px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
 }
 .adv-group-title {
   display: block;
@@ -130,15 +265,27 @@
    -------------------------------------------------------------------------- */
 
 /* The estimate always takes the reference's amber "positive result" border —
-   a price has no placed/not-placed binary to color-code. */
+   a price has no placed/not-placed binary to color-code. It is also the one
+   elevated surface on the page: a whisper of amber wash at the head plus the
+   floating-layer shadow, earned because the panel is sticky and rides over
+   the rail panels scrolling beneath it. */
 .result-panel--estimate {
   border-color: rgba(217, 166, 63, 0.5);
+  background:
+    linear-gradient(180deg, var(--accent-wash), rgba(217, 166, 63, 0) 140px),
+    var(--surface);
+  box-shadow: var(--shadow-float);
   /* Stick the estimate panel itself, not the whole rail: the filled rail is
      ~3179px tall, so an aside-level sticky has zero slack and the verdict
      scrolls away. The estimate pins while FactorBars / MicroMarket /
-     PricePosition / Comps / ScenarioExplorer scroll beneath it. */
+     PricePosition / Comps / ScenarioExplorer scroll beneath it. The z-index
+     is required, not cosmetic: later siblings carry positioned parts (the
+     position-scale track + markers, the band fill) that would otherwise
+     paint over the pinned panel mid-scroll. Small numeric — in-component
+     stacking stays well under the global --z-* layers. */
   position: sticky;
   top: 24px;
+  z-index: 5;
 }
 /* The verdict is a price figure: numbers stay Plex Mono tabular in neutral
    ink (tokens §2) — the amber signal lives on the border, not the number. */
@@ -147,38 +294,77 @@
   /* apple-design type-first: the estimate is the page's one big number —
      heavy weight + tighter tracking than the 30px/600 base (.result-verdict
      stays the generic verdict text; only the price figure scales up). */
-  font-size: 38px;
+  font-size: 40px;
   font-weight: 700;
   letter-spacing: -0.03em;
+  line-height: 1.05;
   color: var(--text);
-  font-variant-numeric: tabular-nums;
   margin-top: 0;
 }
 .result-verdict-block {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 5px;
 }
+/* Small-caps mono label under the figure — kicker-scale, so the hierarchy
+   runs kicker → figure → caption without a competing mid-weight. */
 .result-verdict-label {
   font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.02em;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--text-3);
 }
-/* Band + caption read as one unit inside the panel's 14px flex rhythm. */
+/* Band + caption read as one unit inside the panel's 14px flex rhythm. The
+   band overrides here (taller pill track, inset hairline, amber-capped
+   marker) are scoped so the workflow's own .band uses stay on the base. */
 .result-band .band {
-  margin-top: 6px;
+  height: 10px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--border);
+  margin: 20px 4px 8px; /* top room for the marker cap (rides −14px up) */
+}
+.result-band .band-fill {
+  border-radius: 4px;
+  background: rgba(217, 166, 63, 0.12);
+  border-color: rgba(217, 166, 63, 0.45);
+}
+.result-band .band-marker {
+  width: 2px;
+  border-radius: 1px;
+}
+/* The estimate marker takes the slider-thumb idiom — an amber cap riding
+   the track, so the point estimate reads as the range's handle. */
+.result-band .band-marker::after {
+  content: '';
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  transform: translateX(-50%);
+}
+/* The middle scale label is the estimate restated — the one amber figure. */
+.band-scale .band-scale-mid {
+  color: var(--accent);
 }
 .result-track {
   position: relative; /* anchor for the threshold tick */
 }
-.result-tick {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: var(--text);
-  transform: translateX(-1px);
+/* Sale-probability meter: taller pill track with an inset hairline; the
+   threshold tick stands proud of the track (overflow visible) and the fill
+   keeps the track's radius so a near-100% fill never pokes the corners. */
+.result-prob .result-track {
+  height: 10px;
+  border-radius: 5px;
+  box-shadow: inset 0 0 0 1px var(--border);
+  overflow: visible;
+}
+.result-prob .result-fill {
+  border-radius: 5px;
 }
 .result-prob-head {
   display: flex;
@@ -191,6 +377,11 @@
   font-size: 12.5px;
   font-weight: 500;
   color: var(--text);
+}
+/* The base .result-meta carries no margin — without this the mono figures
+   sat flush against the track. */
+.result-prob .result-meta {
+  margin-top: 8px;
 }
 .result-fact-cap {
   text-transform: capitalize;
@@ -235,6 +426,19 @@
   color: var(--text-3);
   margin-bottom: 12px;
 }
+/* The delta is the panel's headline figure — mono semibold, with a
+   directional arrow beside the signed text (the sign stays in the copy; the
+   arrow is the glanceable cue, never the only carrier). */
+.kv dd.compare-delta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  font-weight: 600;
+}
+.compare-delta-icon {
+  flex-shrink: 0;
+}
 .compare-actions {
   display: flex;
   align-items: center;
@@ -244,12 +448,30 @@
 
 /* Factor bars: up = accent, down = danger (SPEC §2.1 semantics). The value
    column widens for the ↑/↓ share format; scoped media rule keeps the mobile
-   adaptation from styles.css working. */
+   adaptation from styles.css working. Rows get a quiet hover fill (negative
+   margins keep the text grid aligned with the panel padding), and fills
+   animate on a new estimate. */
 .factor-fill--neg {
   background: var(--danger);
 }
+.factor-list {
+  gap: 4px;
+}
 .factor-row {
   grid-template-columns: 150px 1fr 56px;
+  padding: 6px 8px;
+  margin: 0 -8px;
+  border-radius: var(--radius);
+  transition: background var(--dur-hover);
+}
+.factor-row:hover {
+  background: var(--raised);
+}
+.factor-fill {
+  transition: width var(--dur-emphasis);
+}
+.factor-value {
+  color: var(--text-2);
 }
 @media (max-width: 640px) {
   .factor-row {
@@ -257,11 +479,39 @@
   }
 }
 
-/* Micro-market */
+/* Micro-market — the cluster label is the panel's headline, wearing the
+   cluster-palette swatch (the same hue as its Price position marker and the
+   market-map card). */
 .mm-label {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 15px;
   font-weight: 600;
+  letter-spacing: -0.01em;
   text-transform: capitalize;
-  margin-bottom: 8px;
+  margin-bottom: 10px;
+}
+.mm-label .swatch {
+  flex-shrink: 0;
+}
+/* Panel-foot link: the global prose-link rule stops at .panel-body, so the
+   foot link colours itself — accent, with a 2px arrow nudge on hover. */
+.foot-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--accent);
+  transition: color var(--dur-hover);
+}
+.foot-link:hover {
+  color: var(--accent-hover);
+}
+.foot-link-arrow {
+  transition: transform var(--dur-hover);
+}
+.foot-link:hover .foot-link-arrow {
+  transform: translateX(2px);
 }
 .mm-note {
   margin-top: 10px;
@@ -276,11 +526,16 @@
   margin-right: 6px;
 }
 
-/* Comparable sales — sortable columns + expandable comparison rows (§6.4). */
+/* Comparable sales — sortable columns + expandable comparison rows (§6.4).
+   The header rule is a step stronger than the row hairlines so the column
+   headings read as a separate tier. */
 .comps-tags {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+.valuation-rail .table thead th {
+  border-bottom-color: var(--border-strong);
 }
 .comp-expander {
   width: 28px;
@@ -292,16 +547,19 @@
   color: var(--text-3);
   font-family: var(--font-mono);
   font-size: 11px;
-  padding: 2px 4px;
+  padding: 2px 6px;
   border-radius: var(--radius-sm);
+  transition: color var(--dur-hover), background var(--dur-hover);
 }
 .comp-toggle:hover {
   color: var(--text);
+  background: var(--raised);
 }
-/* Sanctioned › chevron: points right collapsed, rotates to point down when
-   the row is expanded (replaces the off-set disclosure-triangle glyphs). */
+/* Sanctioned chevron: an inline SVG (10px, currentColor) pointing right when
+   collapsed, rotating to point down when the row is expanded. */
 .comp-chevron {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   transition: transform var(--dur-hover);
 }
 .comp-toggle[aria-expanded='true'] .comp-chevron {
@@ -311,12 +569,18 @@
   background: var(--bg);
   white-space: normal;
 }
+/* The comps table always overflows the narrow rail horizontally, so the
+   detail grid stays compact-left: labels ≤124px, then the two value columns
+   immediately after — the whole comparison (~330px) reads inside the first
+   visible stretch of the scrolled table instead of spreading across the
+   full colSpan width (which pushed the values into the hidden overflow). */
 .cmp {
   display: grid;
-  grid-template-columns: minmax(110px, 1fr) auto auto;
-  gap: 5px 18px;
+  grid-template-columns: minmax(96px, 124px) repeat(2, minmax(70px, auto));
+  justify-content: start;
+  gap: 5px 12px;
   font-size: 12px;
-  padding: 4px 0;
+  padding: 8px 0;
 }
 .cmp-head {
   font-family: var(--font-mono);
@@ -341,20 +605,69 @@
   color: var(--text);
 }
 
-/* What-if scenarios: slider + numeric entry per lever. */
+/* What-if scenarios: slider + numeric entry per lever. The levers stack on
+   hairlines (not whitespace alone) so each control row reads as a unit. */
 .lever-stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 0;
 }
+.lever {
+  padding: 12px 0;
+}
+.lever:first-child {
+  padding-top: 2px;
+}
+.lever:last-child {
+  padding-bottom: 0;
+}
+.lever + .lever {
+  border-top: 1px solid var(--border);
+}
+/* Lever head: label left, glanceable mono value chip right — the slider
+   itself shows no number, so the current value reads without scanning the
+   numeric entry. The chip turns amber once the lever has been touched. */
 .lever-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
   margin-bottom: 6px;
+}
+.lever-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  transition: color var(--dur-hover);
+}
+.lever-value--touched {
+  color: var(--accent);
 }
 .lever-controls {
   display: grid;
   grid-template-columns: 1fr 84px;
   gap: 10px;
   align-items: center;
+}
+/* Filled track up to the thumb (--fill is set inline from the lever value)
+   plus a quiet hover deepening of the unfilled portion, so the slider reads
+   as interactive before the thumb is grabbed. The gradient swaps wholesale
+   on hover — background gradients aren't interpolatable, so no transition. */
+.lever-controls input[type='range'] {
+  background: linear-gradient(
+    90deg,
+    var(--accent-border) 0 var(--fill, 0%),
+    var(--raised) var(--fill, 0%)
+  );
+}
+.lever-controls input[type='range']:hover {
+  background: linear-gradient(
+    90deg,
+    var(--accent-border) 0 var(--fill, 0%),
+    var(--border-strong) var(--fill, 0%)
+  );
 }
 .lever-input {
   padding: 6px 9px;
@@ -371,12 +684,15 @@
   color: var(--danger);
 }
 
-/* Provenance footer (SPEC §5.2.2-8). */
+/* Provenance footer (SPEC §5.2.2-8) — a closing hairline makes it read as
+   the rail's colophon rather than a stray note. */
 .provenance {
   font-family: var(--font-mono);
   font-size: 11.5px;
   color: var(--text-3);
   line-height: 1.6;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
 }
 
 /* Small spacing helpers for the rail panels (mt-6/mt-12/mt-16 now live as
@@ -393,5 +709,19 @@
   /* De-stick the estimate panel on the stacked single column. */
   .result-panel--estimate {
     position: static;
+  }
+  /* The hero figure steps down once the rail spans the full measure. */
+  .result-verdict.result-price {
+    font-size: 32px;
+  }
+}
+
+@media (max-width: 520px) {
+  /* Same compact-left logic, tighter: keeps the comp-vs-subject columns
+     inside the ~290px visible stretch of the phone-sized table scroll. */
+  .cmp {
+    grid-template-columns: minmax(84px, 104px) repeat(2, minmax(60px, auto));
+    gap: 4px 8px;
+    font-size: 11.5px;
   }
 }

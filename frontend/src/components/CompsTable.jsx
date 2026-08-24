@@ -5,7 +5,8 @@
  * unmount; failures degrade to an ErrorState with a retry button and never
  * affect the valuation panels above.
  *
- * Refinements: stable composite row keys (the API serves no id — never the
+ * Refinements: stable composite row keys (the API serves no id; the row's
+ * natural-order position only breaks exact-duplicate ties — never the bare
  * array index, AUDIT §5.5); Price and Sold columns sort via
  * useSortable/SortHeader (SPEC §7.6 — natural order is the API's similarity
  * rank and the caption says so); each row expands to a comp-vs-subject
@@ -35,8 +36,10 @@ function soldOrdinal(sold) {
   return Number(match[2]) * 12 + Number(match[1])
 }
 
-/** Composite identity for a comp row — stable across sorts and re-renders. */
-function compKey(comp) {
+/** Composite identity for a comp row — stable across sorts and re-renders.
+ *  `index` (the API's natural-order position) only breaks ties between rows
+ *  whose fields are all identical; identity never rests on the index alone. */
+function compKey(comp, index) {
   return [
     comp.sale_price,
     comp.sold,
@@ -44,6 +47,7 @@ function compKey(comp) {
     comp.year_built,
     comp.overall_qual,
     comp.baths,
+    index,
   ].join('|')
 }
 
@@ -138,9 +142,9 @@ export default function CompsTable({ payload, estimate }) {
   }, [payload, retryKey])
 
   const comps = Array.isArray(state.data?.comps) ? state.data.comps : []
-  const rows = comps.map((comp) => ({
+  const rows = comps.map((comp, index) => ({
     ...comp,
-    _key: compKey(comp),
+    _key: compKey(comp, index),
     _sold: soldOrdinal(comp.sold),
   }))
   const { sorted, sort, toggleSort } = useSortable(rows)
@@ -208,11 +212,11 @@ export default function CompsTable({ payload, estimate }) {
                       sort={sort}
                       onToggle={toggleSort}
                     />
-                    <th className="num">$/sqft</th>
-                    <th className="num">Sq ft</th>
-                    <th className="num">Qual</th>
-                    <th className="num">Built</th>
-                    <th>Beds/Baths</th>
+                    <th scope="col" className="num">$/sqft</th>
+                    <th scope="col" className="num">Sq ft</th>
+                    <th scope="col" className="num">Qual</th>
+                    <th scope="col" className="num">Built</th>
+                    <th scope="col">Beds/Baths</th>
                     <SortHeader label="Sold" sortKey="_sold" sort={sort} onToggle={toggleSort} />
                   </tr>
                 </thead>
@@ -237,7 +241,20 @@ export default function CompsTable({ payload, estimate }) {
                                 setOpen((prev) => ({ ...prev, [comp._key]: !prev[comp._key] }))
                               }
                             >
-                              <span className="comp-chevron" aria-hidden="true">›</span>
+                              <span className="comp-chevron" aria-hidden="true">
+                                <svg
+                                  width="10"
+                                  height="10"
+                                  viewBox="0 0 10 10"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="1.5"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                >
+                                  <path d="M3.5 1.5 7 5l-3.5 3.5" />
+                                </svg>
+                              </span>
                             </button>
                           </td>
                           <td className="num strong">{formatUsd(comp.sale_price)}</td>

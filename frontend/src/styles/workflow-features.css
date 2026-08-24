@@ -1,10 +1,12 @@
 /* ==========================================================================
    ML Workbench — stage 02 Analyze Features (blueprint §8.3)
-   Page-scoped styles for FeaturesStage + FeatureTable + TargetCards. The
-   registry itself is shared styles.css vocabulary (.registry-group,
-   .registry-count, .coverage, .role-tag, .samples, .registry-optional hidden
-   ≤980px); only the prediction-objective cards live here. Tokens are never
-   redefined; hairlines over boxes; no shadows/gradients; radius 4/6/8 only.
+   Page-scoped styles for FeaturesStage + FeatureTable + TargetCards, loaded
+   only on stage 02 (after styles.css, so equal-specificity rules win). The
+   registry groups are framed here as bordered cards over the shared
+   vocabulary (.registry-group, .registry-count, .coverage, .role-tag,
+   .registry-optional hidden ≤980px); tables opt into the shared
+   .table-zebra idiom (styles.css). Tokens are never redefined; radius 4/6/8
+   only.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -18,10 +20,15 @@
   flex-direction: column;
   gap: 8px;
   padding: 14px 16px;
-  background: var(--surface);
+  /* Subtle top-lit surface — the one quiet gradient in the card language. */
+  background: linear-gradient(180deg, var(--raised) 0%, var(--surface) 42%);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+  transition: border-color var(--dur-hover);
 }
+.wff-target:hover { border-color: var(--border-strong); }
+/* Available objectives get an accent top edge; unavailable ones stay quiet. */
+.wff-target:not(.wff-target--off) { border-top-color: var(--accent-border); }
 .wff-target--off { opacity: 0.65; }
 .wff-target-top { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .wff-target-kicker {
@@ -31,16 +38,16 @@
   text-transform: uppercase;
   color: var(--text-3);
 }
-.wff-target-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; margin: 0; }
+.wff-target-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.3; margin: 0; }
 .wff-target-chips { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .wff-chip {
   font-family: var(--font-mono);
   font-size: 11px;
   padding: 3px 7px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   color: var(--text-2);
-  background: var(--surface);
+  background: var(--raised);
   white-space: nowrap;
 }
 .wff-target-meta {
@@ -50,7 +57,48 @@
   margin: 0;
   letter-spacing: 0.02em;
 }
-.wff-target-note { font-size: 12.5px; color: var(--text-2); margin: 0; }
+/* The note is the card's footer: pinned to the shared baseline so the three
+   objectives read as one aligned row even when chip/meta counts differ. */
+.wff-target-note {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-2);
+  margin: auto 0 0;
+  padding-top: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Field registry — each family framed as a card: a raised head band with a
+   hairline separator, then the shared .table carrying the .table-zebra
+   idiom (styles.css).
+   -------------------------------------------------------------------------- */
+
+.registry-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  overflow: hidden;
+}
+.registry-group-head {
+  padding: 11px 16px;
+  background: var(--raised);
+  border-bottom: 1px solid var(--border);
+}
+.registry-count {
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+/* Role tags sit on raised chips; the target tag keeps its amber meaning. */
+.registry-group .role-tag { background: var(--raised); }
+.registry-group .role-tag.role-target { background: var(--accent-dim); }
+
+/* Below the 95% coverage threshold the bar goes danger — the numeral follows
+   so the shortfall never depends on the 4px fill alone (:has() is a
+   progressive enhancement; older engines keep the neutral numeral). */
+.registry-group .coverage:has(.coverage-low) .coverage-pct { color: var(--danger); }
 
 /* --------------------------------------------------------------------------
    Responsive (blueprint §10)

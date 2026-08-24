@@ -1,26 +1,20 @@
 /**
  * Micro-market card (`.cluster-card`): clusterColor swatch + capitalized
- * label + 2-col stats grid (median price, $/sqft, sales, neighborhood count,
+ * label + a hover/active chevron affordance + 2-col stats grid (median price, $/sqft, sales, neighborhood count,
  * 30-day velocity). The velocity stat is full-width so the mandatory
  * `badge-muted` "simulated" (ADR-3) fits without wrapping.
  *
- * Renders as a Link when `to` is set (Overview cards → /market) or as a
- * toggleable button when `onClick` is set (Market rail → fly the map).
+ * Renders as a toggleable button (Market rail → fly the map).
  * Every stat is Number.isFinite-guarded before formatting ('—' fallback).
  */
-import { Link } from 'react-router'
-import { clusterColor } from '../../constants'
-import { formatNumber, formatPct, formatUsd } from '../../format'
+import { clusterColor, clusterLabel } from '../../constants'
+import { formatNumber, formatPct, formatUsd, isFiniteValue } from '../../format'
 
-const fin = (value) => Number.isFinite(Number(value))
-const num = (value, digits) => (fin(value) ? formatNumber(value, digits) : '—')
-const usd = (value) => (fin(value) ? formatUsd(value) : '—')
+const num = (value, digits) => (isFiniteValue(value) ? formatNumber(value, digits) : '—')
+const usd = (value) => (isFiniteValue(value) ? formatUsd(value) : '—')
 
 function ClusterCardBody({ cluster }) {
-  const label =
-    typeof cluster?.label === 'string' && cluster.label
-      ? cluster.label
-      : `Cluster ${cluster?.cluster_id ?? '?'}`
+  const label = clusterLabel(cluster)
   // Guard before join (SPEC §7.3): the neighborhoods list may be absent.
   const hoodList = Array.isArray(cluster?.neighborhoods) ? cluster.neighborhoods : []
   return (
@@ -32,6 +26,21 @@ function ClusterCardBody({ cluster }) {
           aria-hidden="true"
         />
         <span className="cluster-card-name">{label}</span>
+        <svg
+          className="card-chevron"
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <polyline points="9 6 15 12 9 18" />
+        </svg>
       </div>
       <div className="cluster-card-stats">
         <span>
@@ -47,7 +56,7 @@ function ClusterCardBody({ cluster }) {
           Neighborhoods <b>{num(cluster?.n_neighborhoods, 0)}</b>
         </span>
         <span style={{ gridColumn: '1 / -1' }}>
-          30-day velocity <b>{fin(cluster?.sale_velocity_30d) ? formatPct(cluster.sale_velocity_30d) : '—'}</b>{' '}
+          30-day velocity <b>{isFiniteValue(cluster?.sale_velocity_30d) ? formatPct(cluster.sale_velocity_30d) : '—'}</b>{' '}
           <span className="badge badge-muted">simulated</span>
         </span>
       </div>
@@ -55,14 +64,7 @@ function ClusterCardBody({ cluster }) {
   )
 }
 
-export default function ClusterCard({ cluster, to = null, active = false, onClick }) {
-  if (to) {
-    return (
-      <Link className="cluster-card" to={to}>
-        <ClusterCardBody cluster={cluster} />
-      </Link>
-    )
-  }
+export default function ClusterCard({ cluster, active = false, onClick }) {
   return (
     <button
       type="button"

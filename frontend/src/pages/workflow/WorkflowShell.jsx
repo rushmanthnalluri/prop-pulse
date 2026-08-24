@@ -5,8 +5,10 @@
  * demand).
  *
  * Chrome split (blueprint §4): the sidebar in Layout.jsx owns the numbered
- * pipeline stepper; this shell renders the quiet dataset-context strip at
- * the top and the StagePager (prev ← / next →) at the foot of every stage.
+ * pipeline stepper; this shell renders the quiet dataset-context strip at the
+ * top (with the twelve-segment stage-progress rail — completed / current /
+ * locked / upcoming at a glance) and the StagePager (prev ← / next →) at the
+ * foot of every stage.
  *
  * Truth model (§6.2, binding):
  * - Server truth first: `GET /workflow/datasets/{id}/state` drives the 08/09
@@ -42,14 +44,17 @@ import { useApi } from '../../api/useApi'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { useToast } from '../../components/Toast'
 import ErrorBoundary from '../../components/ErrorBoundary'
-import { EmptyState, ErrorState, PanelSkeleton } from '../../components/StateView'
+import { ErrorState, PanelSkeleton } from '../../components/StateView'
 import StagePager from '../../components/workflow/StagePager'
 import DatasetPicker from '../../components/workflow/DatasetPicker'
+import { IconCheck, IconLock } from './icons'
 import {
   DATASET_ID_RE,
   DEFAULT_STAGE,
   WORKFLOW_STAGES,
+  WORKFLOW_STORAGE_KEY,
   stageBySlug,
+  stageHref,
 } from './stages'
 import '../../styles/workflow.css'
 
@@ -103,7 +108,6 @@ const GATED_STAGES = {
   },
 }
 
-export const WORKFLOW_STORAGE_KEY = 'proppulse:workflow'
 const INITIAL_STORED = { dataset_id: 'ames', last_stage: null, visited: [] }
 
 const WorkflowContext = createContext(null)
@@ -139,33 +143,106 @@ export function useWorkflow() {
   return ctx
 }
 
-/** Designed locked state (§6.4): "Locked" tag (the reference's "Soon"-tag
-    pattern), the unblock action, CTA to stage 07. */
+/** Designed locked state (§6.4): lock tile, the unblock action, CTA to the
+    unblocking stage (nothing dead-ends). Keeps the reference's "Soon"-tag
+    pattern (.step-soon) for the status chip. Pinned copy: the title and
+    gate.reason render verbatim (e2e workflow.spec gating test). */
 function LockedStage({ stage, gate, datasetId }) {
   return (
     <div className="section">
-      <EmptyState
-        kicker={`Stage ${stage.num} · ${stage.title}`}
-        title="This stage is locked"
-        detail={gate.reason}
-      >
-        <span className="step-soon wf-locked-tag">Locked</span>
-        <Link
-          className="btn btn-primary btn-sm wf-locked-cta"
-          to={`/workflow/${gate.ctaSlug}?dataset=${datasetId}`}
-        >
-          {gate.ctaLabel}
-        </Link>
-      </EmptyState>
+      <div className="empty-state wf-locked">
+        <span className="wf-locked-icon" aria-hidden="true">
+          <IconLock size={18} />
+        </span>
+        <span className="kicker">
+          Stage {stage.num} · {stage.title}
+        </span>
+        <div className="empty-state-title">This stage is locked</div>
+        <p className="empty-state-detail">{gate.reason}</p>
+        <div className="wf-locked-actions">
+          <span className="step-soon wf-locked-tag">Locked</span>
+          <Link
+            className="btn btn-primary btn-sm wf-locked-cta"
+            to={stageHref(gate.ctaSlug, datasetId)}
+          >
+            {gate.ctaLabel}
+          </Link>
+        </div>
+      </div>
     </div>
   )
 }
 
+/** Layout-matched suspense/gating fallback: head lines + one panel block. */
 function StageFallback() {
   return (
-    <div className="section">
-      <PanelSkeleton height={280} />
+    <div aria-hidden="true">
+      <div className="page-head">
+        <div className="skeleton sk-line" style={{ width: 140 }} />
+        <div className="skeleton sk-line" style={{ width: 300, height: 22 }} />
+        <div className="skeleton sk-line" style={{ width: 460 }} />
+      </div>
+      <div className="section">
+        <PanelSkeleton height={280} />
+      </div>
     </div>
+  )
+}
+
+/** Segment status copy for the progress rail's aria-labels. */
+const PROGRESS_STATUS = {
+  done: 'completed',
+  current: 'current stage',
+  locked: 'locked',
+  available: 'not visited yet',
+}
+
+/**
+ * Stage-progress rail (§6.2 stepper view-model, made visible): twelve
+ * segments — completed (check) / current (accent, aria-current="step") /
+ * locked (lock glyph) / upcoming (quiet number) — each a real link preserving
+ * ?dataset=, so the rail doubles as keyboard-accessible stage navigation and
+ * its state is never colour-only (the status rides every aria-label). The
+ * sidebar stepper stays the primary nav; this strip surfaces the per-stage
+ * state the sidebar does not carry, including the stage-07 live-jobs dot
+ * (server truth: state.jobs.running).
+ */
+function StageProgress({ stages, datasetId }) {
+  return (
+    <nav className="wf-progress" aria-label="Workflow stage progress">
+      <ol className="wf-progress-list">
+        {stages.map((item) => {
+          const label =
+            `Stage ${item.num} of ${stages.length}: ${item.title} — ` +
+            (PROGRESS_STATUS[item.status] ?? item.status) +
+            (item.status === 'locked' && item.lockMessage ? `. ${item.lockMessage}` : '') +
+            (item.jobsRunning > 0
+              ? ` — ${item.jobsRunning} job${item.jobsRunning === 1 ? '' : 's'} running`
+              : '')
+          return (
+            <li key={item.slug}>
+              <Link
+                className={`wf-progress-seg wf-progress-seg--${item.status}`}
+                to={stageHref(item.slug, datasetId)}
+                aria-label={label}
+                aria-current={item.status === 'current' ? 'step' : undefined}
+              >
+                {item.status === 'done' ? (
+                  <IconCheck size={11} />
+                ) : item.status === 'locked' ? (
+                  <IconLock size={11} />
+                ) : (
+                  <span className="wf-progress-num">{item.num}</span>
+                )}
+                {item.jobsRunning > 0 && (
+                  <span className="wf-progress-live" aria-hidden="true" />
+                )}
+              </Link>
+            </li>
+          )
+        })}
+      </ol>
+    </nav>
   )
 }
 
@@ -190,9 +267,20 @@ export default function WorkflowShell() {
         ? storedId
         : 'ames'
 
-  // Keep the URL canonical (?dataset= always present on /workflow/*).
+  // Keep the URL canonical (?dataset= always present on /workflow/*). The
+  // functional form preserves the rest of the query string — a deep link like
+  // /workflow/08-evaluate?job=job_xxxxxxxx (no ?dataset=) must not lose its
+  // job param to the canonicalization rewrite.
   useEffect(() => {
-    if (paramId !== datasetId) setSearchParams({ dataset: datasetId }, { replace: true })
+    if (paramId === datasetId) return
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('dataset', datasetId)
+        return next
+      },
+      { replace: true },
+    )
   }, [paramId, datasetId, setSearchParams])
 
   // Mirror the active dataset into localStorage (§6.2 client layer).
@@ -296,7 +384,7 @@ export default function WorkflowShell() {
   const goToStage = useCallback(
     (slug) => {
       if (!stageBySlug(slug)) return
-      navigate(`/workflow/${slug}?dataset=${datasetId}`)
+      navigate(stageHref(slug, datasetId))
     },
     [navigate, datasetId],
   )
@@ -346,7 +434,7 @@ export default function WorkflowShell() {
   // /workflow (or an unknown slug) → the last visited stage, else stage 01.
   if (!stage) {
     const target = stageBySlug(stored?.last_stage) ?? stageBySlug(DEFAULT_STAGE)
-    return <Navigate to={`/workflow/${target.slug}?dataset=${datasetId}`} replace />
+    return <Navigate to={stageHref(target.slug, datasetId)} replace />
   }
 
   const gate = GATED_STAGES[stage.slug]
@@ -386,13 +474,26 @@ export default function WorkflowShell() {
     <WorkflowContext.Provider value={contextValue}>
       <div className="wf-shell">
         {/* Quiet mono context strip — reads as the page-head meta area; the
-            dataset picker is a compact quiet control on the right. */}
+            dataset picker is a compact quiet control on the right. Below the
+            meta row, the stage-progress rail surfaces completed / current /
+            locked / upcoming for all twelve stages (the §6.2 view-model). */}
         <div className="wf-context">
-          <p className="wf-context-line">
-            Sandbox workbench — models you train here serve this workbench only and
-            never replace the PropPulse champion.
-          </p>
-          <DatasetPicker />
+          <div className="wf-context-top">
+            <p className="wf-context-line">
+              <span className="wf-context-dot" aria-hidden="true" />
+              Sandbox workbench — models you train here serve this workbench only and
+              never replace the PropPulse champion.
+            </p>
+            <div className="wf-context-side">
+              <span className="wf-context-stage">
+                Stage <span className="wf-context-stage-num">{stage.num}</span>
+                {' / '}
+                {WORKFLOW_STAGES.length}
+              </span>
+              <DatasetPicker />
+            </div>
+          </div>
+          <StageProgress stages={stages} datasetId={datasetId} />
         </div>
         {body}
         <StagePager currentSlug={stage.slug} datasetId={datasetId} />

@@ -11,7 +11,7 @@
  * locked state when visited).
  */
 import { Link } from 'react-router'
-import { WORKFLOW_STAGES } from '../../pages/workflow/stages'
+import { WORKFLOW_STAGES, stageHref } from '../../pages/workflow/stages'
 
 /**
  * @param {Object} props
@@ -23,20 +23,19 @@ export default function StagePager({ currentSlug, datasetId }) {
   if (index === -1) return null
   const prev = WORKFLOW_STAGES[index - 1] ?? null
   const next = WORKFLOW_STAGES[index + 1] ?? null
-  const stageTo = (slug) => `/workflow/${slug}?dataset=${datasetId}`
 
   return (
     <nav className="stage-pager" aria-label="Workflow stages">
       {prev ? (
-        <Link className="pager-link" to={stageTo(prev.slug)}>
+        <Link className="pager-link" rel="prev" to={stageHref(prev.slug, datasetId)}>
           <span className="pager-dir">← Stage {prev.num}</span>
           <span className="pager-label">{prev.title}</span>
         </Link>
       ) : (
-        <span />
+        <span aria-hidden="true" />
       )}
       {next && (
-        <Link className="pager-link pager-next" to={stageTo(next.slug)}>
+        <Link className="pager-link pager-next" rel="next" to={stageHref(next.slug, datasetId)}>
           <span className="pager-dir">Stage {next.num} →</span>
           <span className="pager-label">{next.title}</span>
         </Link>

@@ -8,20 +8,22 @@
  *
  * Until a market is selected it renders the reference idle pattern: a
  * dashed-edge panel with a mono kicker ("Awaiting selection") and one quiet
- * guidance line. Every stat is Number.isFinite-guarded ('—' fallback);
- * `members` arrives pre-joined from the page.
+ * guidance line. Every stat renders through the formatters' own non-finite
+ * guard ('—' fallback); `members` arrives pre-joined from the page.
  */
 import { Link } from 'react-router'
-import { clusterColor } from '../../constants'
+import { clusterColor, clusterLabel } from '../../constants'
 import { formatNumber, formatPct, formatUsd, humanizeNote } from '../../format'
-
-const fin = (value) => Number.isFinite(Number(value))
 
 export default function MarketProfile({ cluster, members = [] }) {
   if (!cluster) {
     return (
-      <aside className="panel market-profile market-profile--idle" aria-label="Market profile">
-        <div className="panel-head">
+      <aside
+        className="panel market-profile market-profile--idle"
+        aria-label="Market profile"
+        aria-live="polite"
+      >
+        <div className="panel-head panel-head--raised">
           <span className="panel-title">Market profile</span>
         </div>
         <div className="panel-body">
@@ -35,17 +37,18 @@ export default function MarketProfile({ cluster, members = [] }) {
     )
   }
 
-  const label =
-    typeof cluster.label === 'string' && cluster.label
-      ? cluster.label
-      : `Cluster ${cluster.cluster_id}`
+  const label = clusterLabel(cluster)
   const note = typeof cluster.note === 'string' && cluster.note ? cluster.note : null
   const fallbackMembers = members.filter((member) => member.fallback)
   const firstMember = members[0] ?? null
 
   return (
-    <aside className="panel market-profile" aria-label={`Market profile: ${label}`}>
-      <div className="panel-head">
+    <aside
+      className="panel market-profile"
+      aria-label={`Market profile: ${label}`}
+      aria-live="polite"
+    >
+      <div className="panel-head panel-head--raised">
         <span className="panel-title market-profile-title">
           <span
             className="swatch"
@@ -60,28 +63,28 @@ export default function MarketProfile({ cluster, members = [] }) {
       <div className="panel-body">
         <div className="metrics metrics--auto market-profile-stats">
           <div className="metric">
-            <div className="metric-value">{fin(cluster.median_price) ? formatUsd(cluster.median_price) : '—'}</div>
+            <div className="metric-value">{formatUsd(cluster.median_price)}</div>
             <div className="metric-label">Typical price (median)</div>
           </div>
           <div className="metric">
             <div className="metric-value">
-              {fin(cluster.median_price_per_sqft) ? formatNumber(cluster.median_price_per_sqft, 1) : '—'}
+              {formatNumber(cluster.median_price_per_sqft, 1)}
             </div>
             <div className="metric-label">Median $/sqft</div>
           </div>
           <div className="metric">
-            <div className="metric-value">{fin(cluster.n_sales) ? formatNumber(cluster.n_sales, 0) : '—'}</div>
+            <div className="metric-value">{formatNumber(cluster.n_sales, 0)}</div>
             <div className="metric-label">Train sales</div>
           </div>
           <div className="metric">
             <div className="metric-value">
-              {fin(cluster.n_neighborhoods) ? formatNumber(cluster.n_neighborhoods, 0) : '—'}
+              {formatNumber(cluster.n_neighborhoods, 0)}
             </div>
             <div className="metric-label">Neighborhoods</div>
           </div>
           <div className="metric">
             <div className="metric-value">
-              {fin(cluster.sale_velocity_30d) ? formatPct(cluster.sale_velocity_30d) : '—'}
+              {formatPct(cluster.sale_velocity_30d)}
             </div>
             <div className="metric-label">30-day velocity</div>
             <div className="metric-hint">
@@ -127,7 +130,23 @@ export default function MarketProfile({ cluster, members = [] }) {
             to={`/valuation?neighborhood=${encodeURIComponent(firstMember.code)}`}
             title={`Prefills the valuation form with ${firstMember.name}`}
           >
-            Estimate value →
+            Estimate value
+            <svg
+              className="cta-arrow"
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <line x1="4" y1="12" x2="20" y2="12" />
+              <polyline points="13 5 20 12 13 19" />
+            </svg>
           </Link>
         </div>
       )}

@@ -83,16 +83,15 @@ curl http://localhost:8080/                # SPA shell
 ## Environment variables
 
 Keys mirror `.env.example` (SPEC §12). The backend image sets the defaults
-below via `ENV`; compose's `env_file: .env` overrides them, and the compose
-`environment:` block overrides `env_file` (used to force `API_HOST=0.0.0.0`).
+below via `ENV`; compose's `env_file: .env` overrides them. Uvicorn's bind
+host/port come from the image CMD's flags (nothing in the app reads a
+host/port env var).
 
 | Variable | Default (image / .env.example) | Purpose |
 |---|---|---|
 | `MODEL_DIR` | `models` | model artifact root (repo-relative → `/app/models`) |
 | `DATA_DIR` | `data` | dataset root (only `data/external/neighborhood_geo.csv` + `data/processed/train.csv` are baked in) |
 | `MLFLOW_TRACKING_URI` | empty | empty → local file store; set `http://localhost:5000` to use the mlflow service from the host |
-| `API_HOST` | `0.0.0.0` in container (`127.0.0.1` in .env.example) | bind address; containers must use 0.0.0.0 |
-| `API_PORT` | `8000` | uvicorn port |
 | `VITE_API_URL` | `http://localhost:8000` | frontend → backend base URL; **frontend build-time ARG** — changing it requires rebuilding the frontend image |
 | `LOG_LEVEL` | `INFO` | backend logging verbosity |
 | `PREDICTION_LOG_PATH` | `logs/predictions.jsonl` | JSONL prediction log (bind-mounted to `./logs`) |

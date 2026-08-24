@@ -12,7 +12,6 @@ provenance block from the ml layer (§3.11).
 """
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 from fastapi import HTTPException
@@ -22,8 +21,6 @@ from ml.workflow.prepare import preview_report
 
 from backend.app.services.workflow.datasets import DONE_JOB_STATES, normalize_job_status
 from backend.app.services.workflow.jobs import WorkflowJobService
-
-logger = logging.getLogger(__name__)
 
 #: Red-team F1: plain-English provenance note on stale-split sandbox predictions.
 _STALE_SPLIT_NOTE = (
@@ -40,7 +37,7 @@ class WorkflowPredictService:
         self._models: dict[tuple[str, str], Any] = {}
 
     def _sandbox_model(self, dataset_id: str, job_id: str) -> Any:
-        """Cached ``SandboxModelService`` per ``(dataset_id, job_id)``; 503 pre-WF-B2.
+        """Cached ``SandboxModelService`` per ``(dataset_id, job_id)``.
 
         The ml layer raises ``UnknownDataset``/``UnknownJobError`` for missing
         state (404 per its contract); those can still surface here when the
@@ -49,17 +46,11 @@ class WorkflowPredictService:
         """
         key = (dataset_id, job_id)
         if key not in self._models:
-            try:
-                from ml.workflow.predict import (  # noqa: PLC0415
-                    SandboxModelService,
-                    UnknownJobError,
-                )
-            except ImportError as exc:
-                raise HTTPException(
-                    status_code=503,
-                    detail="the workflow training engine (ml.workflow.predict) is not "
-                    "available in this build",
-                ) from exc
+            from ml.workflow.predict import (  # noqa: PLC0415
+                SandboxModelService,
+                UnknownJobError,
+            )
+
             try:
                 self._models[key] = SandboxModelService(dataset_id, job_id)
             except (UnknownDataset, UnknownJobError) as exc:
@@ -76,7 +67,7 @@ class WorkflowPredictService:
         Raises:
             HTTPException: 404 unknown job/candidate; 409 job not done /
                 candidate failed; 422 the payload cannot be scored (or the
-                objective does not serve predictions); 503 pre-WF-B2.
+                objective does not serve predictions).
         """
         dataset_id, _job_dir, status = self._job_service._job_dir_for(job_id)
         objective = str(status.get("objective"))

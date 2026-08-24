@@ -1,19 +1,16 @@
 /* ==========================================================================
    Model Insights page — page-scoped styles, in the reference's evaluation
    language (blueprint §8.9). Imported by pages/ModelInsights.jsx AFTER
-   styles.css. Tokens from styles.css only; hairlines over boxes; nothing
+   styles.css; pages/NotFound.jsx also imports it (for the .not-found block
+   at the end). Tokens from styles.css only; hairlines over boxes; nothing
    below 10px (canonical floor: .field-error in styles.css).
    Note: the shared components/ConfusionMatrix.jsx modifiers
    (.cm-grid--totals / .insights-cm*) live in styles/confusion-matrix.css,
    imported by every page that renders the component. Keep the names.
    ========================================================================== */
 
-/* Stale-while-revalidate: previous content dims, never swaps to a skeleton
-   once data is on screen. */
-.insights-stale {
-  opacity: 0.55;
-  transition: opacity var(--dur-hover);
-}
+/* Stale-while-revalidate: previous content dims via the shared .dim-stale
+   (styles.css), never swaps to a skeleton once data is on screen. */
 
 /* First-load skeleton stack for the /model/info group. */
 .insights-sk {
@@ -23,8 +20,68 @@
 }
 
 /* --------------------------------------------------------------------------
-   Champion duo — two .panel cards; only the badge-set wrap is page-specific.
+   Headline verdict strip — the sealed-test numbers get the ledger-band
+   treatment: hairlines above and below, values one step up from the global
+   23px, and the selection metric inked amber as the strip's focal point
+   (one amber numeral, not a rainbow).
    -------------------------------------------------------------------------- */
+
+.insights-headline {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 22px 0;
+}
+
+/* Supporting figures step back one size so the focal numeral owns the strip. */
+.insights-headline .metric-value {
+  font-size: 22px;
+}
+
+.insights-headline .metric-label {
+  color: var(--text-2);
+}
+
+/* One focal metric per strip: the selection metric carries the verdict —
+   a larger amber numeral on a whisper of accent wash that bleeds into the
+   strip's padding without growing it (negative margins keep the grid track
+   sized to the content, and stay well inside the page gutters at every
+   breakpoint: 40px/24px/18px vs the 16px bleed). */
+.insights-headline .metric--focal {
+  background: linear-gradient(180deg, var(--accent-wash), rgba(217, 166, 63, 0) 90%);
+  border-radius: var(--radius);
+  padding: 12px 20px 12px 16px;
+  margin: -12px 0 -12px -16px;
+}
+
+.insights-headline .metric--focal .metric-value {
+  font-size: 32px;
+  color: var(--accent);
+}
+
+/* --------------------------------------------------------------------------
+   Champion duo — two .panel cards. Page-specific polish: the shared
+   .panel-head--raised band (styles.css), a 2px amber top rule (the system's
+   active-indicator idiom, marking the registry champions), and the
+   chart-card hover hairline. The badge-set wrap is the original
+   page-specific piece.
+   -------------------------------------------------------------------------- */
+
+.insights-champions .panel {
+  box-shadow: inset 0 2px 0 var(--accent-border);
+  transition: border-color var(--dur-hover);
+}
+
+.insights-champions .panel:hover {
+  border-color: var(--border-strong);
+}
+
+/* The mono model tag is an identifier, not part of the title sentence —
+   lighter ink and weight than the label it follows. */
+.insights-champions .panel-title .mono {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-2);
+}
 
 .insights-badge-set {
   display: inline-flex;
@@ -60,14 +117,22 @@
   font-size: 20px;
 }
 
+/* The caveat separates from the stats on a hairline — facts above, the
+   honest note below. */
 .insights-panel-note {
   margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
 
 /* --------------------------------------------------------------------------
    Metrics tables — dense .table language; one-line hint under each metric
    name (the UI teaches). The global .table nowrap is lifted so hints can
-   wrap inside the scrollable table.
+   wrap inside the scrollable table. `table-sticky` (JSX) keeps the header
+   pinned if the scroll frame ever gains a max-height. The sealed-test
+   column is the evidence: an amber header label, primary ink, and a whisper
+   of amber on the body cells, with a hover-safe override so row hover never
+   flattens the tint.
    -------------------------------------------------------------------------- */
 
 .insights-metrics td {
@@ -78,10 +143,25 @@
   min-width: 200px;
 }
 
+.insights-metrics th:last-child {
+  color: var(--accent);
+}
+
+.insights-metrics td:last-child {
+  background: rgba(217, 166, 63, 0.04);
+  /* The evidence column reads in primary ink — everything else stays --text-2. */
+  color: var(--text);
+}
+
+.table.insights-metrics tbody tr:hover td:last-child {
+  background: rgba(217, 166, 63, 0.07);
+}
+
 .insights-metric-hint {
   display: block;
   font-weight: 400;
   font-size: 11.5px;
+  line-height: 1.45;
   color: var(--text-3);
   margin-top: 2px;
 }
@@ -92,11 +172,53 @@
 }
 
 /* --------------------------------------------------------------------------
-   Bootstrap honesty banner (amber = honesty caveat, blueprint §5 alert-warn)
+   Bootstrap honesty banner (amber = honesty caveat, blueprint §5 alert-warn).
+   The 2px leading edge ties it to the disclosures banner as one family.
    -------------------------------------------------------------------------- */
 
+.insights-bootstrap {
+  border-left: 2px solid var(--accent);
+}
+
+/* The verdict's evidence pulled out of the prose: three mono stats on amber
+   hairlines, scannable before the sentences that qualify them. */
+.insights-bootstrap-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 40px;
+  margin-top: 12px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(217, 166, 63, 0.18);
+  border-bottom: 1px solid rgba(217, 166, 63, 0.18);
+}
+
+.insights-bootstrap-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.insights-bootstrap-stat-value {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.insights-bootstrap-stat-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.03em;
+  color: var(--text-3);
+}
+
 .insights-bootstrap-body {
-  margin-top: 4px;
+  margin-top: 12px;
+  line-height: 1.6;
 }
 
 /* The global .alert strong is display:block (title styling); model names
@@ -107,9 +229,14 @@
   margin: 0;
 }
 
+/* The "how to read it" paragraph separates from the numbers on a faint
+   amber hairline — verdict, then figures, then interpretation. */
 .insights-bootstrap-explainer {
-  margin-top: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(217, 166, 63, 0.18);
   font-size: 12.5px;
+  line-height: 1.55;
   color: var(--text-3);
 }
 
@@ -128,11 +255,43 @@
 }
 
 /* --------------------------------------------------------------------------
-   Global drivers — numbered top-20 ledger rows (DriverBars `numbered` prop)
+   Global drivers — numbered top-20 ledger rows (DriverBars `numbered` prop).
+   Scoped under .insights-drivers so Overview's plain .driver-rows stay
+   untouched: a mono column head on the row grid's exact tracks, row hover
+   for scanning the long ledger, podium ranks in amber with full-strength
+   bars, and ranks 4+ stepping back to a quieter amber.
    -------------------------------------------------------------------------- */
 
 .driver-row.driver-row--numbered {
   grid-template-columns: 30px 190px 1fr 64px;
+}
+
+/* Ledger column head — sits on the same grid tracks as the numbered rows
+   (the ≤820px tier below keeps both in lockstep) and bleeds the same 8px so
+   its baseline hairline continues the rows' rule lines. */
+.insights-drivers-head {
+  display: grid;
+  grid-template-columns: 30px 190px 1fr 64px;
+  gap: 18px;
+  align-items: end;
+  padding: 0 8px 7px;
+  margin: 0 -8px;
+  border-bottom: 1px solid var(--border-strong);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* Right-aligned over the value column; the item spans the bar + value
+   tracks so the nowrap label always fits inside its box (a bare 64px/46px
+   track would let the glyphs spill past the viewport at 390px). */
+.insights-drivers-head-num {
+  grid-column: 3 / -1;
+  min-width: 0;
+  text-align: right;
+  white-space: nowrap;
 }
 
 .driver-rank {
@@ -142,9 +301,71 @@
   font-variant-numeric: tabular-nums;
 }
 
+.insights-drivers .driver-row {
+  padding: 10px 8px;
+  margin: 0 -8px;
+  border-radius: var(--radius);
+  transition: background var(--dur-hover);
+}
+
+.insights-drivers .driver-row:hover {
+  background: var(--surface);
+}
+
+.insights-drivers .driver-row:nth-child(-n + 3) .driver-rank {
+  color: var(--accent);
+}
+
+/* The podium bars carry full-strength amber; everything below rank 3 steps
+   back so the top of the ledger owns the emphasis. */
+.insights-drivers .driver-row:nth-child(n + 4) .driver-fill {
+  background: rgba(217, 166, 63, 0.55);
+}
+
 .insights-drivers-note {
   margin-top: 14px;
   max-width: 640px;
+}
+
+/* Confusion-matrix legend — static swatch key for the heat encoding; the
+   counts and the role=img aria-label stay the primary channels. */
+.insights-cm-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 12px 0 0;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-2);
+}
+
+.insights-cm-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.insights-cm-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Swatches match the deepest cell fills (see confusion-matrix.css). */
+.insights-cm-swatch--correct {
+  background: rgba(217, 166, 63, 0.22);
+  border: 1px solid rgba(217, 166, 63, 0.45);
+}
+
+.insights-cm-swatch--error {
+  background: rgba(211, 107, 98, 0.115);
+  border: 1px solid rgba(211, 107, 98, 0.45);
+}
+
+.insights-cm-legend-dim {
+  color: var(--text-3);
 }
 
 /* --------------------------------------------------------------------------
@@ -155,13 +376,39 @@
   max-width: 720px;
 }
 
-.insights-rationale {
-  margin: 20px 0 0;
-  padding: 12px 16px;
-  border-left: 2px solid var(--accent);
-  background: rgba(217, 166, 63, 0.05);
-  border-radius: 0 var(--radius) var(--radius) 0;
+/* Two real children (index + body) — name the columns instead of inheriting
+   the global row-item's unused `auto` track, and give the steps air. */
+.insights-prose .row-item {
+  grid-template-columns: 40px 1fr;
+  padding: 17px 0;
+}
+
+/* Step numerals ride the accent like the nav's active step numbers. */
+.insights-prose .row-index {
   font-size: 12.5px;
+  color: var(--accent);
+}
+
+/* Long-form reading measure: the narrative steps run one ink step brighter
+   and one size up from the global row-body microcopy, with an open leading. */
+.insights-prose .row-body strong {
+  font-size: 14px;
+}
+
+.insights-prose .row-body span {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.65;
+}
+
+.insights-rationale {
+  margin: 24px 0 0;
+  padding: 14px 18px;
+  border-left: 2px solid var(--accent);
+  background: var(--accent-wash);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  font-size: 13px;
+  line-height: 1.6;
   color: var(--text-2);
   white-space: pre-line;
 }
@@ -176,9 +423,12 @@
   margin-bottom: 6px;
 }
 
-/* The sealed-set honesty line — the evaluation page's closing statement. */
+/* The sealed-set honesty line — the evaluation page's closing statement,
+   set apart on a hairline. */
 .insights-sealed-line {
-  margin-top: 20px;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
   font-size: 13px;
   font-weight: 600;
   color: var(--text);
@@ -193,13 +443,19 @@
   gap: 16px;
 }
 
+/* Same honesty-banner family as the bootstrap note: 2px amber leading edge. */
+.insights-disclosures .alert {
+  border-left: 2px solid var(--accent);
+}
+
 .insights-not-shown li {
   display: flex;
   gap: 12px;
   align-items: baseline;
-  padding: 10px 0;
+  padding: 12px 0;
   border-top: 1px solid var(--border);
   font-size: 12.5px;
+  line-height: 1.55;
   color: var(--text-2);
 }
 
@@ -209,6 +465,9 @@
 
 .insights-not-shown-tag {
   flex-shrink: 0;
+  /* Ledger alignment: equal-width tags line the text up as a column. */
+  min-width: 104px;
+  text-align: center;
 }
 
 /* Closing CTA row (no dead ends) — primary then secondary, left-aligned. */
@@ -216,6 +475,118 @@
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   404 page (pages/NotFound.jsx imports this sheet) — an oversized outlined
+   numeral filling the column's dead space. Pure decoration: aria-hidden,
+   pointer-events off, flat hairline stroke (no gradients, no shadows), and
+   dropped ≤900px where the column narrows to the text measure.
+   -------------------------------------------------------------------------- */
+
+.not-found {
+  position: relative;
+}
+
+/* The attempted path, verbatim — mono microcopy under the description. */
+.not-found-path {
+  font-size: 12.5px;
+  color: var(--text-3);
+  margin: -14px 0 24px;
+}
+
+.not-found-path .mono {
+  color: var(--text-2);
+  /* Arbitrary user URLs never force horizontal overflow. */
+  word-break: break-all;
+}
+
+/* Recovery list — hairline link rows in the pipeline-list idiom, so the
+   dead end routes somewhere useful. */
+.not-found-nav {
+  margin-top: 40px;
+  max-width: 520px;
+}
+
+.not-found-nav-kicker {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin: 0 0 10px;
+}
+
+.not-found-links {
+  border-top: 1px solid var(--border);
+}
+
+.not-found-link {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+  padding: 11px 6px;
+  margin: 0 -6px;
+  border-bottom: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: background var(--dur-hover);
+}
+
+.not-found-link:hover {
+  background: var(--surface);
+}
+
+.not-found-link-label {
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  transition: color var(--dur-hover);
+}
+
+.not-found-link:hover .not-found-link-label {
+  color: var(--accent);
+}
+
+.not-found-link-note {
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--text-3);
+}
+
+.not-found-link-arrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-3);
+  transition: color var(--dur-hover);
+}
+
+.not-found-link:hover .not-found-link-arrow {
+  color: var(--accent);
+}
+
+.not-found-numeral {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: clamp(88px, 11vw, 140px);
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--raised);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Outlined-numeral refinement where text-stroke exists (every modern
+   engine); the --raised fallback above keeps a quiet watermark otherwise. */
+@supports ((-webkit-text-stroke: 1px #000)) {
+  .not-found-numeral {
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--border-strong);
+  }
 }
 
 /* --------------------------------------------------------------------------
@@ -228,6 +599,9 @@
   .insights-cm-grid {
     grid-template-columns: 1fr;
   }
+  .not-found-numeral {
+    display: none;
+  }
 }
 
 @media (max-width: 820px) {
@@ -237,6 +611,31 @@
   .driver-row.driver-row--numbered {
     grid-template-columns: 24px 96px 1fr 46px;
     gap: 12px;
+  }
+  /* The ledger head follows the row tracks exactly. */
+  .insights-drivers-head {
+    grid-template-columns: 24px 96px 1fr 46px;
+    gap: 12px;
+  }
+  .insights-headline {
+    padding: 18px 0;
+  }
+  /* The focal metric takes a full-width row above the 2-col supports… */
+  .insights-headline .metric--focal {
+    grid-column: 1 / -1;
+    padding: 10px 16px 10px 12px;
+    margin: -10px 0 0 -12px;
+  }
+  /* …which re-deals the hairline dividers: row-leading cells flush, only the
+     second column keeps its rule (overrides the global even-child tier). */
+  .insights-headline .metric:nth-child(2),
+  .insights-headline .metric:nth-child(4) {
+    border-left: none;
+    padding-left: 0;
+  }
+  .insights-headline .metric:nth-child(3) {
+    border-left: 1px solid var(--border);
+    padding-left: 20px;
   }
 }
 
@@ -252,6 +651,15 @@
   }
   .cm-grid.cm-grid--totals .cm-total strong {
     font-size: 13px;
+  }
+  .insights-headline .metric-value {
+    font-size: 21px;
+  }
+  .insights-headline .metric--focal .metric-value {
+    font-size: 26px;
+  }
+  .insights-not-shown-tag {
+    min-width: 0;
   }
   .insights-cta .btn {
     width: 100%;

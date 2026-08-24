@@ -146,7 +146,7 @@ def journey(
         # Deletion.
         assert client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
 
-        return SimpleNamespace(dataset_id=dataset_id, job_id=job_id)
+        return SimpleNamespace(dataset_id=dataset_id)
     finally:
         monkey.undo()
 

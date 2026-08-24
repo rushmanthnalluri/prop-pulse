@@ -23,7 +23,9 @@ import { api } from '../../api/client'
 import { useApi } from '../../api/useApi'
 import { formatNumber } from '../../format'
 import { EmptyState, ErrorState, PanelSkeleton } from '../../components/StateView'
+import FindCard from '../../components/workflow/FindCard'
 import { useWorkflow } from './WorkflowShell'
+import { IconArrowRight, IconMapPin, IconSegments, IconTable, IconTrend } from './icons'
 import '../../styles/workflow-bridge.css'
 
 export default function MarketStage() {
@@ -135,7 +137,8 @@ export default function MarketStage() {
                 className="btn btn-secondary btn-sm"
                 onClick={() => goToStage('08-evaluate')}
               >
-                Inspect clusters in stage 08 →
+                Inspect clusters in stage 08
+                <IconArrowRight />
               </button>
             </div>
           </div>
@@ -174,38 +177,27 @@ export default function MarketStage() {
             What you&rsquo;ll find:
           </p>
           <div className="wf-find-grid">
-            <div className="wf-find-card">
-              <span className="wf-find-title">Micro-market map</span>
-              <p className="wf-find-body">
-                {nNeighborhoods !== null
-                  ? `All ${nNeighborhoods} Ames neighborhoods`
-                  : 'Every Ames neighborhood'}{' '}
-                as approximate centroids on an interactive map, colored by micro-market.
-              </p>
-            </div>
-            <div className="wf-find-card">
-              <span className="wf-find-title">
-                {nMicroMarkets !== null ? `${nMicroMarkets} micro-markets` : 'Micro-markets'}
-              </span>
-              <p className="wf-find-body">
-                Cluster profiles with median price, $/sqft, and 30-day sale velocity per
-                micro-market.
-              </p>
-            </div>
-            <div className="wf-find-card">
-              <span className="wf-find-title">Half-year trends</span>
-              <p className="wf-find-body">
-                Median sale price and sales count per micro-market by half-year — gaps
-                shown as gaps, never interpolated.
-              </p>
-            </div>
-            <div className="wf-find-card">
-              <span className="wf-find-title">Sortable directory</span>
-              <p className="wf-find-body">
-                Every neighborhood&rsquo;s stats in a table you can sort by any column —
-                the full non-map equivalent.
-              </p>
-            </div>
+            <FindCard Icon={IconMapPin} title="Micro-market map">
+              {nNeighborhoods !== null
+                ? `All ${nNeighborhoods} Ames neighborhoods`
+                : 'Every Ames neighborhood'}{' '}
+              as approximate centroids on an interactive map, colored by micro-market.
+            </FindCard>
+            <FindCard
+              Icon={IconSegments}
+              title={nMicroMarkets !== null ? `${nMicroMarkets} micro-markets` : 'Micro-markets'}
+            >
+              Cluster profiles with median price, $/sqft, and 30-day sale velocity per
+              micro-market.
+            </FindCard>
+            <FindCard Icon={IconTrend} title="Half-year trends">
+              Median sale price and sales count per micro-market by half-year — gaps
+              shown as gaps, never interpolated.
+            </FindCard>
+            <FindCard Icon={IconTable} title="Sortable directory">
+              Every neighborhood&rsquo;s stats in a table you can sort by any column —
+              the full non-map equivalent.
+            </FindCard>
           </div>
           <p className="wf-bridge-note">
             Caveats, stated plainly: neighborhood centroids are approximate, and the
@@ -213,7 +205,8 @@ export default function MarketStage() {
             listings.
           </p>
           <Link className="btn btn-primary wf-bridge-cta" to="/market">
-            Open Market Intelligence →
+            Open Market Intelligence
+            <IconArrowRight />
           </Link>
         </div>
       </section>

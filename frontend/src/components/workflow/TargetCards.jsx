@@ -10,25 +10,16 @@
  * and the positive rate is labelled as simulated.
  */
 import { formatPct } from '../../format'
+import { OBJECTIVES, OBJECTIVE_LABELS } from '../../api/workflow'
 import SimulatedBadge from './SimulatedBadge'
 
-const OBJECTIVES = [
-  {
-    key: 'regression',
-    kicker: 'Regression',
-    title: 'Sale price prediction',
-  },
-  {
-    key: 'classification',
-    kicker: 'Classification',
-    title: 'Sale speed prediction',
-  },
-  {
-    key: 'clustering',
-    kicker: 'Clustering',
-    title: 'Neighborhood segmentation',
-  },
-]
+/* Card titles per objective — pinned copy (e2e workflow.spec.js); the kicker
+   is the shared OBJECTIVE_LABELS map from api/workflow.js. */
+const OBJECTIVE_TITLES = {
+  regression: 'Sale price prediction',
+  classification: 'Sale speed prediction',
+  clustering: 'Neighborhood segmentation',
+}
 
 function TargetCard({ kicker, title, target }) {
   const available = Boolean(target?.available)
@@ -70,12 +61,12 @@ export default function TargetCards({ targets }) {
   if (!targets || typeof targets !== 'object') return null
   return (
     <div className="wff-targets">
-      {OBJECTIVES.map((objective) => (
+      {OBJECTIVES.map((key) => (
         <TargetCard
-          key={objective.key}
-          kicker={objective.kicker}
-          title={objective.title}
-          target={targets[objective.key]}
+          key={key}
+          kicker={OBJECTIVE_LABELS[key]}
+          title={OBJECTIVE_TITLES[key]}
+          target={targets[key]}
         />
       ))}
     </div>

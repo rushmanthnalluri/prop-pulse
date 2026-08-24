@@ -116,7 +116,7 @@ export default function ResultHero({ result, coverage, mae, r2 }) {
           >
             <div className="result-fill" style={{ width: `${pct}%` }} />
             {thrPct !== null && (
-              <span className="result-tick" style={{ left: `${thrPct}%` }} aria-hidden="true" />
+              <span className="threshold-tick" style={{ left: `${thrPct}%` }} aria-hidden="true" />
             )}
           </div>
           <div className="result-meta">

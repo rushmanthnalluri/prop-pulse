@@ -53,17 +53,13 @@
  * data/uploads (nothing outside this suite tracks them — C15/C16 spirit).
  */
 import { test, expect, request } from '@playwright/test'
-import { spawn } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { ensureBackend, BACKEND_ORIGIN as BACKEND, REPO_ROOT } from '../helpers/backend.js'
 // Production formatting — DOM numbers are compared against the API payloads
 // through the exact same helpers (the audit-blackbox trace-truth pattern).
 import { formatUsd, formatMetric } from '../../frontend/src/format.js'
 
-const BACKEND = 'http://localhost:8200'
-const FRONTEND_ORIGIN = 'http://localhost:5300'
-const REPO_ROOT = fileURLToPath(new URL('../..', import.meta.url))
 const PREDICTION_LOG = path.join(REPO_ROOT, 'logs', 'predictions.jsonl')
 
 /** Verbatim honesty strings (ml/workflow/prepare.py + ml/workflow/predict.py). */
@@ -113,38 +109,11 @@ async function waitForJob(jobId, timeoutMs = 120_000) {
   throw new Error(`job ${jobId} not terminal within ${timeoutMs}ms: ${JSON.stringify(last)}`)
 }
 
-/** Re-ensure the E2E backend (dashboard.spec's LAST test stops :8200). */
-async function ensureBackend() {
-  try {
-    if ((await fetch(`${BACKEND}/health`)).status === 200) return
-  } catch {
-    /* down — respawn below */
-  }
-  spawn(
-    path.join(REPO_ROOT, '.venv', 'Scripts', 'python.exe'),
-    ['-m', 'uvicorn', 'backend.app.main:app', '--port', '8200'],
-    {
-      cwd: REPO_ROOT,
-      env: { ...process.env, CORS_ORIGINS: FRONTEND_ORIGIN },
-      detached: true,
-      stdio: 'ignore',
-    },
-  ).unref()
-  await expect
-    .poll(
-      async () => {
-        try {
-          return (await fetch(`${BACKEND}/health`)).status
-        } catch {
-          return 0
-        }
-      },
-      { timeout: 180_000, intervals: [1000, 2000, 3000] },
-    )
-    .toBe(200)
-}
-
 const ames = (slug) => `/workflow/${slug}?dataset=ames`
+
+/** `.metric` card located by its `.metric-label` text. */
+const metric = (page, label) =>
+  page.locator('.metric', { has: page.locator('.metric-label', { hasText: label }) })
 
 /** The sidebar pipeline stepper (Layout) — stages 01–09 deep-link into /workflow/*. */
 const sidebarStages = (page) =>
@@ -196,10 +165,8 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     // Bundled dataset is active out of the box, with its real shape.
     await expect(page.locator('.wf-ds-chip-name')).toHaveText('Ames Housing (bundled)')
     await expect(page.locator('.wf-ds-chip-meta')).toHaveText('1,460 × 81')
-    const profileMetric = (label) =>
-      page.locator('.metric', { has: page.locator('.metric-label', { hasText: label }) })
-    await expect(profileMetric('Rows').locator('.metric-value')).toHaveText('1,460')
-    await expect(profileMetric('Columns').locator('.metric-value')).toHaveText('81')
+    await expect(metric(page, 'Rows').locator('.metric-value')).toHaveText('1,460')
+    await expect(metric(page, 'Columns').locator('.metric-value')).toHaveText('81')
 
     // Select the crafted 120-row Ames-schema slice in the dropzone, then submit.
     await page.locator('.upload-drop').waitFor()
@@ -223,7 +190,7 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
       page.getByRole('button', { name: 'Continue to Analyze Features →' }),
     ).toBeVisible()
     // The profile card refetched for the upload: its real shape (120 × 81).
-    await expect(profileMetric('Rows').locator('.metric-value')).toHaveText('120')
+    await expect(metric(page, 'Rows').locator('.metric-value')).toHaveText('120')
 
     expectClean(w)
   })
@@ -234,11 +201,9 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     await expect(page).toHaveTitle('Analyze Features · PropPulse')
 
     // Headline counts straight from raw_features (38 numeric incl. Id + target).
-    const metric = (label) =>
-      page.locator('.metric', { has: page.locator('.metric-label', { hasText: label }) })
-    await expect(metric('Fields per record').locator('.metric-value')).toHaveText('81')
-    await expect(metric('Numeric').locator('.metric-value')).toHaveText('38')
-    await expect(metric('Categorical').locator('.metric-value')).toHaveText('43')
+    await expect(metric(page, 'Fields per record').locator('.metric-value')).toHaveText('81')
+    await expect(metric(page, 'Numeric').locator('.metric-value')).toHaveText('38')
+    await expect(metric(page, 'Categorical').locator('.metric-value')).toHaveText('43')
 
     // Three objective cards; classification carries the structural SIMULATED badge.
     await expect(page.locator('.wff-target')).toHaveCount(3)
@@ -300,12 +265,10 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     await page.goto(ames('04-missing'))
     await expect(page).toHaveTitle('Missing Values · PropPulse')
 
-    const metric = (label) =>
-      page.locator('.metric', { has: page.locator('.metric-label', { hasText: label }) })
-    await expect(metric('Total cells').locator('.metric-value')).toHaveText('118,260')
-    await expect(metric('Missing cells').locator('.metric-value')).toHaveText('7,829')
-    await expect(metric('Complete').locator('.metric-value')).toHaveText('93.4%')
-    await expect(metric('Columns affected').locator('.metric-value')).toHaveText('19')
+    await expect(metric(page, 'Total cells').locator('.metric-value')).toHaveText('118,260')
+    await expect(metric(page, 'Missing cells').locator('.metric-value')).toHaveText('7,829')
+    await expect(metric(page, 'Complete').locator('.metric-value')).toHaveText('93.4%')
+    await expect(metric(page, 'Columns affected').locator('.metric-value')).toHaveText('19')
 
     // The danger bar chart covers every gapped column (19), role="img" + a11y
     // table whose Missing cells sum to the payload's total.
@@ -392,11 +355,9 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     await page.getByRole('button', { name: 'Run preprocessing' }).click()
 
     // Canonical bundled splits (ADR-4), straight from the persisted report.
-    const splitMetric = (label) =>
-      page.locator('.metric', { has: page.locator('.metric-label', { hasText: label }) })
-    await expect(splitMetric('Train').locator('.metric-value')).toHaveText('945')
-    await expect(splitMetric('Validation').locator('.metric-value')).toHaveText('338')
-    await expect(splitMetric('Test').locator('.metric-value')).toHaveText('175')
+    await expect(metric(page, 'Train').locator('.metric-value')).toHaveText('945')
+    await expect(metric(page, 'Validation').locator('.metric-value')).toHaveText('338')
+    await expect(metric(page, 'Test').locator('.metric-value')).toHaveText('175')
 
     // Pipeline flow: 2 caps + 7 real steps; sale-speed step is SIMULATED-badged.
     await expect(page.locator('.wf-flow-node')).toHaveCount(9)
@@ -499,15 +460,13 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     expect(evaluation.n).toBe(338)
 
     // Metric cards render the real validation numbers.
-    const metric = (label) =>
-      page.locator('.metric', { has: page.locator('.metric-label', { hasText: label }) })
-    await expect(metric('RMSLE').locator('.metric-value')).toHaveText(
+    await expect(metric(page, 'RMSLE').locator('.metric-value')).toHaveText(
       formatMetric(evaluation.metrics.rmsle, 4),
     )
-    await expect(metric('MAE').locator('.metric-value')).toHaveText(
+    await expect(metric(page, 'MAE').locator('.metric-value')).toHaveText(
       formatUsd(evaluation.metrics.mae),
     )
-    await expect(metric('R²').locator('.metric-value')).toBeVisible()
+    await expect(metric(page, 'R²').locator('.metric-value')).toBeVisible()
 
     // Charts: actual-vs-predicted scatter, residual histogram, importance.
     await expect(page.getByRole('img', { name: /actual vs predicted/i })).toBeVisible()

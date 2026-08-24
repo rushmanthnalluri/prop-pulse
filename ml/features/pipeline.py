@@ -481,9 +481,7 @@ def build_feature_frame(
     )
 
     neighborhoods = out["Neighborhood"].astype(str)
-    joined = neighborhoods.map(
-        {name: values for name, values in stats.neighborhoods.items()}
-    )
+    joined = neighborhoods.map(stats.neighborhoods)
     fallback = stats.global_fallback
     for feature, field_name in zip(
         NEIGHBORHOOD_STAT_FEATURES,

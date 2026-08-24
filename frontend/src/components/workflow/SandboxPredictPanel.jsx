@@ -12,7 +12,8 @@
  * - filled: `.result-panel` with the amber border for a value/positive call
  *   (danger for a negative one), kicker "Prediction · {model}" + a "Best
  *   model" badge, the 30px verdict (estimated price / 30-day-sale call), the
- *   8px animated `.result-track` probability bar (classification), the mono
+ *   8px `.result-track` probability meter (classification) with the job's own
+ *   F1-optimal threshold ticked on the track, the mono
  *   meta row, the `.result-facts` dl, and the banded hedged explanation
  *   (≥80 / 50–80 / 20–50 / ≤20 wording, adapted to sale probability; the
  *   regression analog bands the ~80% residual range).
@@ -62,8 +63,7 @@ function predictiveRoster(jobs) {
     )
     .map((job) => ({
       job,
-      candidates: Object.entries(job.results ?? {})
-        .filter(([, result]) => result?.status === 'done')
+      candidates: wf.doneCandidateEntries(job)
         .map(([name]) => name)
         .sort(),
     }))
@@ -78,7 +78,7 @@ const finiteNumber = (value) => Number.isFinite(Number(value))
  * back to the first done candidate when metrics are absent.
  */
 function jobBest(job) {
-  const done = Object.entries(job?.results ?? {}).filter(([, r]) => r?.status === 'done')
+  const done = wf.doneCandidateEntries(job)
   if (done.length === 0) return null
   if (job.objective === 'regression') {
     const scored = done.filter(([, r]) => finiteNumber(r?.val_metrics?.rmsle))
@@ -207,7 +207,7 @@ function RegressionResult({ result, bestName, valMetrics, busy }) {
 
   return (
     <div
-      className={`result-panel result-placed${busy ? ' result-panel--busy' : ''}`}
+      className={`result-panel result-placed${busy ? ' dim-stale' : ''}`}
       aria-busy={busy || undefined}
     >
       <div className="result-kicker-row">
@@ -251,17 +251,19 @@ function RegressionResult({ result, bestName, valMetrics, busy }) {
   )
 }
 
-/** Classification result: 30px call + probability track + SIMULATED labeling. */
+/** Classification result: 30px call + probability meter + SIMULATED labeling. */
 function ClassificationResult({ result, bestName, valMetrics, busy }) {
   const p = Number(result.probability)
   const threshold = Number(result.threshold)
   const positive = result.sells_within_30_days === true
   const pctText = formatPct(result.probability, 1)
   const isBest = result.model?.candidate != null && result.model.candidate === bestName
+  const pct = finiteNumber(p) ? Math.min(100, Math.max(0, p * 100)) : null
+  const thrPct = finiteNumber(threshold) ? Math.min(100, Math.max(0, threshold * 100)) : null
 
   return (
     <div
-      className={`result-panel ${positive ? 'result-placed' : 'result-not'}${busy ? ' result-panel--busy' : ''}`}
+      className={`result-panel ${positive ? 'result-placed' : 'result-not'}${busy ? ' dim-stale' : ''}`}
       aria-busy={busy || undefined}
     >
       <div className="result-kicker-row">
@@ -271,16 +273,19 @@ function ClassificationResult({ result, bestName, valMetrics, busy }) {
       <span className="result-verdict">
         {positive ? 'Sells in 30 days' : 'No 30-day sale'}
       </span>
-      {finiteNumber(p) && (
+      {pct !== null && (
         <div
           className="result-track"
-          role="img"
-          aria-label={`Sale probability ${pctText}`}
+          role="meter"
+          aria-valuenow={Number(pct.toFixed(1))}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`Sale probability ${pctText} — simulated target`}
         >
-          <div
-            className="result-fill"
-            style={{ width: `${Math.min(100, Math.max(0, p * 100))}%` }}
-          />
+          <div className="result-fill" style={{ width: `${pct}%` }} />
+          {thrPct !== null && (
+            <span className="threshold-tick" style={{ left: `${thrPct}%` }} aria-hidden="true" />
+          )}
         </div>
       )}
       <div className="result-meta">
@@ -341,12 +346,16 @@ export default function SandboxPredictPanel() {
   // AUD-10: abort the in-flight prediction if the panel unmounts mid-request.
   useEffect(() => () => abortRef.current?.abort(), [])
 
-  // A dataset switch drops every trace of the previous dataset's run.
+  // A dataset switch drops every trace of the previous dataset's run —
+  // including any in-flight prediction, whose late resolution would otherwise
+  // surface a result served by the old dataset's model in the new context.
   useEffect(() => {
+    abortRef.current?.abort()
     setResult(null)
     setServerError(null)
     setSubmitError(null)
     setSubmitting(false)
+    setLastPayload(null)
   }, [datasetId])
 
   // Keep the selection valid as the roster (re)loads; default to the newest

@@ -80,11 +80,11 @@ _POLICY_NOTES = {
     "NA_ABSENT_NUMERIC": "filled with 0 at cleaning",
 }
 
-_SCATTER_MAX_CAP = 20_000
-_HISTOGRAM_BINS_CAP = 200
+SCATTER_MAX_CAP = 20_000
+HISTOGRAM_BINS_CAP = 200
 _BOX_GROUP_CAP = 25
 _TOP_VALUES_CAP = 8
-_CORRELATION_TOP_CAP = 60
+CORRELATION_TOP_CAP = 60
 
 
 # ---------------------------------------------------------------------------
@@ -441,7 +441,7 @@ def missing_report(df: pd.DataFrame) -> dict[str, Any]:
 def histogram(df: pd.DataFrame, column: str, bins: int = 30) -> dict[str, Any]:
     """Histogram bins + summary stats for a numeric column (§3.7)."""
     _require_numeric(df, column)
-    bins = max(1, min(int(bins), _HISTOGRAM_BINS_CAP))
+    bins = max(1, min(int(bins), HISTOGRAM_BINS_CAP))
     values = _numeric_values(df, column)
     if not len(values):
         raise ValueError(f"column {column!r} has no non-missing values")
@@ -470,7 +470,7 @@ def scatter(df: pd.DataFrame, x: str, y: str, max_points: int = 1500) -> dict[st
     """
     _require_numeric(df, x)
     _require_numeric(df, y)
-    max_points = max(1, min(int(max_points), _SCATTER_MAX_CAP))
+    max_points = max(1, min(int(max_points), SCATTER_MAX_CAP))
     frame = df[[x, y]].dropna()
     n_total = int(len(frame))
     sampled = n_total > max_points
@@ -532,7 +532,7 @@ def correlation(df: pd.DataFrame, target: str = "SalePrice", top: int = 20) -> d
     (constant or all-missing) are excluded.
     """
     _require_numeric(df, target)
-    top = max(1, min(int(top), _CORRELATION_TOP_CAP))
+    top = max(1, min(int(top), CORRELATION_TOP_CAP))
     numeric = df.select_dtypes(include="number")
     corr = numeric.corr()
     with_target = corr[target].drop(index=target).dropna()

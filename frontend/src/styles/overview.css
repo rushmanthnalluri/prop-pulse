@@ -1,31 +1,334 @@
 /* ==========================================================================
-   Overview page (blueprint §8.1) — page-scoped styles. Everything structural
-   comes from styles.css (.home-head, .metrics.metrics-rows, .chart-grid,
-   .group-index, .pipeline-list, .insight-list, .driver-row, .section-link …);
-   this file only carries what the shared vocabulary does not. Imported from
-   pages/Overview.jsx, after the global stylesheet.
+   Overview page (blueprint §8.1) — page-scoped styles. The shared vocabulary
+   (.home-head, .metrics.metrics-rows, .chart-grid, .group-index,
+   .pipeline-list, .insight-list, .driver-row, .section-link …) comes from
+   styles.css; this file carries the overview's own layout tune-ups plus its
+   page-local components (quick actions, service strip, panel skeleton,
+   row-arrows, donut centre). Imported from pages/Overview.jsx, after the
+   global stylesheet. `.home-head` / `.group-index` / `.pipeline-list` /
+   `.chart-grid` are used by this page only, so the refinements below cannot
+   leak into other routes.
    ========================================================================== */
+
+/* Hero display type — one step above the shared 30px page-title scale so the
+   landing hierarchy reads before any section page's. */
+.home-head .page-title { font-size: 34px; letter-spacing: -0.035em; }
+
+/* Amber tick leads the hero kicker — the overview's one display flourish. */
+.home-head .page-kicker {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.home-head .page-kicker::before {
+  content: '';
+  width: 18px;
+  height: 1px;
+  background: var(--accent);
+  flex-shrink: 0;
+}
+
+/* Command-center grid: hero copy + active-model rail on row one, the
+   quick-action strip full-width on row two. DOM order (hero → panel →
+   actions) matches the visual reading order. */
+.home-head {
+  grid-template-areas:
+    'hero panel'
+    'actions actions';
+  gap: 40px 56px;
+}
+.home-head > .ov-hero { grid-area: hero; }
+.home-head > .panel { grid-area: panel; }
+.home-head > .ov-actions { grid-area: actions; }
+/* Grid items default to min-width:auto — keep long mono lines from forcing
+   their track past the column. */
+.home-head > .ov-hero,
+.home-head > .panel { min-width: 0; }
+
+/* Active-model rail: a half-step above in-page panels — top-light from
+   --surface-hi and a stronger hairline set it off from the hero copy. */
+.home-head .panel {
+  background: linear-gradient(180deg, var(--surface-hi), var(--surface) 55%);
+  border-color: var(--border-strong);
+}
+
+/* --------------------------------------------------------------------------
+   Hero service strip — live /metrics readout under the page actions: status
+   dot + "API live" + uptime / requests / latency / errors + health link.
+   Mono, quiet, hairline-boxed; the strip's box keeps its shape across
+   loading → error → data so the hero never re-flows.
+   -------------------------------------------------------------------------- */
+.ov-service {
+  margin-top: 26px;
+  max-width: 560px;
+  min-height: 37px; /* one row of 11px mono + 10px padding, all states */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.ov-service-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  flex-shrink: 0;
+}
+.ov-service-dot--down { background: var(--danger); }
+.ov-service-lead { color: var(--text-2); }
+.ov-service-stats { color: var(--text-3); }
+.ov-service-link {
+  margin-left: auto;
+  color: var(--text-3);
+  white-space: nowrap;
+  transition: color var(--dur-hover);
+}
+.ov-service-link:hover { color: var(--accent); }
+.ov-service-retry { margin-left: auto; }
+/* Loading state mirrors the live row: dot + one stats-width line. */
+.ov-service-sk { display: inline-flex; align-items: center; gap: 10px; }
+.ov-service-sk-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Quick actions — four command cards into the product routes (/valuation,
+   /market, /model, /health). Icon chip + title + one-line desc + arrow that
+   firms up on hover/focus.
+   -------------------------------------------------------------------------- */
+.ov-actions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.ov-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--card-sheen), var(--surface);
+  color: var(--text);
+  transition: border-color var(--dur-hover), background-color var(--dur-hover);
+}
+.ov-action:hover { border-color: var(--border-strong); }
+.ov-action-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--raised);
+  color: var(--text-2);
+  transition: color var(--dur-hover), border-color var(--dur-hover);
+}
+.ov-action:hover .ov-action-icon,
+.ov-action:focus-visible .ov-action-icon {
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+.ov-action-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.ov-action-title { font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+.ov-action-desc { font-size: 12px; line-height: 1.45; color: var(--text-3); }
+.ov-action-arrow {
+  flex-shrink: 0;
+  margin-top: 6px;
+  color: var(--text-3);
+  opacity: 0.45;
+  transition: opacity var(--dur-hover), transform var(--dur-hover), color var(--dur-hover);
+}
+.ov-action:hover .ov-action-arrow,
+.ov-action:focus-visible .ov-action-arrow {
+  opacity: 1;
+  transform: translateX(2px);
+  color: var(--accent);
+}
+
+/* --------------------------------------------------------------------------
+   Active-model panel — layout-matched loading skeleton (tag / provenance /
+   five fact rows / link) so the panel never jumps when /model/info lands.
+   -------------------------------------------------------------------------- */
+.ov-panel-sk { display: block; }
+.ov-panel-sk .sk-line { margin: 0; }
+.ov-panel-sk-tag { width: 148px; height: 13px; }
+.ov-panel-sk .ov-panel-sk-meta { width: 205px; height: 10px; margin-top: 9px; }
+.ov-panel-sk-facts { margin: 13px 0 15px; }
+.ov-panel-sk-fact {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-top: 1px solid var(--border);
+}
+.ov-panel-sk-fact .sk-line { height: 11px; }
+.ov-panel-sk-link { width: 112px; height: 10px; }
 
 /* Mono provenance line under the model name in the Active-model panel. */
 .ov-model-meta {
   font-family: var(--font-mono);
   font-size: 10.5px;
+  line-height: 1.5;
   color: var(--text-3);
   margin: 6px 0 0;
 }
 
 /* The panel-body prose-link rule (styles.css) would turn the quiet
-   "Inspect the model →" amber — keep it the reference's text-3 until hover. */
+   "Inspect the model" amber — keep it the reference's text-3 until hover. */
 .panel-body a.section-link { color: var(--text-3); }
 .panel-body a.section-link:hover { color: var(--accent); }
+
+/* Panel footer link: arrow nudges right on hover/focus. */
+.ov-panel-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.ov-panel-link svg { transition: transform var(--dur-hover); }
+.ov-panel-link:hover svg,
+.ov-panel-link:focus-visible svg { transform: translateX(2px); }
+
+/* --------------------------------------------------------------------------
+   Chart grid polish — the shared .chart-card, tuned for this page: hairline
+   under every card head, grid/head children allowed to shrink (a recharts
+   svg or a nowrap mono tag must never push past the card at 390px), tags
+   wrap instead of leaking.
+   -------------------------------------------------------------------------- */
+.chart-grid > *,
+.chart-grid .chart-card-head > * { min-width: 0; }
+.chart-grid .chart-card-head {
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.chart-grid .chart-tag { white-space: normal; text-align: right; }
+
+/* Donut centre readout — the clustered-sales total sits inside the ring
+   (pointer-events none; the figure is also in the ChartA11yTable). */
+.ov-donut-center {
+  position: absolute;
+  left: 50%;
+  top: 42%; /* matches the Pie cy so the readout sits dead centre */
+  transform: translate(-50%, -50%);
+  text-align: center;
+  pointer-events: none;
+}
+.ov-donut-total {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.ov-donut-caption {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-top: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   Row affordances — pipeline rows and record tiles reveal an arrow on
+   hover/focus so the whole row reads as the link it is.
+   -------------------------------------------------------------------------- */
+.pipeline-arrow {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--text-3);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity var(--dur-hover), transform var(--dur-hover), color var(--dur-hover);
+}
+.pipeline-row:hover .pipeline-arrow,
+.pipeline-row:focus-visible .pipeline-arrow {
+  opacity: 1;
+  transform: none;
+  color: var(--accent);
+}
+
+.group-cell-arrow {
+  display: inline-flex;
+  color: var(--text-3);
+  transition: color var(--dur-hover), transform var(--dur-hover);
+}
+.group-cell:hover .group-cell-arrow,
+.group-cell:focus-visible .group-cell-arrow {
+  color: var(--accent);
+  transform: translateX(2px);
+}
+
+/* Touch devices never hover — keep the arrows faintly visible there. */
+@media (hover: none) {
+  .pipeline-arrow { opacity: 0.6; transform: none; }
+}
 
 /* Captions/notes sitting under a grid or chart. */
 .ov-note-block { margin-top: 14px; max-width: 720px; }
 
-/* Disclosures — plain stacked note lines. */
+/* Disclosures — three editorial footnote columns, hairline-topped. */
 .ov-disclosures {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  max-width: 720px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px 28px;
+  max-width: none;
+}
+.ov-disclosures .note {
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+@media (max-width: 900px) {
+  .home-head {
+    grid-template-areas:
+      'hero'
+      'panel'
+      'actions';
+    gap: 32px;
+  }
+  .ov-actions { grid-template-columns: 1fr 1fr; }
+  .ov-service { max-width: none; }
+}
+
+@media (max-width: 820px) {
+  .home-head .page-title { font-size: 26px; }
+  .ov-disclosures { grid-template-columns: 1fr; gap: 12px; }
+}
+
+@media (max-width: 520px) {
+  .ov-actions { grid-template-columns: 1fr; }
+  /* Card heads stack: the mono tag drops under the title, flush left. */
+  .chart-grid .chart-card-head { flex-wrap: wrap; row-gap: 4px; }
+  .chart-grid .chart-tag { text-align: left; }
+}
+
+@media (max-width: 400px) {
+  .home-head .page-title { font-size: 23px; }
 }

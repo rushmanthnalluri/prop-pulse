@@ -89,7 +89,8 @@ def select_dom_provider(train_df: pd.DataFrame) -> tuple[DomProvider, str]:
     - ``DOM_CSV_PATH``: observed-DOM CSV for the ``csv`` provider (default
       ``data/external/days_on_market.csv``). A relative path is resolved
       against the repository root (``ml.paths.REPO_ROOT``), not the process
-      CWD.
+      CWD. A set-but-empty value is treated as unset, i.e. the default path
+      (same convention as ``DOM_PROVIDER``).
 
     Args:
         train_df: cleaned, trimmed train split — used to fit the simulator
@@ -107,7 +108,10 @@ def select_dom_provider(train_df: pd.DataFrame) -> tuple[DomProvider, str]:
     # Set-but-empty (or whitespace-only) means "unset" -> simulated default.
     kind = os.environ.get(DOM_PROVIDER_ENV, "").strip().lower() or "simulated"
     if kind == "csv":
-        csv_path = Path(os.environ.get(DOM_CSV_PATH_ENV, str(DEFAULT_DOM_CSV_PATH))).expanduser()
+        # Set-but-empty (or whitespace-only) means "unset" -> default path.
+        csv_path = Path(
+            os.environ.get(DOM_CSV_PATH_ENV, "").strip() or str(DEFAULT_DOM_CSV_PATH)
+        ).expanduser()
         # Anchor relative paths to the repo root so resolution is independent
         # of the process CWD (the default is already absolute via ml.paths).
         if not csv_path.is_absolute():

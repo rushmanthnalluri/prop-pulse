@@ -6,7 +6,7 @@
  *
  * Accessibility (AUDIT §5.4 fix — popups were mouse-only): real markers with
  * Leaflet's `keyboard: true` — Tab focuses a point, Enter opens its popup,
- * Esc closes it, and the popup's "Estimate value →" router link is a real
+ * Esc closes it, and the popup's "Estimate value" router link is a real
  * <a> reachable by Tab. A labeled "Highlight a neighborhood" select offers
  * the same focus+popup without pointing, and the sortable directory table
  * below is the full non-map equivalent (the map's aria-label says so).
@@ -26,13 +26,12 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { CircleMarker, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import { divIcon } from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { clusterColor } from '../constants'
-import { formatNumber, formatPct, formatUsd, humanizeNote } from '../format'
+import { formatNumber, formatPct, formatUsd, humanizeNote, isFiniteValue } from '../format'
 import useReducedMotion from './shared/useReducedMotion'
 
 const AMES_CENTER = [42.0347, -93.62]
-
-const fin = (value) => Number.isFinite(Number(value))
 
 /** Flies the map to the selected micro-market's centroid (rail card / deep link). */
 function FlyToTarget({ target, reduced }) {
@@ -75,7 +74,7 @@ function FocusPoint({ focus, points, markerRefs }) {
     if (!focus?.code) return
     const point = points.find((p) => p.neighborhood === focus.code)
     if (!point) return
-    if (map && Number.isFinite(point.lat) && Number.isFinite(point.long)) {
+    if (Number.isFinite(point.lat) && Number.isFinite(point.long)) {
       markerRefs.current.get(focus.code)?.openPopup()
     }
   }, [map, focus, points, markerRefs])
@@ -198,7 +197,7 @@ export default function NeighborhoodMap({
                   keypress: (event) => {
                     if (event.originalEvent?.key !== 'Enter') return
                     // Leaflet opens the popup on Enter; move focus into it so
-                    // Tab reaches the "Estimate value →" link and Esc (map
+                    // Tab reaches the "Estimate value" link and Esc (map
                     // keyboard handler) closes the popup (AUDIT §5.4 fix).
                     keyboardPopup.current = point.neighborhood
                     window.setTimeout(() => {
@@ -227,23 +226,30 @@ export default function NeighborhoodMap({
                   {point.name}
                 </Tooltip>
                 <Popup>
-                  <div>
-                    <strong>{point.name}</strong>{' '}
-                    {point.fallback && <span className="badge badge-warn">approximate</span>}
+                  <div className="map-popup">
+                    <div className="map-popup-head">
+                      <span
+                        className="swatch"
+                        style={{ backgroundColor: clusterColor(point.cluster_id) }}
+                        aria-hidden="true"
+                      />
+                      <strong className="map-popup-name">{point.name}</strong>{' '}
+                      {point.fallback && <span className="badge badge-warn">approximate</span>}
+                    </div>
                     {cluster && (
-                      <dl className="kv" style={{ marginTop: 8 }}>
+                      <dl className="kv map-popup-kv">
                         <div>
                           <dt>Micro-market</dt>
                           <dd className="capitalize">{cluster.label}</dd>
                         </div>
                         <div>
                           <dt>Median price</dt>
-                          <dd>{fin(cluster.median_price) ? formatUsd(cluster.median_price) : '—'}</dd>
+                          <dd>{isFiniteValue(cluster.median_price) ? formatUsd(cluster.median_price) : '—'}</dd>
                         </div>
                         <div>
                           <dt>Median $/sqft</dt>
                           <dd>
-                            {fin(cluster.median_price_per_sqft)
+                            {isFiniteValue(cluster.median_price_per_sqft)
                               ? formatNumber(cluster.median_price_per_sqft, 1)
                               : '—'}
                           </dd>
@@ -251,25 +257,41 @@ export default function NeighborhoodMap({
                         <div>
                           <dt>30-day velocity</dt>
                           <dd>
-                            {fin(cluster.sale_velocity_30d) ? formatPct(cluster.sale_velocity_30d) : '—'}{' '}
+                            {isFiniteValue(cluster.sale_velocity_30d) ? formatPct(cluster.sale_velocity_30d) : '—'}{' '}
                             <span className="badge badge-muted">simulated</span>
                           </dd>
                         </div>
                       </dl>
                     )}
                     {velocityNote && (
-                      <p className="note velocity-note" style={{ marginTop: 8 }}>
+                      <p className="note velocity-note">
                         {humanizeNote(velocityNote)}
                       </p>
                     )}
                     {point.fallback && (
-                      <p className="note" style={{ marginTop: 8 }}>
+                      <p className="note">
                         Approximate centroid — assigned to the nearest micro-market.
                       </p>
                     )}
-                    <p style={{ marginTop: 8 }}>
+                    <p className="map-popup-cta-row">
                       <Link to={`/valuation?neighborhood=${encodeURIComponent(point.neighborhood)}`}>
-                        Estimate value →
+                        Estimate value
+                        <svg
+                          className="cta-arrow"
+                          width="13"
+                          height="13"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                          focusable="false"
+                        >
+                          <line x1="4" y1="12" x2="20" y2="12" />
+                          <polyline points="13 5 20 12 13 19" />
+                        </svg>
                       </Link>
                     </p>
                   </div>

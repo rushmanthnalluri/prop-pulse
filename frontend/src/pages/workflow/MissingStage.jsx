@@ -39,7 +39,7 @@ import {
 } from 'recharts'
 import { getMissing } from '../../api/workflow'
 import { useApi } from '../../api/useApi'
-import { formatNumber } from '../../format'
+import { datasetMetaName, formatNumber } from '../../format'
 import { EmptyState, ErrorState, PageSkeleton } from '../../components/StateView'
 import ProvenanceBanner from '../../components/workflow/ProvenanceBanner'
 import ChartA11yTable from '../../components/shared/ChartA11yTable'
@@ -120,7 +120,7 @@ export default function MissingStage() {
 
   const metaParts = dataset
     ? [
-        `Dataset · ${dataset.name}${dataset.source === 'bundled' ? (dataset.name.endsWith('(bundled)') ? '' : ' (bundled default)') : ' (uploaded)'}`,
+        `Dataset · ${datasetMetaName(dataset)}`,
         `${formatNumber(dataset.n_rows, 0)} × ${formatNumber(dataset.n_cols, 0)}`,
         ...(data ? [`${formatNumber(data.total_missing, 0)} missing cells`] : []),
       ]
@@ -128,7 +128,7 @@ export default function MissingStage() {
 
   return (
     <div>
-      <div className="page-head">
+      <header className="page-head">
         <span className="kicker">Stage 04 · Records</span>
         <h1 className="page-title">Missing Values</h1>
         <p className="page-desc">
@@ -139,7 +139,7 @@ export default function MissingStage() {
             : 'Where the gaps are, and exactly what the cleaning pipeline will do about each one.'}
         </p>
         <p className="page-meta">{metaParts.join(' · ')}</p>
-      </div>
+      </header>
 
       <hr className="divider" />
 
@@ -153,7 +153,7 @@ export default function MissingStage() {
         </div>
       ) : (
         <>
-          <div className="wfm-banner-slot">
+          <div className="wf-banner-slot">
             <ProvenanceBanner
               provenance={{ dataset_name: dataset?.name ?? datasetId }}
               label="Missing-value analysis describes the active dataset — switch it from the dataset chip above."
@@ -267,7 +267,7 @@ export default function MissingStage() {
                     className="btn btn-primary btn-sm wfm-empty-cta"
                     to={`/workflow/05-viz?dataset=${datasetId}`}
                   >
-                    Continue to stage 05 — Visualization →
+                    Continue to stage 05 — Visualization
                   </Link>
                 </EmptyState>
               </div>
@@ -280,7 +280,7 @@ export default function MissingStage() {
 
               <div className="section">
                 <div className="section-head">
-                  <span className="section-title">Repair — documented NA policies</span>
+                  <h2 className="section-title">Repair — documented NA policies</h2>
                   {columns.length > 0 && (
                     <span className="section-note">
                       {formatNumber(columns.length, 0)} columns treated

@@ -45,12 +45,12 @@ Recomputed with `build_feature_frame(stats=train-fit artifact)` + `models/featur
 
 | Metric | val claim | val recomputed | test claim | test recomputed | Match |
 |---|---|---|---|---|---|
-| ROC-AUC | 0.721778 | 0.721778 | 0.766602 | 0.766602 | ✓ (<5e-7) |
-| PR-AUC | 0.525013 | 0.525013 | 0.567363 | 0.567363 | ✓ |
-| Brier | 0.18555 | 0.185550 | 0.171026 | 0.171026 | ✓ |
-| F1 @0.203292 | 0.545455 | 0.545455 | 0.506329 | 0.506329 | ✓ |
-| Precision / recall | 0.409091 / 0.818182 | same | 0.366972 / 0.816327 | same | ✓ |
-| Confusion matrix | TN=122 FP=117 FN=18 TP=81 | same | **TP=40 FP=69 FN=9 TN=57** | same | ✓ |
+| ROC-AUC | 0.721778 | 0.721778 | 0.766602 | 0.766602 | Yes (<5e-7) |
+| PR-AUC | 0.525013 | 0.525013 | 0.567363 | 0.567363 | Yes |
+| Brier | 0.18555 | 0.185550 | 0.171026 | 0.171026 | Yes |
+| F1 @0.203292 | 0.545455 | 0.545455 | 0.506329 | 0.506329 | Yes |
+| Precision / recall | 0.409091 / 0.818182 | same | 0.366972 / 0.816327 | same | Yes |
+| Confusion matrix | TN=122 FP=117 FN=18 TP=81 | same | **TP=40 FP=69 FN=9 TN=57** | same | Yes |
 
 README.md:225-227 and docs/METHODOLOGY.md:142-144 rounded values all match. Champion selection rule verified against `models/classification/metrics.json`: calibrated RF has both the best calibrated val PR-AUC (0.52501 vs logistic 0.50889 / DT 0.46663 / XGB 0.50316) and best calibrated Brier (0.18555 vs 0.19131/0.19730/0.19038) — consistent with SPEC §6 + `select.py:267-321`.
 

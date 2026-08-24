@@ -1,22 +1,64 @@
 /* ==========================================================================
    ML Workbench — stage 05 Visualization (WORKFLOW §6.3-05, blueprint §8.6)
-   Page-scoped styles for VizStage + VizExplorer only. The section chrome
-   (.viz-nav, .viz-section), the correlation heat map (.heat-*), and the
-   chart-card/.chart-tag/.chart-select vocabulary all live in styles.css;
-   everything below is a layout tweak those classes don't cover or a state the
-   old explorer's now-deleted page stylesheet once carried. Tokens only; no
-   shadows; the heatmap-legend gradient stays the system's single allowed
-   gradient (defined in styles.css).
+   Page-scoped styles for VizStage + VizExplorer only, loaded after
+   styles.css so equal-specificity rules win. The section chrome (.viz-nav,
+   .viz-section), the correlation heat map (.heat-*) and the chart-card
+   vocabulary live in styles.css; the rules below frame those charts for this
+   stage — card-head hairlines, tag pills, the heat map's containing card.
+   Tokens only; shadows stay reserved for floating layers.
    ========================================================================== */
 
-/* ProvenanceBanner directly under the page head — tighten the rhythm, and
-   keep the reference's air between banner and the sticky anchor strip. */
-.wfv-banner-slot { margin-top: -14px; }
-.wfv-banner-slot + .viz-nav { margin-top: 22px; }
+/* ProvenanceBanner slot directly under the page head — the shared
+   .wf-banner-slot (styles.css) tightens the rhythm and keeps the
+   reference's air between banner and the sticky anchor strip. */
+
+/* The sticky anchor strip: keep the hairline, give the links a quiet hover
+   fill so the strip reads as navigation, not loose text. The negative margin
+   keeps the first link's text aligned with the content edge. */
+.viz-nav a {
+  padding: 9px 6px;
+  margin: 0 -6px;
+  border-radius: var(--radius-sm);
+  transition: color var(--dur-hover), background var(--dur-hover);
+}
+.viz-nav a:hover { color: var(--accent); background: var(--raised); }
+/* Scrollspy: the section in the reading band marks its link (accent wash,
+   not just a hue swap — hover keeps the neutral fill underneath). */
+.viz-nav a.is-active { color: var(--accent); background: var(--accent-wash); }
+.viz-nav a.is-active:hover { background: var(--accent-wash); }
+
+/* --------------------------------------------------------------------------
+   Chart framing — every card head gets a hairline separator; the mono
+   chart-tag becomes a small raised pill so the "μ x · σ y" stats read as
+   metadata, not body text.
+   -------------------------------------------------------------------------- */
+
+.viz-section .chart-card-head {
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.viz-section .chart-tag {
+  padding: 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--raised);
+  white-space: normal; /* long tags wrap inside the pill instead of leaking */
+}
 
 /* Card heads carrying a compact .chart-select align on center so the control
    doesn't hang off the text baseline. */
 .wfv-card-head { align-items: center; }
+
+/* The correlation heat map framed as its own card. */
+.heat-scroll {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  padding: 14px 14px 10px;
+}
+/* A 2px micro-radius on the base .heat-cell (styles.css) turns the mosaic
+   into tiles without leaving the 4/6/8 radius scale's spirit. */
 
 /* Server column-validation errors (422) inside a chart card — compact
    variant of the shared alert that fits the card width. */
@@ -28,9 +70,9 @@
 }
 .wfv-card-alert .alert-actions { margin-top: 8px; }
 
-/* The current chart stays on screen, dimmed, while its refreshed payload is
-   in flight — never a skeleton swap on user-triggered re-fetches. */
-.wfv-dim { opacity: 0.55; transition: opacity var(--dur-hover); }
+/* The current chart stays on screen, dimmed via the shared .dim-stale
+   (styles.css), while its refreshed payload is in flight — never a skeleton
+   swap on user-triggered re-fetches. */
 
 /* Mono caption row under scatter / influence charts (n + sampling honesty). */
 .wfv-caption {
@@ -38,7 +80,7 @@
   align-items: center;
   flex-wrap: wrap;
   gap: 4px 8px;
-  margin: 10px 0 0;
+  margin: 12px 0 0;
   font-family: var(--font-mono);
   font-size: 10.5px;
   color: var(--text-3);

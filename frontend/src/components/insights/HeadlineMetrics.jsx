@@ -8,10 +8,14 @@
  */
 import { formatMetric, formatPct, formatUsd } from '../../format'
 
-function HeadlineMetric({ label, value, hint }) {
+/** One verdict-strip cell — also exported for ChampionDuo, which passes
+    valueClassName="insights-stat" for its smaller in-panel values. */
+export function HeadlineMetric({ label, value, hint, focal = false, valueClassName }) {
   return (
-    <div className="metric">
-      <div className="metric-value">{value}</div>
+    <div className={focal ? 'metric metric--focal' : 'metric'}>
+      <div className={valueClassName ? `metric-value ${valueClassName}` : 'metric-value'}>
+        {value}
+      </div>
       <div className="metric-label">{label}</div>
       {hint && <div className="metric-hint">{hint}</div>}
     </div>
@@ -22,8 +26,9 @@ export default function HeadlineMetrics({ info }) {
   const regTest = info?.regression?.test_metrics ?? {}
   const clsTest = info?.classification?.test_metrics ?? {}
   return (
-    <div className="metrics">
+    <div className="metrics insights-headline">
       <HeadlineMetric
+        focal
         label="Test RMSLE"
         value={formatMetric(regTest.rmsle, 4)}
         hint="selection metric · regression"

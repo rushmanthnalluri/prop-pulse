@@ -1,15 +1,12 @@
 """Cluster service — micro-market lookups and the market-map payload."""
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import pandas as pd
 
 from ml.clustering.serve import MicroMarketLookup
 from ml.paths import EXTERNAL_DIR
-
-logger = logging.getLogger(__name__)
 
 __all__ = ["ClusterService"]
 

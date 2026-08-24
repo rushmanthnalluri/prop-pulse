@@ -3,20 +3,14 @@
  * outputs — estimated price and sale probability — from GET /metrics →
  * drift.prediction_psi. Under the current "no_data" snapshot this renders
  * the same honest empty state as feature drift; with an "ok" snapshot it
- * reports both output PSIs with the snapshot's warn/drift thresholds.
+ * reports both output PSIs with the snapshot's warn/drift thresholds, each
+ * with a PsiScale (shared with the feature-drift panel) so shift severity
+ * reads at a glance.
  */
-import { formatDateTime, formatMetric } from '../../format'
+import { finiteOr, formatDateTime, formatMetric, psiTone } from '../../format'
 import { ErrorState, PanelSkeleton } from '../StateView'
 import DriftEmpty from './DriftEmpty'
-
-const finiteOr = (value, fallback) => (Number.isFinite(Number(value)) ? Number(value) : fallback)
-
-function psiTone(psi, warnThreshold, driftThreshold) {
-  if (!Number.isFinite(psi)) return ''
-  if (psi >= driftThreshold) return ' metric-value--bad'
-  if (psi >= warnThreshold) return ' metric-value--warn'
-  return ''
-}
+import { PsiScale } from './DriftPanel'
 
 export default function PredictionDrift({ metrics }) {
   const { data, loading, error, reload } = metrics
@@ -65,8 +59,8 @@ export default function PredictionDrift({ metrics }) {
   }
 
   return (
-    <div className="panel">
-      <div className="panel-head">
+    <div className="panel health-drift-panel">
+      <div className="panel-head panel-head--raised">
         <h3 className="panel-title">Output PSI vs training reference</h3>
         <span className="chart-tag">
           warn ≥ {formatMetric(warnThreshold, 1)} · drift ≥ {formatMetric(driftThreshold, 1)}
@@ -79,6 +73,12 @@ export default function PredictionDrift({ metrics }) {
               {formatMetric(predictionPsi.estimated_price)}
             </div>
             <div className="metric-label">Estimated price PSI</div>
+            <PsiScale
+              psi={pricePsi}
+              warnThreshold={warnThreshold}
+              driftThreshold={driftThreshold}
+              label="Estimated price PSI"
+            />
             <div className="metric-hint">distribution of scored prices</div>
           </div>
           <div className="metric">
@@ -86,6 +86,12 @@ export default function PredictionDrift({ metrics }) {
               {formatMetric(predictionPsi.probability)}
             </div>
             <div className="metric-label">Sale probability PSI</div>
+            <PsiScale
+              psi={probabilityPsi}
+              warnThreshold={warnThreshold}
+              driftThreshold={driftThreshold}
+              label="Sale probability PSI"
+            />
             <div className="metric-hint">distribution of scored probabilities</div>
           </div>
         </div>

@@ -73,7 +73,7 @@ function classificationRows(classification) {
 function InfoSkeleton() {
   return (
     <div className="insights-sk" aria-hidden="true">
-      <SkeletonBlock height={64} />
+      <SkeletonBlock height={108} />
       <div className="grid-2">
         <SkeletonBlock height={210} />
         <SkeletonBlock height={210} />
@@ -119,7 +119,7 @@ export default function ModelInsightsPage() {
     confusionTotal(infoData?.classification?.test_metrics?.confusion_matrix) ?? SPLIT_CONTRACT.test
 
   return (
-    <div>
+    <>
       <header className="page-head">
         <p className="kicker">Model Insights</p>
         <h1 className="page-title">Can you trust the numbers?</h1>
@@ -229,6 +229,21 @@ export default function ModelInsightsPage() {
                     title="Sealed test split"
                   />
                 </div>
+                {/* Static legend for the heat encoding (counts stay the primary
+                    channel; the tints are the secondary one). */}
+                <p className="insights-cm-legend">
+                  <span className="insights-cm-legend-item">
+                    <span className="insights-cm-swatch insights-cm-swatch--correct" aria-hidden="true" />
+                    Correct
+                  </span>
+                  <span className="insights-cm-legend-item">
+                    <span className="insights-cm-swatch insights-cm-swatch--error" aria-hidden="true" />
+                    Misclassified
+                  </span>
+                  <span className="insights-cm-legend-item insights-cm-legend-dim">
+                    stronger tint = more sales
+                  </span>
+                </p>
                 <p className="note insights-table-note">
                   @ threshold {formatMetric(threshold, 4)} — positive class
                   &ldquo;fast sale&rdquo; (sale within 30 days, simulated
@@ -295,12 +310,12 @@ export default function ModelInsightsPage() {
 
       <section className="section insights-cta">
         <Link className="btn btn-primary" to="/valuation">
-          Estimate value →
+          Estimate value
         </Link>
         <Link className="btn btn-secondary" to="/health">
-          Model health →
+          Model health
         </Link>
       </section>
-    </div>
+    </>
   )
 }

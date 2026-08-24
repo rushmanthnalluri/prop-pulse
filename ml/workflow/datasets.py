@@ -286,7 +286,12 @@ def _contained(root: Path, path: Path) -> Path:
     """Resolve ``path`` and assert it stays inside ``root`` (MECH §6 pattern)."""
     root_resolved = root.resolve()
     resolved = path.resolve()
-    if os.path.commonpath([str(root_resolved), str(resolved)]) != str(root_resolved):
+    try:
+        contained = os.path.commonpath([str(root_resolved), str(resolved)]) == str(root_resolved)
+    except ValueError:
+        # Mixed drives/relative-absolute (Windows): outside the root by definition.
+        contained = False
+    if not contained:
         raise UnknownDataset(f"dataset path escapes its sandbox root: {path}")
     return resolved
 
@@ -780,11 +785,11 @@ def list_datasets() -> list[DatasetRecord]:
             if not child.is_dir():
                 continue
             try:
-                records_upload = get_record(child.name)
+                record = get_record(child.name)
             except UnknownDataset:
                 logger.warning("skipping malformed upload directory %s", child.name)
                 continue
-            uploads.append(records_upload)
+            uploads.append(record)
     uploads.sort(key=lambda r: r.created_at, reverse=True)
     records.extend(uploads)
     return records

@@ -111,6 +111,10 @@ class MicroMarketLookup:
             if not members:
                 raise ValueError(f"cluster {cluster_id} has no geo-coded members")
             self._centroids[cluster_id] = self._scaler.transform(np.vstack(members)).mean(axis=0)
+        if not self._centroids:
+            raise ValueError(
+                f"clustering artifacts in {model_dir} contain no non-noise clusters"
+            )
         logger.info(
             "MicroMarketLookup ready: %d clusters, %d assignments, eps=%.4f, min_samples=%d",
             len(self._clusters), len(self._assignments),

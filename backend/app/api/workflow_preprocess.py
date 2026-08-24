@@ -11,7 +11,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 
 from ml.workflow.datasets import UnknownDataset
-from ml.workflow.prepare import PrepareConfig, prepare_dataset, preview_report
+from ml.workflow.prepare import prepare_dataset, preview_report
 
 from backend.app.api.deps import get_workflow_dataset_service
 from backend.app.schemas.workflow import PreprocessPreviewRequest, PreprocessStatusOut
@@ -29,7 +29,10 @@ def get_preprocess(
 ) -> dict[str, Any]:
     """The persisted stage-06 state ``{prepared, config, fingerprint, summary}`` (§3.8)."""
     record = service.get_dataset(dataset_id)  # 404 gate
-    report = preview_report(dataset_id)
+    try:
+        report = preview_report(dataset_id)
+    except UnknownDataset as exc:  # deleted between the gate and the read
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     prepare = record.get("prepare")
     return {
         "prepared": report is not None,
@@ -49,14 +52,10 @@ def preprocess_preview(
 
     Raises:
         HTTPException: 404 unknown dataset; 400 rows outside the training
-            window (or the cleaner's no-policy failure); 422 config rejected
-            by the ml-layer model (defensive — the request schema mirrors it).
+            window (or the cleaner's no-policy failure).
     """
     service.get_dataset(dataset_id)  # 404 gate
-    try:
-        config = PrepareConfig(**body.config.model_dump())
-    except ValueError as exc:  # pydantic ValidationError subclasses ValueError
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    config = body.config  # already validated — the request schema IS PrepareConfig
     try:
         report = prepare_dataset(dataset_id, config)
     except UnknownDataset as exc:

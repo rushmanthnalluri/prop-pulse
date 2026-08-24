@@ -45,19 +45,29 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Mono provenance meta row ("candidate · objective · job_id"). */
+/* Mono provenance meta row ("candidate · objective · job_id") — a footer
+   rule closes the result panel. */
 .predict-result .wf-result-meta {
   margin: 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
   font-size: 11px;
   color: var(--text-3);
 }
 
-/* Previous result dims while a re-predict is in flight — busy feedback lives
-   on the submit control; never a skeleton swap once data is on screen. */
-.result-panel--busy {
-  opacity: 0.55;
-  transition: opacity var(--dur-hover);
+/* State changes (idle → placed/not, busy dim) glide instead of snapping;
+   the transition lives on the base panel so it applies in both directions. */
+.predict-result .result-panel {
+  transition:
+    opacity var(--dur-hover),
+    border-color var(--dur-hover);
 }
+
+/* Sandbox probability meter: the serving job's own F1-optimal threshold rides
+   the track as the shared .threshold-tick (styles.css) — the same idiom as
+   the champion result's meter. The track un-clips so the tick stands proud
+   of the 8px rail. */
+.predict-result .result-track { position: relative; overflow: visible; }
 
 /* Badges sit flush with the kicker row / note text. */
 .predict-result .result-kicker-row .badge { flex-shrink: 0; }

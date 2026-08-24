@@ -50,6 +50,13 @@ export default class ErrorBoundary extends Component {
       return (
         <div className="crash-box">
           <div className="alert alert-error" role="alert">
+            <span className="crash-icon" aria-hidden="true">
+              <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 6.2v4" />
+                <path d="M9 13.4v.15" />
+                <path d="M7.1 2.6h3.8l4.5 4.5v3.8l-4.5 4.5H7.1l-4.5-4.5V7.1l4.5-4.5z" />
+              </svg>
+            </span>
             <span className="alert-title">This section failed to render</span>
             {chunkLoad
               ? 'This section could not be loaded — the connection dropped or the app was updated mid-session. Reloading fetches a fresh copy.'
@@ -85,6 +92,7 @@ export default class ErrorBoundary extends Component {
                 Back to overview
               </a>
             </div>
+            <p className="crash-note">error logged to console · no data lost</p>
           </div>
         </div>
       )

@@ -42,19 +42,19 @@ requires a modern engine; Playwright Chromium verified at runtime below).
 
 ### Targeted regression tests — `e2e/tests/frontend-fixes.spec.js` (8 tests, all route-intercepted, order-independent)
 
-- AUD-24a: empty factors → note visible, zero `.factor-row` ✓
+- AUD-24a: empty factors → note visible, zero `.factor-row`
 - AUD-24b: 390×844 viewport → every `.factor-name` `scrollWidth − clientWidth ≤ 1` (no
   truncation); "Neighborhood median price" fully visible; evidence screenshot
   `docs/audit/evidence/fix-frontend-mobile-390.png` (visually re-inspected: name wraps to
-  two lines, no ellipsis — before: blackbox-e2e's "Neighborhood medi…") ✓
-- AUD-24c: `models_loaded.regression:false` → `.api-status--degraded` "API degraded" ✓;
-  control all-true → "API connected" ✓
-- AUD-24d: `low_sample:true` → note visible ✓; control (key absent) → no note ✓
+  two lines, no ellipsis — before: blackbox-e2e's "Neighborhood medi…")
+- AUD-24c: `models_loaded.regression:false` → `.api-status--degraded` "API degraded";
+  control all-true → "API connected"
+- AUD-24d: `low_sample:true` → note visible; control (key absent) → no note
 - AUD-10 timeout: `/predict` stalled 35 s → `role="alert"` shows "timed out … check your
   connection" at ~30 s (test duration 30.7 s). Before: contract-hang-demo showed the same
-  fetch pending >10 s and never settling ✓
+  fetch pending >10 s and never settling
 - AUD-10 unmount: hanging `/market/clusters`, navigate away → `requestfailed
-  net::ERR_ABORTED` observed, zero page errors ✓
+  net::ERR_ABORTED` observed, zero page errors
 
 ### Full Playwright suite (backend :8100 `CORS_ORIGINS=http://localhost:5200`, vite :5200 `VITE_API_URL=http://localhost:8100`)
 

@@ -326,7 +326,7 @@ from the serving process (INV §7: a training job with `n_jobs=-1` saturates all
 degrades co-located serving — observed in PERFORMANCE.md:71), contains crashes, needs zero new
 deps, and makes every `lru_cache` staleness concern moot (fresh interpreter per job; §4).
 
-`GET /workflow/jobs/{job_id}` →
+`GET /workflow/jobs/{job_id}`:
 
 ```json
 {"job_id", "dataset_id", "objective",

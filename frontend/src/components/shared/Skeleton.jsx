@@ -10,7 +10,7 @@
  */
 
 /** Free-form shimmer block. Size via `width`/`height` (px or CSS length). */
-export default function Skeleton({ width, height, className = '', style }) {
+function Skeleton({ width, height, className = '', style }) {
   return (
     <div
       className={`skeleton ${className}`.trim()}

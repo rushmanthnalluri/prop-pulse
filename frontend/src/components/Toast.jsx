@@ -6,14 +6,16 @@
  *
  *   // App.jsx: <ToastProvider> wraps the layout, inside the router.
  *   const toast = useToast()
- *   toast.push({ kind: 'success' | 'error' | 'info', title, body? }) // → id
- *   toast.success('Estimate updated')                 // sugar
+ *   toast.success('Estimate updated')
  *   toast.error('Estimate failed — previous result kept')
  *
  * Rules: auto-dismiss 6s (info/success) / 10s (error); every toast is
  * dismissible; max 3 visible, FIFO evicts the oldest; stacked bottom-right
- * ≥900px, full-width top <900px; container `aria-live="polite"`; enter
- * animation `--dur-toast`, none under reduced motion (global rule).
+ * ≥900px, full-width top <900px; container `aria-live="polite"`; enter and
+ * exit animations ride `--dur-toast`, none under reduced motion (global
+ * rule). Each toast carries an inline-SVG severity marker (colour + shape,
+ * never colour alone) and a live-region role (`status`, or `alert` for
+ * errors) so screen readers announce it on arrival.
  */
 import {
   createContext,
@@ -30,27 +32,77 @@ const ToastContext = createContext(null)
 const AUTO_DISMISS_MS = { success: 6_000, info: 6_000, error: 10_000 }
 const MAX_VISIBLE = 3
 const KINDS = new Set(['success', 'error', 'info'])
+/* Matches --dur-toast (0.18s); keep in step with styles.css `.toast--leaving`. */
+const EXIT_MS = 180
+
+/* Severity glyphs — 15px inline SVG, currentColor, 1.5 stroke. */
+const KIND_ICONS = {
+  success: (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="6.25" />
+      <path d="M5.5 8.2l1.8 1.8 3.4-4" />
+    </svg>
+  ),
+  error: (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="6.25" />
+      <path d="M8 4.75v3.75" />
+      <path d="M8 11.1v.15" />
+    </svg>
+  ),
+  info: (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="8" cy="8" r="6.25" />
+      <path d="M8 7.25v4" />
+      <path d="M8 4.75v.15" />
+    </svg>
+  ),
+}
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([])
+  const [leaving, setLeaving] = useState(() => new Set())
   const nextId = useRef(1)
   const timers = useRef(new Map())
+  const exitTimers = useRef(new Map())
 
   const dismiss = useCallback((id) => {
-    setToasts((list) => list.filter((toast) => toast.id !== id))
+    // First pass: play the exit transition; the toast is removed when it ends.
+    setLeaving((set) => {
+      if (set.has(id)) return set
+      return new Set(set).add(id)
+    })
     const timer = timers.current.get(id)
     if (timer !== undefined) {
       clearTimeout(timer)
       timers.current.delete(id)
     }
+    if (!exitTimers.current.has(id)) {
+      exitTimers.current.set(
+        id,
+        setTimeout(() => {
+          setToasts((list) => list.filter((toast) => toast.id !== id))
+          setLeaving((set) => {
+            if (!set.has(id)) return set
+            const next = new Set(set)
+            next.delete(id)
+            return next
+          })
+          exitTimers.current.delete(id)
+        }, EXIT_MS),
+      )
+    }
   }, [])
 
-  // Pending auto-dismiss timers must not outlive the provider.
+  // Pending auto-dismiss / exit timers must not outlive the provider.
   useEffect(() => {
     const pending = timers.current
+    const pendingExit = exitTimers.current
     return () => {
       pending.forEach((timer) => clearTimeout(timer))
       pending.clear()
+      pendingExit.forEach((timer) => clearTimeout(timer))
+      pendingExit.clear()
     }
   }, [])
 
@@ -71,13 +123,11 @@ export function ToastProvider({ children }) {
 
   const api = useMemo(
     () => ({
-      push,
-      dismiss,
       success: (title, body) => push({ kind: 'success', title, body }),
       error: (title, body) => push({ kind: 'error', title, body }),
       info: (title, body) => push({ kind: 'info', title, body }),
     }),
-    [push, dismiss],
+    [push],
   )
 
   return (
@@ -85,7 +135,14 @@ export function ToastProvider({ children }) {
       {children}
       <div className="toast-region" aria-live="polite" aria-label="Notifications">
         {toasts.map((toast) => (
-          <div key={toast.id} className={`toast toast--${toast.kind}`}>
+          <div
+            key={toast.id}
+            className={`toast toast--${toast.kind}${leaving.has(toast.id) ? ' toast--leaving' : ''}`}
+            role={toast.kind === 'error' ? 'alert' : 'status'}
+          >
+            <span className="toast-icon" aria-hidden="true">
+              {KIND_ICONS[toast.kind]}
+            </span>
             <div className="toast-body">
               <span className="toast-title">{toast.title}</span>
               {toast.body && <span className="toast-detail">{toast.body}</span>}

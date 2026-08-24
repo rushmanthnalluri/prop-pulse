@@ -7,20 +7,11 @@
  * Every number comes from GET /model/info.
  */
 import { formatMetric, formatUsd } from '../../format'
+import { HeadlineMetric } from './HeadlineMetrics'
 
 /** Compact "<name>_<version>" tag, mirroring the backend's model_version string. */
 function modelTag(section) {
   return [section?.name, section?.version].filter(Boolean).join('_') || '—'
-}
-
-function HeadlineStat({ label, value, hint }) {
-  return (
-    <div className="metric">
-      <div className="metric-value insights-stat">{value}</div>
-      <div className="metric-label">{label}</div>
-      {hint && <div className="metric-hint">{hint}</div>}
-    </div>
-  )
 }
 
 export default function ChampionDuo({ info }) {
@@ -31,9 +22,9 @@ export default function ChampionDuo({ info }) {
   const threshold = clsTest.threshold ?? classification.threshold
 
   return (
-    <div className="grid-2">
+    <div className="grid-2 insights-champions">
       <div className="panel">
-        <div className="panel-head">
+        <div className="panel-head panel-head--raised">
           <span className="panel-title">
             Regression · <span className="mono">{modelTag(regression)}</span>
           </span>
@@ -41,20 +32,23 @@ export default function ChampionDuo({ info }) {
         </div>
         <div className="panel-body">
           <div className="metrics metrics--3 insights-champion-stats">
-            <HeadlineStat
+            <HeadlineMetric
               label="Test RMSLE"
               value={formatMetric(regTest.rmsle, 4)}
               hint="selection metric"
+              valueClassName="insights-stat"
             />
-            <HeadlineStat
+            <HeadlineMetric
               label="Test R²"
               value={formatMetric(regTest.r2)}
               hint="variance explained"
+              valueClassName="insights-stat"
             />
-            <HeadlineStat
+            <HeadlineMetric
               label="Test MAE"
               value={formatUsd(regTest.mae)}
               hint="typical error"
+              valueClassName="insights-stat"
             />
           </div>
           <p className="note insights-panel-note">
@@ -68,7 +62,7 @@ export default function ChampionDuo({ info }) {
       </div>
 
       <div className="panel">
-        <div className="panel-head insights-champion-head">
+        <div className="panel-head panel-head--raised insights-champion-head">
           <span className="panel-title">
             Classification · <span className="mono">{modelTag(classification)}</span>
           </span>
@@ -80,20 +74,23 @@ export default function ChampionDuo({ info }) {
         </div>
         <div className="panel-body">
           <div className="metrics metrics--3 insights-champion-stats">
-            <HeadlineStat
+            <HeadlineMetric
               label="Test ROC-AUC"
               value={formatMetric(clsTest.roc_auc)}
               hint="0.5 = chance"
+              valueClassName="insights-stat"
             />
-            <HeadlineStat
+            <HeadlineMetric
               label="Test PR-AUC"
               value={formatMetric(clsTest.pr_auc)}
               hint="primary metric"
+              valueClassName="insights-stat"
             />
-            <HeadlineStat
+            <HeadlineMetric
               label="Threshold"
               value={formatMetric(threshold, 4)}
               hint="max-F1, not 0.5"
+              valueClassName="insights-stat"
             />
           </div>
           <p className="note insights-panel-note">

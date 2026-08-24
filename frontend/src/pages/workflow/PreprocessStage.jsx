@@ -38,7 +38,7 @@ import { EmptyState, ErrorState, PanelSkeleton } from '../../components/StateVie
 import PreprocessConfig, { fractionsValid } from '../../components/workflow/PreprocessConfig'
 import BeforeAfterPanel from '../../components/workflow/BeforeAfterPanel'
 import SimulatedBadge from '../../components/workflow/SimulatedBadge'
-import { formatDateTime, formatNumber, formatPct } from '../../format'
+import { datasetRowsMeta, formatDateTime, formatNumber, formatPct } from '../../format'
 import { SPLIT_CONTRACT } from '../../constants'
 import '../../styles/workflow-train.css'
 import '../../styles/workflow-preprocess.css'
@@ -155,6 +155,11 @@ function NodeStatus({ status }) {
   )
 }
 
+/** Raw-input rows of a features payload — shared by the section title and FeatureSet. */
+function rawInputsOf(features) {
+  return (features?.raw_features ?? []).filter((f) => f?.role === 'raw_input')
+}
+
 /**
  * The reference's "Feature set" registry (§8.7) adapted to the real API.
  * The PrepareReport carries no per-feature imputed means / train stds, so
@@ -164,7 +169,7 @@ function NodeStatus({ status }) {
  * target badged, ADR-3).
  */
 function FeatureSet({ features, loading, error, onRetry }) {
-  const rawInputs = (features?.raw_features ?? []).filter((f) => f.role === 'raw_input')
+  const rawInputs = rawInputsOf(features)
   const pipeline = features?.pipeline_features ?? []
   const targets = features?.targets ?? {}
   const salePrice = (features?.raw_features ?? []).find(
@@ -327,7 +332,7 @@ export default function PreprocessStage() {
 
   const fingerprint = currentReport?.fingerprint ?? data?.fingerprint ?? null
   const metaBits = [
-    dataset ? `${dataset.name} · ${formatNumber(dataset.n_rows, 0)} rows` : null,
+    dataset ? datasetRowsMeta(dataset) : null,
     fingerprint ? `fingerprint ${String(fingerprint).slice(0, 12)}` : null,
     currentReport?.prepared_at ? `prepared ${formatDateTime(currentReport.prepared_at)}` : null,
   ].filter(Boolean)
@@ -335,10 +340,10 @@ export default function PreprocessStage() {
   if (loading && !data) {
     return (
       <>
-        <div className="page-head">
+        <header className="page-head">
           <span className="kicker">Stage 06 · Preparation</span>
           <h1 className="page-title">Preprocessing</h1>
-        </div>
+        </header>
         <div className="section">
           <PanelSkeleton height={220} />
         </div>
@@ -356,7 +361,7 @@ export default function PreprocessStage() {
 
   return (
     <>
-      <div className="page-head">
+      <header className="page-head">
         <span className="kicker">Stage 06 · Preparation</span>
         <h1 className="page-title">Preprocessing</h1>
         <p className="page-desc">
@@ -365,13 +370,13 @@ export default function PreprocessStage() {
           previewed here and persisted for training. Stage 07 fits on exactly this frame.
         </p>
         {metaBits.length > 0 && <p className="page-meta">{metaBits.join(' · ')}</p>}
-      </div>
+      </header>
 
       <hr className="divider" />
 
       <div className="section">
         <div className="section-head">
-          <span className="section-title">Configuration</span>
+          <h2 className="section-title">Configuration</h2>
           <span className="section-note">persisted on run — training uses exactly this</span>
         </div>
         <div className="panel">
@@ -442,10 +447,10 @@ export default function PreprocessStage() {
       )}
 
       {currentReport && (
-        <div aria-busy={running || undefined} className={running ? 'wf-dimmed' : undefined}>
+        <div aria-busy={running || undefined} className={running ? 'dim-stale' : undefined}>
           <div className="section">
             <div className="section-head">
-              <span className="section-title">The split — sealed before anything is fit</span>
+              <h2 className="section-title">The split — sealed before anything is fit</h2>
               <span className="section-note">rule: {currentReport.splits?.rule}</span>
             </div>
             <p className="section-sub">
@@ -492,7 +497,7 @@ export default function PreprocessStage() {
 
           <div className="section">
             <div className="section-head">
-              <span className="section-title">Pipeline — raw data to model-ready frame</span>
+              <h2 className="section-title">Pipeline — raw data to model-ready frame</h2>
               <span className="section-note">
                 {steps.length} steps · every statistic fit on train only
               </span>
@@ -553,9 +558,9 @@ export default function PreprocessStage() {
 
       <div className="section">
         <div className="section-head">
-          <span className="section-title">
-            Feature set — {features ? `${rawInputCount(features) + (features.pipeline_features?.length ?? 0)} inputs, ` : ''}two targets
-          </span>
+          <h2 className="section-title">
+            Feature set — {features ? `${rawInputsOf(features).length + (features.pipeline_features?.length ?? 0)} inputs, ` : ''}two targets
+          </h2>
           <span className="section-note">the frame stage 07 trains on</span>
         </div>
         <p className="section-sub">
@@ -574,11 +579,11 @@ export default function PreprocessStage() {
 
       {currentReport && (
         <div
-          className={running ? 'section wf-dimmed' : 'section'}
+          className={running ? 'section dim-stale' : 'section'}
           aria-busy={running || undefined}
         >
           <div className="section-head">
-            <span className="section-title">Before / after</span>
+            <h2 className="section-title">Before / after</h2>
             <span className="section-note">raw frame vs persisted processed splits</span>
           </div>
           <BeforeAfterPanel report={currentReport} />
@@ -586,9 +591,4 @@ export default function PreprocessStage() {
       )}
     </>
   )
-}
-
-/** Raw-input count for the section title (kept out of FeatureSet's render). */
-function rawInputCount(features) {
-  return (features?.raw_features ?? []).filter((f) => f.role === 'raw_input').length
 }

@@ -8,10 +8,12 @@
  * preview of what the panel will report once traffic is scored, and the
  * unblock CTA (score a property on /valuation — champion POST /predict
  * lines are what fill the log the drift check reads).
+ *
+ * Markup composes the global .empty-state chrome directly (instead of the
+ * EmptyState helper) so the monitoring glyph can lead the block.
  */
 import { Link } from 'react-router'
 import { formatDateTime, formatMetric, formatNumber } from '../../format'
-import { EmptyState } from '../StateView'
 
 /** Facts rendered only when the served snapshot actually carries them. */
 function snapshotFacts(drift) {
@@ -54,11 +56,26 @@ export default function DriftEmpty({ drift, detail, whatItems }) {
         : null
 
   return (
-    <EmptyState
-      kicker={`Drift status — ${status}`}
-      title="No scored traffic in the drift window yet"
-      detail={detail}
-    >
+    <div className="empty-state">
+      <div className="health-empty-icon" aria-hidden="true">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <polyline points="2.5 12 7 12 10 5 14 19 17 12 21.5 12" />
+        </svg>
+      </div>
+      <span className="kicker">
+        Drift status — <span className="health-empty-status">{status}</span>
+      </span>
+      <div className="empty-state-title">No scored traffic in the drift window yet</div>
+      {detail && <p className="empty-state-detail">{detail}</p>}
       {facts.length > 0 && (
         <div className="health-empty-facts">
           {facts.map(([label, value]) => (
@@ -82,13 +99,13 @@ export default function DriftEmpty({ drift, detail, whatItems }) {
       </div>
       <div className="health-empty-cta">
         <Link className="btn btn-primary btn-sm" to="/valuation">
-          Estimate value →
+          Estimate value
         </Link>
       </div>
       {report && <p className="note health-empty-report">Latest report: {repoRelative(report)}</p>}
       {drift.timestamp && (
         <p className="note health-section-note">Snapshot {formatDateTime(drift.timestamp)}</p>
       )}
-    </EmptyState>
+    </div>
   )
 }

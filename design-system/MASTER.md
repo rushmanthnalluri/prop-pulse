@@ -83,7 +83,7 @@ changes. Landing pattern N/A (dashboard product).
 ## 4. Style (adopted: **Dark Mode + Data-Dense + Minimal**)
 
 The engine's Real-Time Monitoring style is compatible with dark mode
-("Dark ✓ Full"). PropPulse ships the **dark** instantiation, which the
+("Dark + Full"). PropPulse ships the **dark** instantiation, which the
 Financial #6 rule mandates for financial analytics and Fintech #14's
 `use-dark-mode` supports. Flat/hairline, no gradients, single elevation shadow
 for floating layers.
@@ -100,10 +100,10 @@ n/a for analytics; map integration present).
 | Background | `#F0FDFA` (light) | `#0F1110` (dark) | **Dark adopted.** Financial #6 requires dark for financial analytics; Fintech #14 `use-dark-mode`; anti-pattern = light default. Engine's light bg is the "consumer listings" instantiation. |
 | Primary | `#0F766E` trust teal | `#151816` surface | Teal is the Real-Estate domain voice; PropPulse is a data tool, not a listings brand — surface-led instead. Noted as alternate brand direction. |
 | Accent | `#0369A1` blue | **`#D9A63F` gold-amber** | **Gold adopted.** Gold is the one accent both camps share: colors.csv Real Estate/Property "Trust Blue + Gold", Banking #42 "premium gold #A16207", Fintech #14 "Gold trust #F59E0B", Analytics #7 accent `#D97706` amber. PropPulse's amber is a valid member of that family and is AA-visible on dark. |
-| Success | `—` | `#63A87D` | green family (Financial #6 `#22C55E`) ✓ |
-| Danger | `#DC2626` | `#C65D55` | red family (Financial #6 `#EF4444`) ✓ |
-| Muted text | `#E8F0F3` | `#9BA29A` | slate family ✓ |
-| Border | `#99F6E4` | `#252A26` | hairline role ✓ |
+| Success | `—` | `#63A87D` | green family (Financial #6 `#22C55E`) |
+| Danger | `#DC2626` | `#C65D55` | red family (Financial #6 `#EF4444`) |
+| Muted text | `#E8F0F3` | `#9BA29A` | slate family |
+| Border | `#99F6E4` | `#252A26` | hairline role |
 
 **Decision:** keep dark `#0F1110` + amber `#D9A63F`. The engine's teal/blue is
 the documented "light/consumer" alternative. No palette change applied.
@@ -118,11 +118,11 @@ the documented "light/consumer" alternative. No palette change applied.
 
 | Effect | Engine | Shipped |
 |---|---|---|
-| Real-time chart animations | ✓ | chart updates animate (Recharts default) |
-| Alert pulse/glow | ✓ | `--dur-pulse` on degraded/alert states |
-| Status indicator blink | ✓ | health pill + api-status states |
-| Smooth data-stream updates | ✓ | metric updates |
-| Loading effect | ✓ | skeletons + spinners |
+| Real-time chart animations | Yes | chart updates animate (Recharts default) |
+| Alert pulse/glow | Yes | `--dur-pulse` on degraded/alert states |
+| Status indicator blink | Yes | health pill + api-status states |
+| Smooth data-stream updates | Yes | metric updates |
+| Loading effect | Yes | skeletons + spinners |
 
 ## 8. Anti-Patterns (all PASS)
 
@@ -133,7 +133,7 @@ the documented "light/consumer" alternative. No palette change applied.
 | No filtering | Analytics #7 | **PASS** — neighborhood/model/advanced filters |
 | Playful design | Fintech #14 / Banking #42 | **PASS** — sober, product-grade |
 | AI purple/pink gradients | Fintech #14 / Banking #42 | **PASS** — flat amber, no purple/gradients |
-| Poor photos / no virtual tours | Real Estate #36 | **n/a** — analytics product; map integration ✓ |
+| Poor photos / no virtual tours | Real Estate #36 | **n/a** — analytics product; map integration present |
 
 ## 9. Genuine Deltas Applied (this run)
 
@@ -143,7 +143,7 @@ the documented "light/consumer" alternative. No palette change applied.
    `<main>` after navigation (skip first render, `preventScroll`); region ring
    suppressed via `.app-body main:focus { outline: none }`.
 
-Both regression-verified (build ✓, lint ✓, E2E 49/49 — see
+Both regression-verified (build PASS, lint PASS, E2E 49/49 — see
 `docs/frontend/UIUXPROMAX_AUDIT.md`).
 
 ## 10. Pre-Delivery Checklist

@@ -1,58 +1,51 @@
 /* ==========================================================================
    ML Workbench — bridge stages 09–12 (Predict / Market / Explain / Health)
    + the sandbox prediction panel. Design tokens from styles.css only;
-   hairlines over boxes; no shadows at all here (--shadow-pop stays reserved
-   for floating layers). Imported by each bridge stage page; Vite dedupes the
-   chunk. Dead hooks (wf-duo, wf-picker-row, wf-result--empty/-verdict/-note,
-   wf-sandbox-simnote) were removed once nothing imported them.
+   hairlines over boxes with a whisper of grounding shadow on the static
+   cards (--shadow-pop stays reserved for floating layers). Imported by each
+   bridge stage page; Vite dedupes the chunk. Dead hooks (wf-duo,
+   wf-picker-row, wf-result--empty/-verdict/-note, wf-sandbox-simnote) were
+   removed once nothing imported them; the .wf-result container and .wf-dim
+   followed once SandboxPredictPanel settled on the shared .result-panel
+   skin — only the e2e-pinned .wf-result-price/-range/-meta hooks remain.
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
    Sandbox prediction panel (stage 09 main)
    -------------------------------------------------------------------------- */
 
-.wf-sandbox-lead { margin: 0 0 16px; max-width: 640px; }
+.wf-sandbox-lead { margin: 0 0 16px; max-width: 640px; line-height: 1.55; }
 
-/* Result card — accent hairline (the "measured thing" edge); deliberately
-   NOT the champion's 30px verdict size: the sandbox figure renders smaller
-   so the two faces are visually distinct (honesty by hierarchy). */
-.wf-result {
-  display: grid;
-  gap: 8px;
-  align-content: start;
-  margin-bottom: 18px;
-  padding: 16px 18px;
-  background: var(--surface);
-  border: 1px solid rgba(217, 166, 63, 0.4);
-  border-radius: var(--radius-lg);
-  transition: opacity var(--dur-hover);
-}
+/* Result hooks inside the shared .result-panel (SandboxPredictPanel) —
+   e2e-pinned classes (.wf-result-price/-range/-meta). The sandbox price is
+   deliberately NOT the champion's 30px .result-verdict size: it renders
+   smaller so the two faces stay visually distinct (honesty by hierarchy). */
 .wf-result-price {
   margin: 0;
   font-family: var(--font-mono);
   font-size: 22px;
   font-weight: 600;
   letter-spacing: -0.02em;
+  line-height: 1.2;
   color: var(--text);
   font-variant-numeric: tabular-nums;
 }
 .wf-result-range {
   margin: 0;
   font-size: 13px;
+  line-height: 1.5;
   color: var(--text-2);
   font-variant-numeric: tabular-nums;
 }
 .wf-result-meta {
   margin: 0;
+  padding-top: 2px;
+  border-top: 1px solid var(--border);
   font-family: var(--font-mono);
   font-size: 10.5px;
   letter-spacing: 0.02em;
   color: var(--text-3);
 }
-
-/* Previous result kept dimmed while a re-predict is in flight — busy
-   feedback on the control, never a skeleton swap. */
-.wf-dim { opacity: 0.55; pointer-events: none; }
 
 /* --------------------------------------------------------------------------
    Bridge panels (stages 09–12) + "what you'll find" grids — quiet panels in
@@ -60,31 +53,37 @@
    hairline-separated note, primary onward CTA bottom-left.
    -------------------------------------------------------------------------- */
 
-.wf-bridge {
+/* .wf-bridge and .wf-teaser share the quiet-panel skin; the per-class
+   deltas (gap/padding) follow the combined rule. */
+.wf-bridge,
+.wf-teaser {
   display: grid;
-  gap: 12px;
   align-content: start;
-  padding: 18px 20px;
-  background: var(--surface);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.014) 0%, rgba(255, 255, 255, 0) 36%),
+    var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); /* subtle grounding, not floating */
+  transition: border-color var(--dur-hover);
 }
+.wf-bridge { gap: 13px; padding: 20px 22px; }
+.wf-bridge:hover,
+.wf-teaser:hover { border-color: var(--border-strong); }
 .wf-bridge-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .wf-bridge-title { margin: 0; font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
-.wf-bridge-copy { margin: 0; font-size: 13.5px; color: var(--text-2); max-width: 640px; }
+.wf-bridge-copy { margin: 0; font-size: 13.5px; line-height: 1.6; color: var(--text-2); max-width: 640px; }
 .wf-bridge-list {
-  margin: 0;
-  padding: 0;
   display: grid;
-  gap: 6px;
+  gap: 8px;
   font-size: 12.5px;
   color: var(--text-2);
-  list-style: none;
 }
 /* › accent bullets — the reference's insight-list marker (blueprint §5). */
 .wf-bridge-list li {
   display: flex;
   gap: 10px;
+  line-height: 1.55;
 }
 .wf-bridge-list li::before {
   content: '›';
@@ -92,50 +91,75 @@
   font-family: var(--font-mono);
   flex-shrink: 0;
 }
-.wf-bridge-meta { margin: 0; font-size: 10.5px; color: var(--text-3); }
+.wf-bridge-meta { margin: 0; font-size: 10.5px; letter-spacing: 0.02em; color: var(--text-3); }
 .wf-bridge-note {
   margin: 0;
-  padding-top: 10px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
   font-size: 12.5px;
+  line-height: 1.55;
   color: var(--text-3);
   max-width: 640px;
 }
-.wf-bridge-cta { justify-self: start; }
+.wf-bridge-cta { justify-self: start; margin-top: 2px; }
+
+/* Directional affordance: the CTA's arrow nudges on hover (instant swap
+   under prefers-reduced-motion via the global block). The glyph is
+   aria-hidden, so accessible names stay verbatim. */
+.wf-bridge-cta svg,
+.wf-teaser .btn svg { transition: transform var(--dur-hover); }
+.wf-bridge-cta:hover svg,
+.wf-teaser .btn:hover svg { transform: translateX(2px); }
 
 .wf-find-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
-  gap: 10px;
+  gap: 12px;
 }
+/* Inset wells against the bridge surface — nested depth without a new hue. */
 .wf-find-card {
   display: grid;
-  gap: 5px;
+  gap: 6px;
   align-content: start;
-  padding: 12px 14px;
+  justify-items: start;
+  padding: 13px 15px;
+  background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  transition: border-color var(--dur-hover);
 }
-.wf-find-title { font-size: 12.5px; font-weight: 600; color: var(--text); }
-.wf-find-body { margin: 0; font-size: 12px; color: var(--text-2); }
+.wf-find-card:hover { border-color: var(--border-strong); }
+/* Icon tile above the title — the dropzone affordance-tile idiom; warms to
+   the accent on card hover. */
+.wf-find-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  margin-bottom: 2px;
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--accent);
+  transition: border-color var(--dur-hover), background var(--dur-hover);
+}
+.wf-find-card:hover .wf-find-icon {
+  border-color: var(--accent-border);
+  background: var(--accent-dim);
+}
+.wf-find-title { font-size: 12.5px; font-weight: 600; letter-spacing: 0.01em; color: var(--text); }
+.wf-find-body { margin: 0; font-size: 12px; line-height: 1.55; color: var(--text-2); }
 
 /* --------------------------------------------------------------------------
    Sandbox teaser cards (stages 10–12) — the .panel skin with a badge + title
    head and a metrics strip inside.
    -------------------------------------------------------------------------- */
 
-.wf-teaser {
-  display: grid;
-  gap: 12px;
-  align-content: start;
-  padding: 16px 18px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-}
+.wf-teaser { gap: 12px; padding: 18px 20px; }
 .wf-teaser-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .wf-teaser-title { margin: 0; font-size: 13.5px; font-weight: 600; letter-spacing: -0.01em; color: var(--text); }
-.wf-teaser-note { margin: 0; font-size: 12.5px; color: var(--text-2); max-width: 640px; }
+.wf-teaser-note { margin: 0; font-size: 12.5px; line-height: 1.55; color: var(--text-2); max-width: 640px; }
 
 /* --------------------------------------------------------------------------
    Responsive (blueprint §10): cards tighten at ≤820px / ≤520px.

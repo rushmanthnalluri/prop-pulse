@@ -191,7 +191,7 @@ def _coerced(values: Iterable[Any]) -> list[float]:
             number = float(value)  # type: ignore[arg-type]
         except (TypeError, ValueError):
             continue
-        if number == number and number not in (float("inf"), float("-inf")):
+        if math.isfinite(number):
             out.append(number)
     return out
 

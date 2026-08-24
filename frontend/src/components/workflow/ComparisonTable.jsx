@@ -8,9 +8,11 @@
  * is the production model, so the sandbox best is labelled "best").
  *
  * Reference deviations, all deliberate: the table stays sortable on every
- * metric (useSortable + SortHeader, UX §7.6 — e2e-pinned), and stage 08
- * passes metricDigits={4} for the benchmark-table 4dp convention (§12)
- * while stage 07 keeps the 3dp default. The regression paired-bootstrap
+ * metric (useSortable + SortHeader, UX §7.6 — e2e-pinned), and both stages
+ * pass metricDigits={4} for the benchmark-table 4dp convention (§12) —
+ * stage 07 (TrainStage) and stage 08 (EvaluateStage) alike; the 3dp default
+ * is only the fallback for any caller that does not pass the prop. The
+ * regression paired-bootstrap
  * block renders as the honesty banner — "not statistically decisive"
  * framing when significant=false (§7; the BootstrapNote pattern, UX §5.4-5).
  * Every number is validation-only; the ProvenanceBanner states dataset,

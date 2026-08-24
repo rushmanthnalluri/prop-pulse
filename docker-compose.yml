@@ -19,11 +19,6 @@ services:
       dockerfile: docker/backend.Dockerfile
     image: proppulse-backend:latest
     env_file: .env
-    environment:
-      # A container must listen on all interfaces; .env.example defaults to
-      # 127.0.0.1 for bare-metal dev, so override it here. `environment`
-      # takes precedence over `env_file`. Uvicorn also gets --host 0.0.0.0.
-      API_HOST: 0.0.0.0
     ports:
       - "8000:8000"
     volumes:
@@ -47,6 +42,9 @@ services:
       # Model artifacts (incl. the calibrated RF) load in the lifespan startup;
       # allow ample warm-up before failures count.
       start_period: 40s
+    # Headroom for uvicorn's --timeout-graceful-shutdown 10 (image CMD) so a
+    # request still draining at the 10s mark is not SIGKILLed at the boundary.
+    stop_grace_period: 15s
     restart: unless-stopped
 
   frontend:
@@ -63,12 +61,38 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    healthcheck:
+      # nginx:alpine ships busybox wget; -q -O /dev/null discards the body.
+      # Non-2xx or a connection failure exits non-zero -> unhealthy. nginx
+      # starts almost instantly, so a short start_period suffices.
+      # Probe 127.0.0.1, not localhost: on current nginx:alpine, localhost
+      # resolves to ::1 first while docker/nginx.conf binds IPv4 only
+      # (listen 80;), and busybox wget does not fall back — every probe
+      # would be refused despite nginx serving fine (smoke 2026-08-24).
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Static file serving drains instantly; don't wait the default 10s on
+    # stop/restart.
+    stop_grace_period: 5s
+    # nginx only writes its pid file and client/proxy temp dirs at runtime
+    # (access/error logs are symlinks to /dev/stdout|stderr), so the root
+    # filesystem can be read-only with those paths backed by tmpfs.
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /tmp
     restart: unless-stopped
 
   mlflow:
     # Opt-in tracking UI over the local file store (ADR-8). Start with:
     #   docker compose --profile mlflow up mlflow
-    image: ghcr.io/mlflow/mlflow:latest
+    # Tag pinned to the mlflow version in requirements.txt (mlflow==3.15.1)
+    # so the server CLI and the in-process client never skew.
+    image: ghcr.io/mlflow/mlflow:v3.15.1
     command: mlflow server --host 0.0.0.0 --port 5000 --backend-store-uri /mlruns
     environment:
       # MLflow 3.15 refuses file-store URIs unless this is set (SPEC §14);

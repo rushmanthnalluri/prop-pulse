@@ -41,7 +41,7 @@ export default function FeaturesStage() {
 
   return (
     <div>
-      <div className="page-head">
+      <header className="page-head">
         <span className="kicker">Stage 02 · Records</span>
         <h1 className="page-title">Analyze Features</h1>
         <p className="page-desc">
@@ -49,7 +49,7 @@ export default function FeaturesStage() {
           before any analysis begins.
         </p>
         <p className="page-meta">{pageMeta}</p>
-      </div>
+      </header>
 
       <hr className="divider" />
 

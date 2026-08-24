@@ -25,9 +25,9 @@ No servers started, no ports used, no project files modified. Ambient CPU load f
 **(3) Aggregation** — val row Id=26 (Neighborhood=NridgHt; 22 NridgHt rows in val). 25 `cat__Neighborhood_*` dummies exist; exactly one active (`cat__Neighborhood_NridgHt`=1.0). Independent dummy-sum −0.005036476538079 == `explain_one(...)["Neighborhood"]` −0.005036476538079 (diff 0.0). Full mapping audit over all 296 transformed columns: an independently written parser agrees with `parse_base_name` on every column; every parsed base ∈ MODEL_FEATURES; all 94 base features covered; no cross-feature leakage in either direction for the Neighborhood bucket; 41 categorical bases all ∈ RAW_INPUT_COLUMNS.
 
 **(4) Sign checks (manual verification)** — synthetic feature-frame rows differing in exactly one cell (asserted). Independent ground truth computed by hand for the linear model (`shap_j = coef_j·(x_j − E[bg_j])`) matches `shap.LinearExplainer` to 0.0.
-- `OverallQual` 8 vs 4: coef +0.063; shap **+0.0925** (qual 8) vs −0.0958 (qual 4) — positive and larger for 8 ✔ (pred delta +0.188 log).
-- `GrLivArea` 3000 vs 1000: coef +0.037; shap **+0.1072** vs −0.0350 ✔ (pred delta +0.142 log). Caveat: isolated in feature space; in real serving rows `total_sf` and `living_area_per_bedroom` co-vary with `GrLivArea` (documented, not a defect).
-- `property_age` 90 vs 2: coef −0.016; shap −0.0272 (old) vs **+0.0202** (new) — age pushes price down ✔ (pred delta −0.047 log).
+- `OverallQual` 8 vs 4: coef +0.063; shap **+0.0925** (qual 8) vs −0.0958 (qual 4) — positive and larger for 8 (pred delta +0.188 log).
+- `GrLivArea` 3000 vs 1000: coef +0.037; shap **+0.1072** vs −0.0350 (pred delta +0.142 log). Caveat: isolated in feature space; in real serving rows `total_sf` and `living_area_per_bedroom` co-vary with `GrLivArea` (documented, not a defect).
+- `property_age` 90 vs 2: coef −0.016; shap −0.0272 (old) vs **+0.0202** (new) — age pushes price down (pred delta −0.047 log).
 
 **(5) explain_instance contract** — 3 real val rows (Ids 6/695/1455) via the production singleton path. Returned dicts have exactly `{feature, impact, magnitude}`; features are base MODEL_FEATURES names (no dummy columns); order, signs, and 6-decimal magnitudes match my independent recomputation exactly; magnitude sums 0.398 / 0.241 / 0.273 — all ≤ 1 as specified.
 

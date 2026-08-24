@@ -85,4 +85,4 @@ def write_json(path: Path, payload: dict[str, Any]) -> None:
     """Write pretty JSON, creating parent dirs."""
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(payload, indent=2, default=str))
+    path.write_text(json.dumps(payload, indent=2, default=str), encoding="utf-8")
