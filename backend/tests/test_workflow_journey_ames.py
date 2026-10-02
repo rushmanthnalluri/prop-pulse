@@ -34,8 +34,8 @@ def ames_jobs(
 ) -> SimpleNamespace:
     """Run the two real subprocess jobs on ames (regression linear+ridge, dbscan).
 
-    Sequenced strictly one-at-a-time (the server-wide single-job guard would
-    409 a concurrent second POST). Returns the final status payloads.
+    Sequenced strictly one-at-a-time so the journey exercises completed artifacts
+    deterministically; API submissions themselves are queue-safe. Returns the final status payloads.
     """
     client = workflow_client
     regression = client.post(
