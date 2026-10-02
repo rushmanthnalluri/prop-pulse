@@ -108,8 +108,8 @@ A guided five-minute walkthrough of these screens: **`docs/DEMO.md`**.
   compares live traffic against the train reference and recommends (never
   triggers) retraining.
 - **Full MLOps loop**: MLflow experiment tracking, a file-based champion
-  registry (`models/registry/` + `models/champion.json`), 454 automated
-  tests, Playwright browser E2E, CI, and verified Docker packaging.
+  registry (`models/registry/` + `models/champion.json`), automated tests,
+  Playwright browser E2E, CI, and Docker packaging.
 
 ## Architecture
 
@@ -125,7 +125,7 @@ flowchart TD
     F --> H
     H --> I[models/registry + champion.json<br/>MLflow file store mlruns/]
     H --> J[ml/explainability<br/>SHAP artifacts + per-prediction service]
-    I --> K[backend FastAPI<br/>/predict /market/clusters /model/info /metrics /health /workflow/*]
+    I --> K[backend FastAPI<br/>/predict /market/clusters /model/info /metrics /health /ready /workflow/*]
     J --> K
     K --> L["frontend React dashboard<br/>Overview | Valuation | Market | Insights | Health<br/>+ 9-stage guided ML workbench"]
     K --> M[ml/monitoring<br/>prediction log → PSI drift check → retrain recommendation]
@@ -433,28 +433,21 @@ hardening notes: **`docs/DEPLOYMENT.md`**.
 
 ## Testing
 
+Run the local suite with:
+
 ```bash
-.venv/Scripts/python.exe -m pytest tests backend/tests -q   # 454 tests
-.venv/Scripts/python.exe -m pytest tests -m integration -q  # end-to-end only
+.venv/Scripts/python.exe -m pytest tests backend/tests -q
+.venv/Scripts/python.exe -m pytest tests -m integration -q
 ```
 
-`pytest.ini` sets `pythonpath=.` and the `integration` marker (end-to-end
-tests that exercise the committed processed data and champion artifacts).
-Current status: **454 passed** (re-run 2026-08-19; 232 at the wave-10
-release, 162 at wave-9, 210 post-audit). API tests run through FastAPI's
-TestClient against the real champion artifacts.
+`pytest.ini` sets `pythonpath=.` and the tests exercise the committed data and
+model artifacts. Current pass/fail counts belong to the exact CI commit and are
+reported in [`RELEASE_STATUS.md`](RELEASE_STATUS.md) plus the generated CI
+verification artifact; dated reports intentionally remain historical evidence.
 
-Browser E2E (separate npm project in `e2e/`, Playwright + Chromium,
-headless; backend on :8200, Vite dev server on :5300): **49 tests pass across
-4 spec files** (last full run 2026-08-18). `dashboard.spec.js` (12: overview,
-valuation flow, valuation-result extras covering confidence / market position
-/ comps / scenario explorer, pinned-estimate compare, map→form prefill,
-client validation, market page, model insights, model health, 404 page,
-API-down degradation), `audit-blackbox.spec.js` (11), and `workflow.spec.js`
-(16: the 9-stage guided-ML workbench journey — upload → train → evaluate →
-sandbox predict — plus stage gating and 390 px responsive) run against the
-live API with no mocks; `frontend-fixes.spec.js` (10) covers mocked-failure
-and UI regressions. How to re-run: `reports/E2E.md`.
+Browser E2E lives in `e2e/` (Playwright + Chromium). Its current result must be
+read from the current verification record rather than copied from older audit
+reports.
 
 ## Monitoring and drift
 
