@@ -31,7 +31,6 @@ import math
 import os
 import re
 import subprocess
-import threading
 import sys
 import uuid
 from datetime import datetime, timezone
@@ -193,43 +192,6 @@ def spawn_training_job(
     return process
 
 
-def start_process_reaper(
-    process: subprocess.Popen[bytes],
-    dataset_id: str,
-    job_id: str,
-    lock: TrainingAdmissionLock,
-) -> None:
-    """Release the shared admission lock after the trainer exits."""
-    def _reap() -> None:
-        returncode = process.wait()
-        status_file = _jobs_dir(dataset_id) / job_id / "status.json"
-        payload = _read_status_file(status_file)
-        if returncode != 0 and _active_status(payload):
-            payload["status"] = "failed"
-            payload["error"] = (
-                "training subprocess exited before writing a terminal status "
-                f"(exit code {returncode})"
-            )
-            payload["finished_at"] = _utc_now_iso()
-            try:
-                _write_status_file(status_file.parent, payload)
-            except OSError as exc:
-                logger.warning("could not finalize failed job %s: %s", job_id, exc)
-        lock.release()
-        logger.info(
-            "training admission released for job %s (exit code=%s)",
-            job_id,
-            returncode,
-        )
-
-    thread = threading.Thread(
-        target=_reap,
-        name=f"proppulse-job-reaper-{job_id}",
-        daemon=True,
-    )
-    thread.start()
-
-
 def sweep_orphaned_jobs() -> int:
     """Mark active status files failed only when no operation owns the lock."""
     guard = TrainingAdmissionLock(
@@ -320,7 +282,6 @@ class WorkflowJobService:
                 detail = "another training/preprocessing operation is already running server-wide"
             raise HTTPException(status_code=409, detail=detail)
 
-        handed_to_reaper = False
         try:
             job_dir = _jobs_dir(dataset_id) / job_id
             report = preview_report(dataset_id)
@@ -344,7 +305,7 @@ class WorkflowJobService:
             }
             _write_status_file(job_dir, status_payload)
             try:
-                process = spawn_training_job(
+                spawn_training_job(
                     dataset_id, job_id, objective, candidates, job_dir
                 )
             except OSError as exc:
@@ -358,12 +319,11 @@ class WorkflowJobService:
                     status_code=503,
                     detail=f"could not spawn the training subprocess ({exc.__class__.__name__})",
                 ) from exc
-
-            start_process_reaper(process, dataset_id, job_id, lock)
-            handed_to_reaper = True
         finally:
-            if not handed_to_reaper:
-                lock.release()
+            # The child trainer acquires the same shared lock for its full
+            # lifetime. Releasing here ensures the lock survives an API-worker
+            # restart while the child is still fitting.
+            lock.release()
 
         logger.info(
             "accepted training job %s (dataset=%s objective=%s candidates=%s fingerprint=%s)",
