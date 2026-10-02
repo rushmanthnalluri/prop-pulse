@@ -1,5 +1,11 @@
 # PropPulse — Agent Status
 
+> **Archive note:** This file records the 2026-08 implementation chronology and
+> earlier verification snapshots. It is not current release status. Use the
+> root [`RELEASE_STATUS.md`](../RELEASE_STATUS.md) and the latest CI verification
+> artifact for the exact commit being evaluated.
+
+---
 Lead/Orchestrator: Kimi (this session). Owns spec, architecture, integration, final QA sign-off.
 
 | Wave | Agent | Scope | Status |
