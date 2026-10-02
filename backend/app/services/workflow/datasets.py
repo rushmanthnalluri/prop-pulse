@@ -152,8 +152,8 @@ class WorkflowDatasetService:
         lists objectives with at least one completed job. ``can_train``
         enforces the §2.3 row window (post-split train rows >=
         ``MIN_TRAIN_ROWS`` and upload rows <= ``MAX_UPLOAD_ROWS``); the train
-        count is the persisted split size when prepared, else the default
-        70/15/15 estimate.
+        count is the persisted post-outlier preparation split size when prepared,
+        else the exact default preparation calculation is used without writing artifacts.
         """
         statuses = job_status_scan(record.dataset_id)
         counts = {"total": len(statuses), "running": 0, "done": 0, "failed": 0}
@@ -200,15 +200,16 @@ class WorkflowDatasetService:
         # A prepared dataset's persisted config is the configuration whose
         # fingerprint downstream jobs will bind to. For a fresh dataset the
         # same default PrepareConfig used by the self-healing trainer applies.
-        config = (
-            PrepareConfig(**report.config)
-            if report is not None
-            else PrepareConfig()
-        )
-        try:
-            n_train = effective_train_row_count(record.dataset_id, config)
-        except (ValueError, FileNotFoundError) as exc:
-            return False, f"dataset cannot be prepared for training: {exc}"
+        if report is not None:
+            try:
+                n_train = int(report.splits['train'])
+            except (KeyError, TypeError, ValueError) as exc:
+                return False, f"dataset preparation report is corrupt: {exc}"
+        else:
+            try:
+                n_train = effective_train_row_count(record.dataset_id, PrepareConfig())
+            except (ValueError, FileNotFoundError) as exc:
+                return False, f"dataset cannot be prepared for training: {exc}"
 
         if n_train < MIN_TRAIN_ROWS:
             return False, (
