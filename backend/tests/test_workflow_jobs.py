@@ -197,7 +197,11 @@ class TestConcurrencyGuard:
         try:
             busy = workflow_client.delete(f"/workflow/datasets/{dataset_id}")
             assert busy.status_code == 409
-            assert first_job in busy.json()["detail"]
+            detail = busy.json()["detail"]
+            # Deletion names one active job selected from the on-disk status set;
+            # with multiple queued jobs the filesystem order is intentionally not
+            # an API contract, so either submitted job is a valid blocker witness.
+            assert first_job in detail or second.json()["job_id"] in detail
             state = workflow_client.get(f"/workflow/datasets/{dataset_id}/state").json()
             assert state["jobs"]["running"] == 2
         finally:
