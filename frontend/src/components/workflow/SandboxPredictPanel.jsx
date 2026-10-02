@@ -74,7 +74,7 @@ const finiteNumber = (value) => Number.isFinite(Number(value))
 
 /**
  * The run's own validation leader — regression minimizes RMSLE, classification
- * maximizes ROC-AUC (the stage-07 selection rule's headline metrics). Falls
+ * maximizes PR-AUC (the backend's authoritative stage-07 selection metric). Falls
  * back to the first done candidate when metrics are absent.
  */
 function jobBest(job) {
@@ -89,10 +89,10 @@ function jobBest(job) {
     }
   }
   if (job.objective === 'classification') {
-    const scored = done.filter(([, r]) => finiteNumber(r?.val_metrics?.roc_auc))
+    const scored = done.filter(([, r]) => finiteNumber(r?.val_metrics?.pr_auc))
     if (scored.length > 0) {
       return scored.reduce((a, b) =>
-        Number(a[1].val_metrics.roc_auc) >= Number(b[1].val_metrics.roc_auc) ? a : b,
+        Number(a[1].val_metrics.pr_auc) >= Number(b[1].val_metrics.pr_auc) ? a : b,
       )[0]
     }
   }
