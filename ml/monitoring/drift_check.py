@@ -305,6 +305,7 @@ def _no_data_report(base: dict[str, Any], reason: str) -> dict[str, Any]:
         "drift_detected": False,
         "drifted_features": [],
         "calendar_drift_features": [],
+        "degenerate_features": [],
         "warn_features": [],
         "per_feature_psi": {},
         "max_psi": None,
@@ -408,6 +409,11 @@ def _ok_report(
     # AUD-07: calendar-derived features drift structurally (time-based split
     # ends 2010; serving stamps today's date) — they stay visible in
     # ``calendar_drift_features`` but never alone recommend retraining.
+    degenerate_features = sorted(
+        feature
+        for feature in per_feature
+        if bool((reference.get("numeric", {}).get(feature) or {}).get("degenerate"))
+    )
     calendar_drifted = [feature for feature in drifted if feature in CALENDAR_FEATURES]
     non_calendar_drifted = [
         feature for feature in drifted if feature not in CALENDAR_FEATURES
@@ -423,6 +429,7 @@ def _ok_report(
         "drift_detected": drift_detected,
         "drifted_features": drifted,
         "calendar_drift_features": calendar_drifted,
+        "degenerate_features": degenerate_features,
         "warn_features": warn,
         "per_feature_psi": {
             feature: round(psi, 6) for feature, psi in sorted(per_feature.items())
@@ -435,7 +442,7 @@ def _ok_report(
         ),
         "retraining_recommended": retraining_recommended,
         "recommendation_text": _recommendation_text(
-            drifted, warn, n, max_psi, drift_threshold
+            drifted, warn, n, max_psi, drift_threshold, degenerate_features
         ),
     }
 
@@ -446,8 +453,18 @@ def _recommendation_text(
     n: int,
     max_psi: float | None,
     drift_threshold: float,
+    degenerate_features: list[str],
 ) -> str:
     """Human-readable recommendation. Flag only — never auto-retrain."""
+    degenerate_note = ""
+    if degenerate_features:
+        degenerate_note = (
+            f" PSI used reduced-granularity fallback bins for "
+            f"{len(degenerate_features)} degenerate feature(s): "
+            f"{', '.join(degenerate_features)}. Interpret small movements on "
+            "those features cautiously."
+        )
+
     if max_psi is None:
         return (
             "Log window contains no usable numeric feature values; PSI could "
@@ -469,7 +486,7 @@ def _recommendation_text(
             f"({', '.join(non_calendar)}) with PSI >= {drift_threshold}, but only "
             f"{n} valid prediction(s) in window (< {MIN_SAMPLE_FOR_RETRAINING} "
             "minimum). Collect more data before acting; no retraining "
-            "recommended yet."
+            "recommended yet." + degenerate_note
         )
     if drifted:
         return (
@@ -478,17 +495,17 @@ def _recommendation_text(
             "predictions. This is expected structural drift from the time-based "
             "split (train sales end in 2010; live predictions are stamped with "
             "the current date) and on its own does NOT recommend retraining — "
-            "keep watching the non-calendar features."
+            "keep watching the non-calendar features." + degenerate_note
         )
     if warn:
         return (
             f"No drift (PSI >= {drift_threshold}), but {len(warn)} feature(s) "
             f"({', '.join(warn)}) in the warn zone (PSI >= {PSI_WARN_THRESHOLD}, "
-            f"max {max_psi:.3f}). Keep watching; no action needed."
+            f"max {max_psi:.3f}). Keep watching; no action needed." + degenerate_note
         )
     return (
         f"No significant drift across monitored features (max PSI "
-        f"{max_psi:.3f} < {PSI_WARN_THRESHOLD}). No action needed."
+        f"{max_psi:.3f} < {PSI_WARN_THRESHOLD}). No action needed." + degenerate_note
     )
 
 
