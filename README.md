@@ -405,13 +405,9 @@ docker compose up --build                    # backend :8000, frontend :8080
 docker compose --profile mlflow up --build   # + MLflow UI on :5000 (opt-in)
 ```
 
-Builds are **verified** (2026-08-07, Docker 29.4 / Compose v5.1.1): both
-images build cleanly on `python:3.12-slim` / `node:24-alpine` (backend
-1.77 GB — dominated by pinned ML runtime deps; frontend 93.9 MB nginx
-bundle) and pass an in-compose smoke test — `/health`, `/predict` with 5
-populated SHAP factors, `/market/clusters`, `/model/importance`, CORS
-preflight from the composed frontend's origin, and an in-container drift
-check. Full evidence: **`reports/DOCKER_SMOKE.md`**.
+Historical Docker smoke evidence is preserved in `reports/DOCKER_SMOKE.md`.
+The current release gate is the `docker-build` GitHub Actions job, which builds
+both images and verifies `/health` plus `/ready` on the exact commit.
 
 If the default host ports are already taken (as they were on the dev
 machine), the repo carries an optional **`docker-compose.alt-ports.yml`** —
@@ -453,7 +449,7 @@ reports.
 
 - The backend appends every prediction to `logs/predictions.jsonl`
   (best-effort; binding schema in SPEC §10) and the metrics middleware feeds
-  `GET /metrics` (counters, latency, latest drift summary).
+  `GET /metrics` (counters, in-flight requests, latency, request timestamp, latest drift summary).
 - `python -m ml.monitoring.drift_check [--window N] [--log PATH]` computes
   per-numeric-feature **PSI** of the recent log window against the train
   reference (`models/monitoring/reference_stats.json`): warn ≥ 0.1, drift ≥
