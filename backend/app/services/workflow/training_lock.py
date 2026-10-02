@@ -20,29 +20,34 @@ from typing import Any
 
 from filelock import FileLock, Timeout
 
-from ml.workflow.datasets import WORKFLOW_MODELS_ROOT
+from ml.workflow import datasets as wf_datasets
 
 __all__ = ["TrainingAdmissionLock", "read_training_owner"]
 
-LOCK_PATH = WORKFLOW_MODELS_ROOT / ".training.lock"
-OWNER_PATH = WORKFLOW_MODELS_ROOT / ".training.lock.json"
+def _lock_path() -> Path:
+    return wf_datasets.WORKFLOW_MODELS_ROOT / ".training.lock"
+
+
+def _owner_path() -> Path:
+    return wf_datasets.WORKFLOW_MODELS_ROOT / ".training.lock.json"
 
 
 def _write_owner(payload: dict[str, Any]) -> None:
-    OWNER_PATH.parent.mkdir(parents=True, exist_ok=True)
-    tmp = OWNER_PATH.with_name(OWNER_PATH.name + ".tmp")
+    path = _owner_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
     tmp.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp, OWNER_PATH)
+    os.replace(tmp, path)
 
 
 def read_training_owner() -> dict[str, Any] | None:
     """Return the current lock owner's metadata when the lock is held."""
-    lock = FileLock(str(LOCK_PATH))
+    lock = FileLock(str(_lock_path()))
     try:
         lock.acquire(timeout=0)
     except Timeout:
         try:
-            payload = json.loads(OWNER_PATH.read_text(encoding="utf-8"))
+            payload = json.loads(_owner_path().read_text(encoding="utf-8"))
         except (OSError, ValueError):
             return None
         return payload if isinstance(payload, dict) else None
@@ -62,7 +67,7 @@ class TrainingAdmissionLock(AbstractContextManager["TrainingAdmissionLock"]):
         self.dataset_id = dataset_id
         self.job_id = job_id
         self.operation = operation
-        self._lock = FileLock(str(LOCK_PATH), timeout=0)
+        self._lock = FileLock(str(_lock_path()), timeout=0)
         self._acquired = False
 
     def acquire(self) -> bool:
@@ -87,7 +92,7 @@ class TrainingAdmissionLock(AbstractContextManager["TrainingAdmissionLock"]):
             return
         try:
             try:
-                payload = json.loads(OWNER_PATH.read_text(encoding="utf-8"))
+                payload = json.loads(_owner_path().read_text(encoding="utf-8"))
             except (OSError, ValueError):
                 payload = None
             if (
@@ -96,7 +101,7 @@ class TrainingAdmissionLock(AbstractContextManager["TrainingAdmissionLock"]):
                 and payload.get("job_id") == self.job_id
                 and payload.get("operation") == self.operation
             ):
-                OWNER_PATH.unlink(missing_ok=True)
+                _owner_path().unlink(missing_ok=True)
         finally:
             self._lock.release()
             self._acquired = False
