@@ -1,10 +1,6 @@
 """Shared fixtures/helpers for the WF-B4 workflow integration tests (workflow-architecture §8/§9).
 
-This file is **additive only**: there was no ``backend/tests/conftest.py`` before
-WF-B4 and the five pre-existing test modules keep their own module-scoped
-clients — nothing here is registered for them (they never request these
-fixtures).
-
+This file contains the shared fixtures/helpers for the workflow integration suite.\n
 Design notes:
 
 - **One app for all workflow modules.** ``create_app`` loads the champions and
@@ -40,7 +36,6 @@ from fastapi.testclient import TestClient
 
 from backend.app.config import Settings
 from backend.app.main import create_app
-import backend.app.services.workflow.jobs as jobs_service
 from ml.data.ingest import RAW_TRAIN_CSV
 from ml.paths import REPO_ROOT
 from ml.workflow import datasets
@@ -135,7 +130,7 @@ def spawn_in_process(
     from ml.workflow.train_job import run_job  # noqa: PLC0415
 
     run_job(dataset_id, job_id, objective, list(candidates))
-    return SimpleNamespace(pid=-1)
+    return SimpleNamespace(pid=-1, wait=lambda: 0)
 
 
 def write_status_file(
@@ -204,16 +199,10 @@ def workflow_roots(tmp_path_factory: pytest.TempPathFactory) -> SimpleNamespace:
     monkey = pytest.MonkeyPatch()
     monkey.setattr(datasets, "UPLOADS_ROOT", uploads)
     monkey.setattr(datasets, "WORKFLOW_MODELS_ROOT", models)
-    # The job service imported WORKFLOW_MODELS_ROOT by value (from-import), so
-    # its module global must be redirected too.
-    monkey.setattr(jobs_service, "WORKFLOW_MODELS_ROOT", models)
-    jobs_service._running_job = None  # noqa: SLF001 — process-global guard (§4.8)
-    jobs_service._orphan_sweep_done = True  # noqa: SLF001 — no surprise sweeps
+    # The service reads the shared root through the workflow datasets module.
     try:
         yield SimpleNamespace(tmp=tmp, uploads=uploads, models=models)
     finally:
-        jobs_service._running_job = None  # noqa: SLF001
-        jobs_service._orphan_sweep_done = True  # noqa: SLF001
         monkey.undo()
 
 
