@@ -85,9 +85,4 @@ def preprocess_preview(
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     finally:
         lock.release()
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ValueError as exc:
-        # Row-window and cleaner no-policy failures are client-actionable -> 400
-        # (mapping pinned in ml/workflow/prepare.py).
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
     return report.to_dict()
