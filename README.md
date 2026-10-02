@@ -24,18 +24,23 @@ the lowest possible error.
 
 ## Verification status
 
-Wave-10 release v1.1.0 (2026-08-08) — every row is backed by a committed
-report with pasted command output:
+**Current release truth:** [`RELEASE_STATUS.md`](RELEASE_STATUS.md). It is the
+only current release-status authority. Historical release notes and audits
+remain useful evidence, but their old test counts and security findings are
+not current assertions.
 
-| Area | Status | Evidence |
-|---|---|---|
-| Automated tests | **454 passed, 0 failed** (`pytest tests backend/tests -q`, re-run 2026-08-19) | `pytest.ini` suite, run below |
-| Forensic audit | **Completed** — full-codebase audit (waves A–C); all P2/P3 findings fixed and regression-tested (210 green at audit close) | `docs/audit/FINAL_AUDIT.md` |
-| Docker build + smoke | **Verified** (2026-08-07, v1.0.0 build — not re-run in wave 10) — both images build (backend 1.77 GB, frontend 93.9 MB) and pass an in-compose smoke test (`/predict`, `/market/clusters`, CORS preflight, in-container drift check); default ports 8000/8080, alt ports 18000/18080 via the opt-in `docker-compose.alt-ports.yml` | `reports/DOCKER_SMOKE.md` |
-| Browser E2E | **49/49 tests pass** (last full run 2026-08-18; `e2e/test-results/.last-run.json`) — Playwright (Chromium, headless) against the live API (backend :8200, Vite dev :5300); 4 spec files, no mocks in the live specs; coverage includes comps, market position, scenario explorer, confidence flags, prefill, and the 9-stage guided-workbench journey | `reports/E2E.md` |
-| Performance | Warm `/predict` **p50 ≈ 197 ms** (c=1, quiet machine, measured 2026-08-07 on the v1.0.0 build; ~800 ms before the wave-9b fix — contended runs measure 2–3× higher); first call on a fresh process ≈ 0.5 s; 0 errors in 2,000+ measured requests | `reports/PERFORMANCE.md` |
-| Reproducibility | **Audit PASS** — processed data + feature artifacts byte-identical on re-run; full retrain matches (ridge Δ = 0.0; calibrated RF Δ ≤ 2.22e-16, one float64 ulp) | `reports/REPRODUCIBILITY.md` |
-| Security | Audit applied — security-headers + request-body-limit hardening; 1 accepted CVE (`PYSEC-2026-3552`, `cryptography<50` pinned by mlflow 3.15.1, vulnerable code path unreachable here), now gated in CI (`pip-audit --strict` + `npm audit --audit-level=high`) | `reports/SECURITY.md` |
+| Area | Verification authority |
+|---|---|
+| Backend tests | GitHub Actions `python` job |
+| Frontend lint/build | GitHub Actions `frontend` job |
+| Compose validation | GitHub Actions `docker` job |
+| Docker runtime smoke | GitHub Actions `docker-build` job |
+| Security | `pip-audit` and `npm audit` in CI |
+| Browser E2E | `e2e/` suite; hosted CI status is reported explicitly when available |
+| Consolidated release verification | CI `verification` job artifact and `$GITHUB_STEP_SUMMARY` |
+
+Do not copy historical figures from `FINAL-RELEASE.md`, `reports/`, or
+`docs/audit/` into current status without rerunning the corresponding gate.
 
 ## Showcase
 
