@@ -249,7 +249,7 @@ export default function EvaluateStage() {
       <div className="section">
         <div className="section-head">
           <h2 className="section-title">
-            Evaluation — <span className="mono">{selectedCandidate}</span>
+            Evaluation — <span className="mono">{effectiveCandidate}</span>
           </h2>
           <span className="section-note mono">{selectedJobId}</span>
         </div>
