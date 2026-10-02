@@ -196,9 +196,12 @@ export default function NeighborhoodMap({
                 eventHandlers={{
                   keypress: (event) => {
                     if (event.originalEvent?.key !== 'Enter') return
-                    // Leaflet opens the popup on Enter; move focus into it so
-                    // Tab reaches the "Estimate value" link and Esc (map
-                    // keyboard handler) closes the popup (AUDIT §5.4 fix).
+                    // Leaflet opens the popup on Enter; remember the keyboard
+                    // origin so popupopen can move focus after Leaflet mounts it.
+                    keyboardPopup.current = point.neighborhood
+                  },
+                  keydown: (event) => {
+                    if (event.originalEvent?.key !== 'Enter') return
                     keyboardPopup.current = point.neighborhood
                   },
                   popupopen: () => {
@@ -211,11 +214,14 @@ export default function NeighborhoodMap({
                           .get(point.neighborhood)
                           ?.getPopup()
                           ?.getElement()
+                        if (!popupEl) return
                         const target =
-                          popupEl?.querySelector('.leaflet-popup-content a') ??
-                          popupEl?.querySelector('.leaflet-popup-close-button')
-                        target?.focus()
-                      }, 0)
+                          popupEl.querySelector('.leaflet-popup-content a') ??
+                          popupEl.querySelector('.leaflet-popup-close-button') ??
+                          popupEl
+                        if (target === popupEl) popupEl.setAttribute('tabindex', '-1')
+                        target.focus()
+                      }, 50)
                     }
                   },
                   popupclose: () => {
