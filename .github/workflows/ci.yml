@@ -32,17 +32,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Strict dependency audit: the build fails on any known fixable CVE.
-      # The single accepted exception is cryptography 49.0.0 (CVE-2026-69247 /
-      # PYSEC-2026-3552): the only fix (50.0.0) violates mlflow 3.15.1's
-      # cryptography<50 pin and the vulnerable API is never called here —
-      # see reports/SECURITY.md §1.1. Remove the ignore once mlflow permits
-      # cryptography>=50. The slim backend requirements carry no accepted
-      # findings, so they are audited without any ignore.
+      # Dependency security is a hard gate. No historical exception is carried
+      # into the upgraded stack; the current resolver/audit result is the truth.
       - name: Audit Python dependencies
         run: |
           pip install pip-audit
-          pip-audit --strict --ignore-vuln PYSEC-2026-3552 -r requirements.txt
+          pip-audit --strict -r requirements.txt
           pip-audit --strict -r backend/requirements.txt
 
       # pytest.ini sets pythonpath=.; testpaths = tests backend/tests.
@@ -124,23 +119,101 @@ jobs:
       - name: Start backend container
         run: docker run -d --name proppulse-backend-ci -p 8000:8000 proppulse-backend:ci
 
-      # /health only answers once uvicorn is up and the model artifacts are
-      # loaded; poll (2s interval, 60 tries) instead of a fixed sleep so the
-      # gate is as fast as the warm-up allows but bounded at ~120s.
-      - name: Smoke-test backend health
+      # /ready is the deployment readiness gate: it returns 200 only after
+      # required champion artifacts are loaded. Poll it with the same bounded
+      # 120s warm-up budget; /health remains the liveness smoke above it.
+      - name: Smoke-test backend health and readiness
         run: |
           for i in $(seq 1 60); do
-            status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || true)
-            if [ "$status" = "200" ]; then
-              echo "backend healthy after $((i * 2))s"
+            health=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || true)
+            ready=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/ready || true)
+            if [ "$health" = "200" ] && [ "$ready" = "200" ]; then
+              echo "backend healthy and ready after $((i * 2))s"
               exit 0
             fi
             sleep 2
           done
-          echo "backend did not return 200 from /health within 120s — container logs:"
+          echo "backend did not become healthy+ready within 120s — container logs:"
           docker logs proppulse-backend-ci
           exit 1
 
       - name: Remove backend container
         if: always()
         run: docker rm -f proppulse-backend-ci
+
+  # One generated source of release evidence. This job never hides an upstream
+  # failure: it writes the statuses even when a gate failed, uploads the report,
+  # then returns failure so a release cannot accidentally be marked green.
+  verification:
+    if: ${{ always() }}
+    needs: [python, frontend, docker, docker-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate verification report
+        env:
+          PYTHON_RESULT: ${{ needs.python.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          DOCKER_RESULT: ${{ needs.docker.result }}
+          DOCKER_BUILD_RESULT: ${{ needs.docker-build.result }}
+          COMMIT_SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          mkdir -p reports/verification
+          cat > reports/verification/latest.md <<EOF
+          # PropPulse CI verification
+
+          - Commit: `$COMMIT_SHA`
+          - Ref: `$REF_NAME`
+          - Run: [$RUN_ID]($RUN_URL)
+
+          | Gate | Result |
+          |---|---|
+          | Python tests + dependency audit | $PYTHON_RESULT |
+          | Frontend audit + lint + build | $FRONTEND_RESULT |
+          | Compose validation | $DOCKER_RESULT |
+          | Docker build + health/readiness smoke | $DOCKER_BUILD_RESULT |
+
+          ## Release gate
+
+          The exact commit is release-verifiable only when every required upstream
+          gate is `success`. Historical audit/report counts are not substituted.
+          EOF
+          cat > reports/verification/latest.json <<EOF
+          {
+            "commit": "$COMMIT_SHA",
+            "ref": "$REF_NAME",
+            "run_id": "$RUN_ID",
+            "run_url": "$RUN_URL",
+            "gates": {
+              "python": "$PYTHON_RESULT",
+              "frontend": "$FRONTEND_RESULT",
+              "docker": "$DOCKER_RESULT",
+              "docker-build": "$DOCKER_BUILD_RESULT"
+            }
+          }
+          EOF
+          cat reports/verification/latest.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verification report
+        uses: actions/upload-artifact@v4
+        with:
+          name: proppulse-verification-${{ github.sha }}
+          path: reports/verification/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce release gate
+        env:
+          PYTHON_RESULT: ${{ needs.python.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          DOCKER_RESULT: ${{ needs.docker.result }}
+          DOCKER_BUILD_RESULT: ${{ needs.docker-build.result }}
+        run: |
+          test "$PYTHON_RESULT" = success
+          test "$FRONTEND_RESULT" = success
+          test "$DOCKER_RESULT" = success
+          test "$DOCKER_BUILD_RESULT" = success
