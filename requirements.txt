@@ -1,9 +1,10 @@
 # PropPulse — full development environment (ML + API + notebooks + tests).
-# Python 3.14.5 (Windows), pinned to the versions verified installed in .venv.
+# Python 3.14 development / Python 3.12 CI. Pins are release candidates until CI
+# verifies the full resolver, test suite, audits, and Docker build.
 #
 # Pin rationale (see docs/DECISIONS.md ADR-6):
-#   - pandas/numpy/numba remain on the verified compatible ML stack.
-#   - mlflow==3.16.1 removes the previous tracking-layer blocker on cryptography>=50.
+#   - pandas/numpy/numba remain on the established compatible ML stack.
+#   - mlflow + cryptography are upgraded together so CI can verify the advisory path.
 #   - filelock is direct because workflow admission must work across API processes.
 
 # --- core science ---
