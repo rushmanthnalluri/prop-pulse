@@ -2,7 +2,7 @@
 
 Job execution is a subprocess (``python -m ml.workflow.train_job``); this
 router only validates, spawns and reads the status-file protocol. One job at
-a time server-wide (409 otherwise, §4.8).
+at a time; submissions remain queue-safe while the cross-process trainer admission lock serializes active training (§4.8).
 """
 from __future__ import annotations
 
