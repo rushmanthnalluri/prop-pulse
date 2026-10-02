@@ -253,8 +253,8 @@ jobs:
           cat > reports/verification/latest.md <<EOF
           # PropPulse CI verification
 
-          - Commit: `$COMMIT_SHA`
-          - Ref: `$REF_NAME`
+          - Commit: \`$COMMIT_SHA\`
+          - Ref: \`$REF_NAME\`
           - Run: [$RUN_ID]($RUN_URL)
 
           | Gate | Result |
@@ -268,7 +268,7 @@ jobs:
           ## Release gate
 
           The exact commit is release-verifiable only when every required upstream
-          gate is `success`. Historical audit/report counts are not substituted.
+          gate is \`success\`. Historical audit/report counts are not substituted.
           EOF
           cat > reports/verification/latest.json <<EOF
           {
