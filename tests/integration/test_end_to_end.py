@@ -305,6 +305,7 @@ def test_drift_pipeline_clean_window_no_drift(
         "drifted_features",
         "calendar_drift_features",
         "warn_features",
+        "degenerate_features",
         "per_feature_psi",
         "max_psi",
         "prediction_psi",
