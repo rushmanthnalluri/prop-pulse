@@ -156,7 +156,7 @@ jobs:
           PYTHON_RESULT: ${{ needs.python.result }}
           FRONTEND_RESULT: ${{ needs.frontend.result }}
           DOCKER_RESULT: ${{ needs.docker.result }}
-          DOCKER_BUILD_RESULT: ${{ needs.docker-build.result }}
+          DOCKER_BUILD_RESULT: ${{ needs['docker-build'].result }}
           COMMIT_SHA: ${{ github.sha }}
           REF_NAME: ${{ github.ref_name }}
           RUN_ID: ${{ github.run_id }}
