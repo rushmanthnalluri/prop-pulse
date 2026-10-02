@@ -1,5 +1,5 @@
 # PropPulse backend — slim serving subset (root requirements.txt is the full dev set).
-# Same verified pins (Python 3.14.5). shap is included — it installed cleanly.
+# Runtime pins are aligned with requirements.txt; CI is the compatibility proof.
 # numpy is held at <2.5 by numba (shap runtime dependency); see docs/DECISIONS.md ADR-6.
 fastapi==0.142.2
 uvicorn[standard]==0.53.0
