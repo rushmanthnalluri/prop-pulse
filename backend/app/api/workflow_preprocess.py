@@ -14,7 +14,7 @@ from ml.workflow.datasets import UnknownDataset
 from ml.workflow.prepare import prepare_dataset, preview_report
 
 from backend.app.api.deps import get_workflow_dataset_service
-from backend.app.services.workflow.training_lock import (
+from ml.workflow.admission import (
     TrainingAdmissionLock,
     read_training_owner,
 )
