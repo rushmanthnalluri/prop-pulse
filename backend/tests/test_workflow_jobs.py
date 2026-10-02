@@ -23,6 +23,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 import backend.app.services.workflow.jobs as jobs_service
+from ml.workflow.admission import TrainingAdmissionLock
 from backend.tests.conftest import (
     JOB_ID_RE,
     MINIMAL_PROPERTY_PAYLOAD,
@@ -36,20 +37,23 @@ from backend.tests.conftest import (
 pytestmark = pytest.mark.usefixtures("workflow_roots")
 
 
-def _hanging_spawn(calls: list[tuple[str, str]]) -> Any:
-    """A spawn that never starts: the API-written ``queued`` status stays."""
+def _hanging_spawn(calls: list[tuple[str, str]], locks: dict[str, TrainingAdmissionLock]) -> Any:
+    """A fake trainer that holds the real shared lock and never exits."""
 
     def _spawn(
         dataset_id: str, job_id: str, objective: str, candidates: list[str], job_dir: Any
     ) -> SimpleNamespace:
+        lock = TrainingAdmissionLock(
+            dataset_id=dataset_id, job_id=job_id, operation="training-test"
+        )
+        assert lock.acquire()
+        locks[job_id] = lock
         calls.append((dataset_id, job_id))
-        return SimpleNamespace(pid=os.getpid())
+        return SimpleNamespace(pid=os.getpid(), wait=lambda: 0)
 
     return _spawn
-
-
 def _force_failed(roots: SimpleNamespace, dataset_id: str, job_id: str) -> None:
-    """Mark a job's status file failed and clear the in-memory single-job guard."""
+    """Mark a job failed so the test can delete its dataset."""
     status_path = roots.models / dataset_id / "jobs" / job_id / "status.json"
     import json
 
@@ -57,7 +61,6 @@ def _force_failed(roots: SimpleNamespace, dataset_id: str, job_id: str) -> None:
     payload["status"] = "failed"
     payload["error"] = "terminated by the test"
     status_path.write_text(json.dumps(payload), encoding="utf-8")
-    jobs_service._running_job = None  # noqa: SLF001
 
 
 # ---------------------------------------------------------------------------
@@ -160,7 +163,8 @@ class TestConcurrencyGuard:
     ) -> None:
         """A hanging job blocks every other job server-wide and pins its dataset."""
         calls: list[tuple[str, str]] = []
-        monkeypatch.setattr(jobs_service, "spawn_training_job", _hanging_spawn(calls))
+        locks: dict[str, TrainingAdmissionLock] = {}
+        monkeypatch.setattr(jobs_service, "spawn_training_job", _hanging_spawn(calls, locks))
         dataset_id = upload_dataset(
             workflow_client, ames_slice_csv(), filename="busy.csv"
         ).json()["dataset_id"]
@@ -201,6 +205,7 @@ class TestConcurrencyGuard:
             assert live["results"]["ridge"]["status"] == "pending"
         finally:
             _force_failed(workflow_roots, dataset_id, job_id)
+            locks[job_id].release()
             assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
 
     def test_spawn_failure_503_marks_failed(
@@ -225,7 +230,6 @@ class TestConcurrencyGuard:
             )
             assert response.status_code == 503
             assert "could not spawn" in response.json()["detail"]
-            assert jobs_service._running_job is None  # noqa: SLF001 — guard not held
 
             jobs = workflow_client.get(f"/workflow/datasets/{dataset_id}/jobs").json()
             assert len(jobs) == 1
@@ -248,11 +252,7 @@ class TestOrphanSweepAndNormalization:
         write_status_file(workflow_roots.models, "ames", "job_0000000b", status="queued")
         write_status_file(workflow_roots.models, "ames", "job_0000000c", status="done")
 
-        jobs_service._orphan_sweep_done = False  # simulate a fresh API process
-        try:
-            flipped = jobs_service.sweep_orphaned_jobs()
-        finally:
-            jobs_service._orphan_sweep_done = True
+        flipped = jobs_service.sweep_orphaned_jobs()
         assert flipped == 2
 
         for job_id in ("job_0000000a", "job_0000000b"):
@@ -264,11 +264,7 @@ class TestOrphanSweepAndNormalization:
         assert untouched["status"] == "done"
 
         # The sweep is once-per-process: a second call flips nothing new.
-        jobs_service._orphan_sweep_done = False
-        try:
-            assert jobs_service.sweep_orphaned_jobs() == 0
-        finally:
-            jobs_service._orphan_sweep_done = True
+        assert jobs_service.sweep_orphaned_jobs() == 0
 
     def test_complete_normalized_to_done(
         self, workflow_client: TestClient, workflow_roots: SimpleNamespace
