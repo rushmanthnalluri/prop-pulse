@@ -17,6 +17,7 @@
  * poll is a plain deadline loop, not `expect.poll`).
  */
 import { execFile, spawn } from 'node:child_process'
+import fs from 'node:fs'
 import path from 'node:path'
 import os from 'node:os'
 import { fileURLToPath } from 'node:url'
@@ -56,10 +57,11 @@ export async function ensureBackend() {
   }
   if (wasUp) return
 
+  const venvPython = os.platform() === 'win32'
+    ? path.join(REPO_ROOT, '.venv', 'Scripts', 'python.exe')
+    : path.join(REPO_ROOT, '.venv', 'bin', 'python')
   const python = process.env.PYTHON_BIN ||
-    (os.platform() === 'win32'
-      ? path.join(REPO_ROOT, '.venv', 'Scripts', 'python.exe')
-      : path.join(REPO_ROOT, '.venv', 'bin', 'python'))
+    (fs.existsSync(venvPython) ? venvPython : (os.platform() === 'win32' ? 'python' : 'python3'))
   spawn(
     python,
     ['-m', 'uvicorn', 'backend.app.main:app', '--port', String(BACKEND_PORT)],
