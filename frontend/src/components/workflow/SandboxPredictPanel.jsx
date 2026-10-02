@@ -398,7 +398,21 @@ export default function SandboxPredictPanel() {
       : null
 
   const submit = (payload) => {
-    if (!selection.jobId || !selection.candidate) return
+    const entry = roster.find((item) => item.job.job_id === selection.jobId)
+    const candidate = entry?.candidates.includes(selection.candidate)
+      ? selection.candidate
+      : entry
+        ? jobBest(entry.job) ?? entry.candidates[0]
+        : null
+    if (!entry || !candidate) {
+      // The roster can change between render and submit. Refresh instead of
+      // ever submitting a job/candidate pair that no longer exists.
+      reload()
+      return
+    }
+    if (candidate !== selection.candidate) {
+      setSelection({ jobId: entry.job.job_id, candidate })
+    }
     abortRef.current?.abort() // supersede any in-flight run
     const controller = new AbortController()
     abortRef.current = controller
@@ -406,7 +420,7 @@ export default function SandboxPredictPanel() {
     setSubmitting(true)
     setServerError(null)
     setSubmitError(null)
-    wf.sandboxPredict(selection.jobId, selection.candidate, payload, controller.signal)
+    wf.sandboxPredict(entry.job.job_id, candidate, payload, controller.signal)
       .then((res) => {
         setResult(res)
         setSubmitting(false)
@@ -420,11 +434,10 @@ export default function SandboxPredictPanel() {
         if (err?.name === 'AbortError') return // unmounted or superseded
         setSubmitting(false)
         if (err?.status === 422) {
-          // Field-level mapping happens inside PropertyForm via serverError.
           setServerError(err)
           toast.error('The sandbox model rejected the payload', err?.message || undefined)
         } else {
-          // 404/409: the job went away or is no longer done — refresh the roster.
+          // 404/409: the job went away, changed state, or became stale.
           setSubmitError(err)
           if (err?.status === 404 || err?.status === 409) reload()
           toast.error('Sandbox prediction failed', err?.message || undefined)
