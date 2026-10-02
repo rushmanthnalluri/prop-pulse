@@ -230,7 +230,7 @@ class WorkflowJobService:
     """Stateless job facade; admission is cross-process and filesystem-backed."""
 
     def __init__(self) -> None:
-        sweep_orphaned_jobs()
+        pass
 
     # -- create (§3.9) --------------------------------------------------------
 
