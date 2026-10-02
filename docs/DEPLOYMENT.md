@@ -46,11 +46,13 @@ cd frontend && npm install && npm run build && npm run preview   # http://localh
 
 Operational notes:
 
-- **Use a single uvicorn worker.** Request counters and the drift summary
-  reader are in-memory per process, and the prediction log writer is
-  thread-safe but not multi-process-aware; `--workers > 1` would split
-  `/metrics` state across workers. Put a process manager (systemd, NSSM) in
-  front for restarts instead.
+- **Multiple uvicorn workers are supported for serving, but not all state is global.**
+  Workflow training/preprocessing uses a cross-process filesystem admission lock;
+  every instance must share `PROPULSE_WORKFLOW_MODELS_ROOT` on storage with reliable
+  file-lock semantics, or route workflow operations to one instance. Runtime request
+  counters remain process-local, so aggregate them outside the app (Prometheus,
+  OpenTelemetry, or a log collector). Put a process manager (systemd, NSSM) in
+  front for restarts.
 - Champions load in the lifespan startup (the calibrated RF takes a few
   seconds) and the SHAP explainer is warmed during startup — the first
   `/predict` costs ≈0.5 s, warm p50 ≈197 ms (quiet machine; expect 2–3×
@@ -83,14 +85,15 @@ docker compose -f docker-compose.yml -f docker-compose.alt-ports.yml up --build
 
 | Service | Port | Notes |
 |---|---|---|
-| `backend` | 8000 | Healthcheck `GET /health` (start_period 40s for champion loading); bind-mounts `./logs` and `./reports/drift` so the host and container share the prediction log + drift report |
+| `backend` | 8000 | Healthcheck `GET /health` (start_period 40s for champion loading); use `GET /ready` for readiness after required model artifacts are loaded; bind-mounts `./logs` and `./reports/drift` so the host and container share the prediction log + drift report |
 | `frontend` | 8080→80 | `VITE_API_URL` baked at build time (default `http://localhost:8000`); `depends_on: backend healthy` |
 | `mlflow` (profile `mlflow`) | 5000 | `ghcr.io/mlflow/mlflow:v3.15.1` serving the `./mlruns` file store (`MLFLOW_ALLOW_FILE_STORE=true` set in the service env) |
 
 Smoke check once up:
 
 ```bash
-curl http://localhost:8000/health   # {"status":"ok","models_loaded":{"regression":true,"classification":true}}
+curl http://localhost:8000/health   # liveness
+curl http://localhost:8000/ready    # readiness; 503 until required model artifacts are loaded
 curl http://localhost:8080/         # SPA shell
 ```
 
@@ -156,7 +159,7 @@ noisy.
 
 ## 5. CI pipeline
 
-`.github/workflows/ci.yml` — on push to `main` and on PRs, three jobs:
+`.github/workflows/ci.yml` — on push to `main` and on PRs, the functional, frontend, compose, Docker-smoke, and consolidated verification jobs:
 
 1. **python** (ubuntu-latest, Python 3.12): `pip install -r requirements.txt`
    → strict `pip-audit` gate over both `requirements.txt` (one documented,
@@ -171,9 +174,7 @@ noisy.
    config -q` (merged alt-ports config) — static validation only; no image
    builds, no pushes, no secrets.
 
-The dev environment pins were verified on Python 3.14 while CI runs 3.12;
-all pinned packages publish cp312 wheels, but the first CI run is the real
-proof.
+CI is the compatibility proof for the pinned Python and Node dependency set.
 
 ## 6. Production checklist (controls already in place)
 
@@ -226,14 +227,19 @@ The service is a development-grade deployment. For production:
   per prediction; the drift check reads the tail, so rotation is safe);
   ship backend logs to a collector; the drift cron already appends to a
   logfile — rotate that too.
-- **Process supervision:** systemd/NSSM restart policies on bare metal;
-  `restart: unless-stopped` is already set in compose. Keep one uvicorn
-  worker (see §2) or externalize the metrics state first.
+- **Process supervision / scaling:** systemd/NSSM restart policies on bare metal;
+  `restart: unless-stopped` is already set in compose. Serving workers may scale,
+  but workflow training/preprocessing must share a reliable filesystem lock root or
+  be routed to one instance. Request counters are process-local and should be
+  aggregated by the deployment telemetry layer.
 - **Image hygiene:** pin base images by digest, run a vulnerability scan on
   first real build, and keep the non-root user.
 - **Artifact governance:** back up `models/` (it is the registry); promote
   new champions only through `ml.evaluation.evaluate` + human review —
   wire the drift report's `retraining_recommended` flag to an alert, not to
   a retraining job.
-- **Observability:** scrape/alert on `GET /metrics` (errors_total,
-  avg_latency_ms, drift summary) and set up uptime checks on `/health`.
+- **Observability:** scrape/alert on `GET /metrics` (requests_total,
+  errors_total, requests_in_flight, avg_latency_ms, last_request_at, drift summary);
+  propagate the `X-Request-ID` response header into logs/traces, use `/health` for
+  liveness and `/ready` for readiness, and alert on sustained 5xx/error-rate or
+  drift conditions.
