@@ -9,7 +9,7 @@
  * progress, not animated). The panel's job id is mirrored into ?job=
  * (restored on back/reload, the same param EvaluateStage honors) and scoped
  * to its dataset — a mid-job dataset switch hides it rather than showing a
- * foreign job (QA m2/m3). 409 (one job at a time, server-wide) renders an
+ * foreign job (QA m2/m3). 409 admission conflicts are rendered inline when the trainer lock is held; queued submissions remain valid.
  * inline notice naming the running job with a "view it" action; 400 renders
  * the row-window reason. A terminal job fires a toast + reloadState()
  * (stepper gating) and refreshes the history + comparison.
@@ -467,7 +467,7 @@ export default function TrainStage() {
         <h1 className="page-title">Model Training</h1>
         <p className="page-desc">
           Train your own sandboxed candidates on the prepared splits of the active dataset.
-          Everything is validation-scored, one job runs at a time, and sandbox models never
+          Everything is validation-scored; queued jobs are admitted one at a time by the trainer, and sandbox models never
           replace the PropPulse champion.
         </p>
         <p className="page-meta">
@@ -486,7 +486,7 @@ export default function TrainStage() {
       <div className="section">
         <div className="section-head">
           <h2 className="section-title">Model selection</h2>
-          <span className="section-note">one job at a time · server-wide</span>
+          <span className="section-note">queued jobs · one trainer at a time</span>
         </div>
         <p className="section-sub">
           Pick an objective, tick its candidates, and train. Every fit is a real background job
