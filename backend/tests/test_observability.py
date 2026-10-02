@@ -41,6 +41,7 @@ def test_metrics_exposes_in_flight_and_last_request(app) -> None:
         response = client.get('/metrics')
         assert response.status_code == 200
         body = response.json()
-        assert body['requests_in_flight'] == 0
+        # The /metrics request is included while its snapshot is generated.
+        assert body['requests_in_flight'] == 1
         assert body['requests_total'] >= 2
         assert body['last_request_at'] is not None
