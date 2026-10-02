@@ -14,6 +14,10 @@ from ml.workflow.datasets import UnknownDataset
 from ml.workflow.prepare import prepare_dataset, preview_report
 
 from backend.app.api.deps import get_workflow_dataset_service
+from backend.app.services.workflow.training_lock import (
+    TrainingAdmissionLock,
+    read_training_owner,
+)
 from backend.app.schemas.workflow import PreprocessPreviewRequest, PreprocessStatusOut
 from backend.app.services.workflow import WorkflowDatasetService
 
@@ -56,9 +60,31 @@ def preprocess_preview(
     """
     service.get_dataset(dataset_id)  # 404 gate
     config = body.config  # already validated — the request schema IS PrepareConfig
+
+    # Preparation rewrites the split/artifact state that a training job uses.
+    # Hold the same cross-process admission lock for the whole preparation so
+    # a re-prepare cannot race a running trainer and invalidate its fingerprint.
+    lock = TrainingAdmissionLock(
+        dataset_id=dataset_id, job_id=None, operation="preprocess"
+    )
+    if not lock.acquire():
+        owner = read_training_owner()
+        detail = (
+            f"cannot re-prepare while job {owner.get('job_id')} on dataset "
+            f"{owner.get('dataset_id')} is running"
+            if owner
+            else "cannot re-prepare while another training/preprocessing operation is running"
+        )
+        raise HTTPException(status_code=409, detail=detail)
     try:
         report = prepare_dataset(dataset_id, config)
     except UnknownDataset as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        # Row-window and cleaner failures are client-actionable -> 400.
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    finally:
+        lock.release()
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except ValueError as exc:
         # Row-window and cleaner no-policy failures are client-actionable -> 400
