@@ -35,6 +35,8 @@ from backend.app.api import (
 )
 from backend.app.config import Settings, get_settings
 from backend.app.monitoring.middleware import (
+    REQUEST_ID_HEADER,
+    REQUEST_ID_SCOPE_KEY,
     START_TIME_SCOPE_KEY,
     MetricsMiddleware,
     route_template_key,
@@ -315,7 +317,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ``MetricsMiddleware`` never sees these failures, so the error is
         counted into the monitoring service here directly (AUD-03).
         """
-        logger.exception("unhandled error on %s %s", request.method, request.url.path)
+        request_id = request.scope.get(REQUEST_ID_SCOPE_KEY)
+        logger.exception("unhandled error on %s %s request_id=%s", request.method, request.url.path, request_id)
         monitoring = getattr(request.app.state, "monitoring_service", None)
         if monitoring is not None:
             try:
@@ -331,7 +334,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error"},
-            headers=SECURITY_HEADERS,
+            headers={**SECURITY_HEADERS, REQUEST_ID_HEADER: str(request_id) if request_id else ""},
         )
 
     return app
