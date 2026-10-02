@@ -1,25 +1,8 @@
-"""Shared fixtures/helpers for the WF-B4 workflow integration tests (workflow-architecture §8/§9).
+"""Shared fixtures/helpers for the workflow integration tests.
 
-This file contains the shared fixtures/helpers for the workflow integration suite.\n
-Design notes:
-
-- **One app for all workflow modules.** ``create_app`` loads the champions and
-  warms the SHAP singleton (~11 s measured), so every ``test_workflow_*``
-  module shares a single session-scoped ``TestClient``. The app's prediction
-  log is a session tmp file, so even the champion-parity calls never touch the
-  real ``logs/predictions.jsonl``.
-- **Per-module storage roots.** ``workflow_roots`` redirects the WF-B1 storage
-  roots (``ml.workflow.datasets.UPLOADS_ROOT`` / ``WORKFLOW_MODELS_ROOT`` plus
-  the job service's import-time copy of the latter) onto a per-module tmp dir
-  — the WF-B1 test pattern (``tests/ml/workflow/test_datasets.py``) extended to
-  the HTTP layer. It also resets the job service's process-global guard
-  (``_running_job``) and sweep flag (``_orphan_sweep_done``) so modules stay
-  independent of each other and of execution order.
-- **Real subprocesses get the env hooks.** Modules that spawn real training
-  subprocesses through the API additionally request ``workflow_subprocess_env``
-  (``PROPULSE_UPLOADS_ROOT`` / ``PROPULSE_WORKFLOW_MODELS_ROOT`` /
-  ``PYTHONPATH`` — the documented redirection hooks of
-  ``ml.workflow.train_job``), so subprocess writes land in the same tmp roots.
+The workflow tests isolate uploaded datasets and sandbox models per module.
+Cross-process training/preprocessing concurrency is enforced by the shared
+filesystem admission lock in ml.workflow.admission.
 """
 from __future__ import annotations
 
