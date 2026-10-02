@@ -243,3 +243,43 @@ The service is a development-grade deployment. For production:
   propagate the `X-Request-ID` response header into logs/traces, use `/health` for
   liveness and `/ready` for readiness, and alert on sustained 5xx/error-rate or
   drift conditions.
+
+## Workflow scaling and coordination
+
+The guided workflow uses a cross-process filesystem admission lock at
+`models/workflow/.training.lock`. This replaces the old process-local Python
+mutex and works when multiple API workers share the same workflow storage.
+
+**Single replica / local disk:** supported. The API, trainer subprocess, and
+workflow model directory must be on the same filesystem.
+
+**Multiple replicas:** do not point several replicas at independent ephemeral
+workflow directories. Training admission and job artifacts are shared state and
+must live on storage with reliable cross-replica file-lock semantics. If the
+platform cannot guarantee those semantics, run one workflow-serving replica or
+move admission/job state to a database/queue coordinator before scaling out.
+
+The lock owner metadata is stored beside the lock so an operator can identify
+the dataset/job currently holding admission. The trainer owns the lock for the
+full fit, so restarting an API worker does not release an active trainer's
+admission.
+
+### Health and readiness
+
+- `GET /health` is a liveness check and may succeed while model startup is
+  incomplete.
+- `GET /ready` is the deployment readiness gate. It returns HTTP 200 only after
+  the required serving models/artifacts are loaded; otherwise it returns HTTP
+  503.
+- Production load balancers should route traffic only after `/ready` succeeds
+  and should remove an instance when it stops being ready.
+
+### Operational correlation
+
+Every response receives an `X-Request-ID` value. Clients may supply a safe
+existing identifier; otherwise the API generates one. Include this identifier
+in support tickets and correlate it with server logs.
+
+The `/metrics` response includes total requests, 5xx count, in-flight requests,
+last request time, average latency, route-template counters, and the latest
+drift summary.
