@@ -25,10 +25,10 @@ queued -> (preparing ->) running -> done|failed — and after every candidate::
      "error": null | "<message>",
      "created_at": "<iso>", "finished_at": null | "<iso>"}
 
-``prepare_fingerprint`` (red-team F1) is persisted when the job starts —
-after the auto-prepare self-heal, so it always names the split the job
-actually trains on. The serving layer compares it against the *current*
-prepare fingerprint to flag stale-split results after a re-prepare.
+``prepare_fingerprint`` (red-team F1) is bound by the API before spawn
+and preserved by the trainer child, so it names the preparation state current
+when the job was accepted. The trainer refuses a mismatch before fitting;
+serving also rejects stale evaluation/prediction pairs.
 
 A failed candidate never fails the job (§6.4); the job is ``done`` when at
 least one candidate succeeded, ``failed`` when every candidate failed or the
@@ -191,11 +191,25 @@ def run_job(
         return 2
 
     started = time.perf_counter()
-    created_at = _utc_now_iso()
+    status_path = job_dir / _STATUS_NAME
+    existing_status: dict[str, Any] = {}
+    if status_path.exists():
+        try:
+            payload = json.loads(status_path.read_text(encoding='utf-8'))
+            if isinstance(payload, dict):
+                existing_status = payload
+        except (OSError, ValueError):
+            logger.warning(
+                'job %s has an unreadable pre-created status file; rebuilding it',
+                job_id,
+            )
+    created_at = str(existing_status.get('created_at') or _utc_now_iso())
+    bound_fingerprint = existing_status.get('prepare_fingerprint')
     status: dict[str, Any] = {
         "job_id": job_id,
         "dataset_id": dataset_id,
         "objective": objective,
+        "prepare_fingerprint": bound_fingerprint,
         "status": "queued",
         "progress": {
             "done": 0,
