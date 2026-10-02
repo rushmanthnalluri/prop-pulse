@@ -41,10 +41,7 @@ import pandas as pd
 from fastapi import HTTPException
 
 from ml.paths import REPO_ROOT
-from ml.workflow.admission import (
-    TrainingAdmissionLock,
-    read_training_owner,
-)
+from ml.workflow.admission import TrainingAdmissionLock
 from ml.workflow.datasets import (
     UnknownDataset,
     get_record,
@@ -266,63 +263,42 @@ class WorkflowJobService:
             raise HTTPException(status_code=400, detail=reason)
 
         job_id = "job_" + uuid.uuid4().hex[:8]
-        lock = TrainingAdmissionLock(
-            dataset_id=dataset_id, job_id=job_id, operation="training"
-        )
-        if not lock.acquire():
-            owner = read_training_owner()
-            if owner:
-                detail = (
-                    f"job {owner.get('job_id') or '<unknown>'} "
-                    f"(dataset {owner.get('dataset_id') or '<unknown>'}) is already "
-                    "running — one training/preprocessing operation at a time server-wide"
-                )
-            else:
-                detail = "another training/preprocessing operation is already running server-wide"
-            raise HTTPException(status_code=409, detail=detail)
-
+        job_dir = _jobs_dir(dataset_id) / job_id
+        report = preview_report(dataset_id)
+        prepare_fingerprint = report.fingerprint if report is not None else None
+        status_payload: dict[str, Any] = {
+            "job_id": job_id,
+            "dataset_id": dataset_id,
+            "objective": objective,
+            "prepare_fingerprint": prepare_fingerprint,
+            "status": "queued",
+            "progress": {
+                "done": 0,
+                "total": len(candidates),
+                "current": None,
+                "elapsed_s": 0.0,
+            },
+            "results": {name: {"status": "pending"} for name in candidates},
+            "error": None,
+            "created_at": _utc_now_iso(),
+            "finished_at": None,
+        }
+        _write_status_file(job_dir, status_payload)
         try:
-            job_dir = _jobs_dir(dataset_id) / job_id
-            report = preview_report(dataset_id)
-            prepare_fingerprint = report.fingerprint if report is not None else None
-            status_payload: dict[str, Any] = {
-                "job_id": job_id,
-                "dataset_id": dataset_id,
-                "objective": objective,
-                "prepare_fingerprint": prepare_fingerprint,
-                "status": "queued",
-                "progress": {
-                    "done": 0,
-                    "total": len(candidates),
-                    "current": None,
-                    "elapsed_s": 0.0,
-                },
-                "results": {name: {"status": "pending"} for name in candidates},
-                "error": None,
-                "created_at": _utc_now_iso(),
-                "finished_at": None,
-            }
+            spawn_training_job(
+                dataset_id, job_id, objective, candidates, job_dir
+            )
+        except OSError as exc:
+            status_payload["status"] = "failed"
+            status_payload["error"] = (
+                f"could not spawn the training subprocess ({exc.__class__.__name__})"
+            )
+            status_payload["finished_at"] = _utc_now_iso()
             _write_status_file(job_dir, status_payload)
-            try:
-                spawn_training_job(
-                    dataset_id, job_id, objective, candidates, job_dir
-                )
-            except OSError as exc:
-                status_payload["status"] = "failed"
-                status_payload["error"] = (
-                    f"could not spawn the training subprocess ({exc.__class__.__name__})"
-                )
-                status_payload["finished_at"] = _utc_now_iso()
-                _write_status_file(job_dir, status_payload)
-                raise HTTPException(
-                    status_code=503,
-                    detail=f"could not spawn the training subprocess ({exc.__class__.__name__})",
-                ) from exc
-        finally:
-            # The child trainer acquires the same shared lock for its full
-            # lifetime. Releasing here ensures the lock survives an API-worker
-            # restart while the child is still fitting.
-            lock.release()
+            raise HTTPException(
+                status_code=503,
+                detail=f"could not spawn the training subprocess ({exc.__class__.__name__})",
+            ) from exc
 
         logger.info(
             "accepted training job %s (dataset=%s objective=%s candidates=%s fingerprint=%s)",
