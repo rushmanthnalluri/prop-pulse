@@ -17,7 +17,7 @@ be used as current pass/fail or vulnerability status.
 | Compose validation | GitHub Actions `docker` job |
 | Docker image + runtime smoke | GitHub Actions `docker-build` job |
 | Security dependencies | `pip-audit` + `npm audit` in CI |
-| Browser E2E | `e2e/` suite; not yet a hosted CI gate |
+| Browser E2E | `e2e/` suite + GitHub Actions `e2e` job |
 | Consolidated verification | CI `verification` job artifact + job summary |
 
 ## Hardening status
@@ -32,7 +32,7 @@ be used as current pass/fail or vulnerability status.
 | P2 | Training lock | Cross-process filesystem admission lock; trainer owns it during the fit |
 | P2 | PSI degenerate features | Effective-bin metadata is validated and degenerate features are surfaced in drift reports |
 | P3 | Historical documentation contradictions | Current truth separated from historical evidence |
-| P3 | Dependency upgrades | Runtime pins upgraded; CI must validate resolver/audit compatibility |
+| P3 | Dependency upgrades | Runtime pins upgraded and frontend transitive advisories patched; exact-commit CI must validate resolver/audit compatibility |
 | P3 | Production observability | Request IDs, in-flight request gauge, last-request timestamp, and readiness probe added |
 | P3 | CI verification report | Added as a consolidated generated artifact/summary |
 | P3 | Deployment/scaling documentation | Shared-lock/storage and metrics scope documented |
