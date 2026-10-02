@@ -13,6 +13,14 @@ class HealthResponse(BaseModel):
     models_loaded: dict[str, bool]
 
 
+class ReadyResponse(BaseModel):
+    """GET /ready — readiness after required serving artifacts have loaded."""
+
+    status: str
+    models_loaded: dict[str, bool]
+    ready: bool
+
+
 class PriceRange(BaseModel):
     """Quantile-based ~80% prediction interval (validation residuals, log-space)."""
 
@@ -122,6 +130,8 @@ class MetricsResponse(BaseModel):
     requests_by_path: dict[str, int]
     avg_latency_ms: float
     uptime_seconds: float
+    requests_in_flight: int
+    last_request_at: float | None
     drift: dict[str, Any]
 
 
