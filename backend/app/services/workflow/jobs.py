@@ -43,17 +43,17 @@ import pandas as pd
 from fastapi import HTTPException
 
 from ml.paths import REPO_ROOT
-from backend.app.services.workflow.training_lock import (
+from ml.workflow.admission import (
     TrainingAdmissionLock,
     read_training_owner,
 )
 from ml.workflow.datasets import (
-    WORKFLOW_MODELS_ROOT,
     UnknownDataset,
     get_record,
     sandbox_dir,
 )
 from ml.workflow.prepare import preview_report
+from ml.workflow import datasets as wf_datasets
 
 from backend.app.services.workflow.datasets import (
     ACTIVE_JOB_STATES,
@@ -239,9 +239,9 @@ def sweep_orphaned_jobs() -> int:
         return 0
     try:
         flipped = 0
-        if not WORKFLOW_MODELS_ROOT.exists():
+        if not wf_datasets.WORKFLOW_MODELS_ROOT.exists():
             return 0
-        for status_file in WORKFLOW_MODELS_ROOT.glob("*/jobs/*/status.json"):
+        for status_file in wf_datasets.WORKFLOW_MODELS_ROOT.glob("*/jobs/*/status.json"):
             payload = _read_status_file(status_file)
             if not _active_status(payload):
                 continue
