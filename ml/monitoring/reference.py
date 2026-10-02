@@ -115,6 +115,7 @@ def build_reference_stats(
             # AUD-06: quantile binning collapsed below two bins → fallback
             # midpoint-cut bins; fewer effective bins, reduced PSI sensitivity.
             "degenerate": degenerate_binning(frame[feature], n_bins=n_bins),
+            "effective_bins": len(edges) - 1,
         }
 
     categorical: dict[str, dict[str, Any]] = {}
@@ -172,6 +173,28 @@ def _validate_numeric_spec(path: Path, feature: str, spec: Any) -> None:
             f"corrupt drift reference {path}: feature {feature!r} bin_edges must be "
             "a list of >= 2 finite, strictly increasing numbers"
         )
+    if len(edges) < 3:
+        raise ValueError(
+            f"corrupt drift reference {path}: feature {feature!r} must retain "
+            "at least two effective bins (>= 3 edges)"
+        )
+    effective_bins = spec.get("effective_bins")
+    if effective_bins is not None and (
+        not isinstance(effective_bins, int)
+        or isinstance(effective_bins, bool)
+        or effective_bins != len(edges) - 1
+        or effective_bins < 2
+    ):
+        raise ValueError(
+            f"corrupt drift reference {path}: feature {feature!r} has an invalid "
+            "effective_bins value"
+        )
+    degenerate = spec.get("degenerate")
+    if degenerate is not None and not isinstance(degenerate, bool):
+        raise ValueError(
+            f"corrupt drift reference {path}: feature {feature!r} degenerate flag is invalid"
+        )
+
     expected = spec.get("expected_proportions")
     if (
         not isinstance(expected, list)
