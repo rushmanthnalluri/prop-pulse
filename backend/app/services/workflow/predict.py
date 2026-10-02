@@ -22,12 +22,6 @@ from ml.workflow.prepare import preview_report
 from backend.app.services.workflow.datasets import DONE_JOB_STATES, normalize_job_status
 from backend.app.services.workflow.jobs import WorkflowJobService
 
-#: Red-team F1: plain-English provenance note on stale-split sandbox predictions.
-_STALE_SPLIT_NOTE = (
-    "trained on a previous preprocessing configuration — re-run "
-    "preprocessing-aware training for current-split results"
-)
-
 
 class WorkflowPredictService:
     """Sandbox prediction facade (one per request, §5.3)."""
