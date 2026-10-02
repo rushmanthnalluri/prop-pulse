@@ -237,16 +237,16 @@ def run_job(
 
     try:
         # Validate the request before any heavy work (§3.9: 422 lists valid candidates).
-    valid = valid_candidates(objective)
-except ValueError as exc:
-    return _fail(str(exc))
-unknown = [c for c in candidates if c not in valid]
-if unknown or not candidates:
-    return _fail(
-        f"unknown candidates for objective {objective!r}: {unknown}; "
-        f"valid candidates: {list(valid)}"
-    )
-
+        try:
+            valid = valid_candidates(objective)
+        except ValueError as exc:
+            return _fail(str(exc))
+        unknown = [c for c in candidates if c not in valid]
+        if unknown or not candidates:
+            return _fail(
+                f"unknown candidates for objective {objective!r}: {unknown}; "
+                f"valid candidates: {list(valid)}"
+            )
         # §3.9 self-healing: an unprepared dataset is auto-prepared with the
         # default config, surfaced explicitly as the ``preparing`` phase.
         # "Prepared" means the stage-06 sandbox artifacts exist — for the
