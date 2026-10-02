@@ -198,6 +198,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
 
         app.state.settings = settings
+        app.state.models_loaded = models_loaded
         app.state.champion = champion
         app.state.neighborhood_stats = neighborhood_stats
         app.state.model_features = list(features_payload["features"])
