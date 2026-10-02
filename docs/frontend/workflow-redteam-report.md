@@ -13,6 +13,8 @@ both stopped after the review.
 
 ---
 
+> **Historical review.** This report records the 2026-08-09 state. The P1/P2 findings described below are not the current release truth. Current status is defined by `docs/RELEASE_STATUS.md` and the exact-commit CI verification report.
+
 ## 1. The 10 mandated questions — verdicts
 
 ### Q1. Are we copying PlacementPredict instead of designing PropPulse? — **SOUND (designed, not copied)**
