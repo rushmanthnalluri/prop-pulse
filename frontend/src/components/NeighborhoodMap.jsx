@@ -200,18 +200,24 @@ export default function NeighborhoodMap({
                     // Tab reaches the "Estimate value" link and Esc (map
                     // keyboard handler) closes the popup (AUDIT §5.4 fix).
                     keyboardPopup.current = point.neighborhood
-                    window.setTimeout(() => {
-                      const popupEl = markerRefs.current
-                        .get(point.neighborhood)
-                        ?.getPopup()
-                        ?.getElement()
-                      const target =
-                        popupEl?.querySelector('.leaflet-popup-content a') ??
-                        popupEl?.querySelector('.leaflet-popup-close-button')
-                      target?.focus()
-                    }, 0)
                   },
-                  popupopen: () => onSelectCluster?.(point.cluster_id),
+                  popupopen: () => {
+                    onSelectCluster?.(point.cluster_id)
+                    // popupopen fires after Leaflet has mounted the popup DOM;
+                    // focus from here instead of racing popup creation from keypress.
+                    if (keyboardPopup.current === point.neighborhood) {
+                      window.setTimeout(() => {
+                        const popupEl = markerRefs.current
+                          .get(point.neighborhood)
+                          ?.getPopup()
+                          ?.getElement()
+                        const target =
+                          popupEl?.querySelector('.leaflet-popup-content a') ??
+                          popupEl?.querySelector('.leaflet-popup-close-button')
+                        target?.focus()
+                      }, 0)
+                    }
+                  },
                   popupclose: () => {
                     // A keyboard-opened popup takes its focused content with
                     // it when it closes — return focus to the marker.
