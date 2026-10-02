@@ -59,6 +59,7 @@ from pathlib import Path
 from typing import Any
 
 from ml.workflow import datasets
+from ml.workflow.admission import TrainingAdmissionLock
 from ml.workflow.datasets import UnknownDataset, sandbox_dir
 from ml.workflow.prepare import (
     PrepareConfig,
@@ -223,7 +224,20 @@ def run_job(
 
     _flush("queued")
 
-    # Validate the request before any heavy work (§3.9: 422 lists valid candidates).
+    # The trainer process is the long-lived owner of the workflow admission
+    # lock. This makes the concurrency guarantee survive an API worker restart.
+    admission = TrainingAdmissionLock(
+        dataset_id=dataset_id, job_id=job_id, operation="training"
+    )
+    deadline = time.monotonic() + 60.0
+    while not admission.acquire():
+        if time.monotonic() >= deadline:
+            return _fail("training admission remained busy for 60 seconds")
+        time.sleep(0.25)
+
+    try:
+        # Validate the request before any heavy work
+ (§3.9: 422 lists valid candidates).
     try:
         valid = valid_candidates(objective)
     except ValueError as exc:
@@ -261,7 +275,21 @@ def run_job(
         # stale-split instead of silently mixing old-split numbers with
         # new-split provenance.
         report = preview_report(dataset_id)
-        status["prepare_fingerprint"] = report.fingerprint if report is not None else None
+        current_fingerprint = report.fingerprint if report is not None else None
+        bound_fingerprint = status.get("prepare_fingerprint")
+        if (
+            bound_fingerprint is not None
+            and current_fingerprint is not None
+            and bound_fingerprint != current_fingerprint
+        ):
+            return _fail(
+                "preprocessing changed before training started: "
+                f"job bound to {bound_fingerprint}, current prepare is "
+                f"{current_fingerprint}; re-run training for the current split"
+            )
+        if current_fingerprint is None:
+            return _fail("training requires a prepared dataset but no prepare report exists")
+        status["prepare_fingerprint"] = current_fingerprint
         _flush()
 
         def _on_progress(event: dict[str, Any]) -> None:
@@ -304,6 +332,8 @@ def run_job(
     except Exception as exc:  # noqa: BLE001 — the crash is contained in this subprocess
         logger.exception("job %s aborted", job_id)
         return _fail(f"{type(exc).__name__}: {exc}")
+    finally:
+        admission.release()
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
