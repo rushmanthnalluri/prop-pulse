@@ -141,12 +141,98 @@ jobs:
         if: always()
         run: docker rm -f proppulse-backend-ci
 
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Install E2E dependencies and Chromium
+        working-directory: e2e
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Start backend
+        env:
+          CORS_ORIGINS: http://localhost:5300
+        run: |
+          python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8200 > /tmp/proppulse-backend.log 2>&1 &
+          echo $! > /tmp/proppulse-backend.pid
+          for i in $(seq 1 90); do
+            if curl -fsS http://localhost:8200/ready >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/proppulse-backend.log
+          exit 1
+
+      - name: Start frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: http://localhost:8200
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5300 --strictPort > /tmp/proppulse-frontend.log 2>&1 &
+          echo $! > /tmp/proppulse-frontend.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:5300/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/proppulse-frontend.log
+          exit 1
+
+      - name: Run browser E2E suite
+        working-directory: e2e
+        run: npm test
+        env:
+          CI: true
+
+      - name: Upload browser artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proppulse-e2e-${{ github.sha }}
+          path: |
+            e2e/test-results/
+            e2e/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Dump E2E service logs
+        if: failure()
+        run: |
+          cat /tmp/proppulse-backend.log || true
+          cat /tmp/proppulse-frontend.log || true
+
+      - name: Stop E2E services
+        if: always()
+        run: |
+          kill $(cat /tmp/proppulse-frontend.pid) 2>/dev/null || true
+          kill $(cat /tmp/proppulse-backend.pid) 2>/dev/null || true
   # One generated source of release evidence. This job never hides an upstream
   # failure: it writes the statuses even when a gate failed, uploads the report,
   # then returns failure so a release cannot accidentally be marked green.
   verification:
     if: ${{ always() }}
-    needs: [python, frontend, docker, docker-build]
+    needs: [python, frontend, docker, docker-build, e2e]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -157,6 +243,7 @@ jobs:
           FRONTEND_RESULT: ${{ needs.frontend.result }}
           DOCKER_RESULT: ${{ needs.docker.result }}
           DOCKER_BUILD_RESULT: ${{ needs['docker-build'].result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
           COMMIT_SHA: ${{ github.sha }}
           REF_NAME: ${{ github.ref_name }}
           RUN_ID: ${{ github.run_id }}
@@ -176,6 +263,7 @@ jobs:
           | Frontend audit + lint + build | $FRONTEND_RESULT |
           | Compose validation | $DOCKER_RESULT |
           | Docker build + health/readiness smoke | $DOCKER_BUILD_RESULT |
+          | Browser E2E | $E2E_RESULT |
 
           ## Release gate
 
@@ -192,7 +280,8 @@ jobs:
               "python": "$PYTHON_RESULT",
               "frontend": "$FRONTEND_RESULT",
               "docker": "$DOCKER_RESULT",
-              "docker-build": "$DOCKER_BUILD_RESULT"
+              "docker-build": "$DOCKER_BUILD_RESULT",
+              "e2e": "$E2E_RESULT"
             }
           }
           EOF
@@ -212,6 +301,7 @@ jobs:
           FRONTEND_RESULT: ${{ needs.frontend.result }}
           DOCKER_RESULT: ${{ needs.docker.result }}
           DOCKER_BUILD_RESULT: ${{ needs.docker-build.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
         run: |
           test "$PYTHON_RESULT" = success
           test "$FRONTEND_RESULT" = success
