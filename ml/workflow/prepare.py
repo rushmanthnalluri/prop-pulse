@@ -72,6 +72,7 @@ __all__ = [
     "load_prepared_splits",
     "prepare_dataset",
     "preview_report",
+    "effective_train_row_count",
 ]
 
 #: Training requires at least this many post-split train rows (§2.3 row window).
@@ -239,6 +240,39 @@ def _persist_report(report: PrepareReport) -> Path:
 # ---------------------------------------------------------------------------
 # Public entry points
 # ---------------------------------------------------------------------------
+
+def effective_train_row_count(
+    dataset_id: str, config: PrepareConfig | None = None
+) -> int:
+    """Return the exact post-split, post-outlier train-row count without persisting.
+
+    This is the eligibility calculation used by the API before training. It
+    intentionally mirrors the first two preparation steps exactly, including
+    the configured split strategy and train-only outlier removal. The bundled
+    dataset already carries its canonical outlier-filtered train split, so its
+    persisted train row count is authoritative.
+    """
+    config = config or PrepareConfig()
+    record = get_record(dataset_id)
+    if dataset_id == BUNDLED_DATASET_ID:
+        return len(load_prepared_splits(dataset_id)["train"])
+
+    raw = load_dataset_frame(record.dataset_id)
+    resolved = resolve_strategy(raw, config.split_strategy)
+    splits = split_dataset(
+        raw,
+        config.split_strategy,
+        config.val_frac,
+        config.test_frac,
+        config.seed,
+    )
+    # resolved is computed above by the same strategy resolver used by
+    # _prepare_upload; resolve_strategy may reject an invalid auto/time choice.
+    _ = resolved
+    if config.outlier_rule:
+        splits["train"], _ = apply_outlier_rules(splits["train"])
+    return int(len(splits["train"]))
+
 
 def prepare_dataset(dataset_id: str, config: PrepareConfig) -> PrepareReport:
     """Run stage 06 and persist its outputs (§3.8 steps 1–7).
