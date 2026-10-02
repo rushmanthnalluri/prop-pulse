@@ -373,7 +373,7 @@ export default function SandboxPredictPanel() {
         ? { jobId: first.job.job_id, candidate: jobBest(first.job) ?? first.candidates[0] }
         : { jobId: null, candidate: null }
     })
-  }, [roster])
+  }, [roster, selection.jobId])
 
   const selected = roster.find((item) => item.job.job_id === selection.jobId) ?? null
   const objective = selected?.job.objective ?? null
