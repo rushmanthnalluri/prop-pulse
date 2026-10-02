@@ -50,6 +50,7 @@ from backend.app.security import (
 from backend.app.services.cluster_service import ClusterService
 from backend.app.services.comps_service import CompsService
 from backend.app.services.monitoring_service import MonitoringService
+from backend.app.services.workflow.jobs import sweep_orphaned_jobs
 from backend.app.services.prediction_service import (
     PredictionService,
     force_single_threaded,
@@ -213,6 +214,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             f"{app.state.model_version['regression']}"
             f"+{app.state.model_version['classification']}"
         )
+
+        # Clean up jobs left active by a previous API process. This is a true
+        # startup task and runs under the same cross-process lock as training.
+        sweep_orphaned_jobs()
         app.state.prediction_service = PredictionService(
             regression_model=joblib.load(regression_path),
             classification_model=force_single_threaded(joblib.load(classification_path)),
