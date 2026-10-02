@@ -60,8 +60,11 @@ export async function ensureBackend() {
   const venvPython = os.platform() === 'win32'
     ? path.join(REPO_ROOT, '.venv', 'Scripts', 'python.exe')
     : path.join(REPO_ROOT, '.venv', 'bin', 'python')
-  const python = process.env.PYTHON_BIN ||
-    (fs.existsSync(venvPython) ? venvPython : (os.platform() === 'win32' ? 'python' : 'python3'))
+  const configuredPython = process.env.PYTHON_BIN
+  const python = configuredPython &&
+    (configuredPython === 'python' || configuredPython === 'python3' || fs.existsSync(configuredPython))
+    ? configuredPython
+    : (fs.existsSync(venvPython) ? venvPython : (os.platform() === 'win32' ? 'python' : 'python3'))
   spawn(
     python,
     ['-m', 'uvicorn', 'backend.app.main:app', '--port', String(BACKEND_PORT)],
