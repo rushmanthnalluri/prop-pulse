@@ -4,12 +4,11 @@ Every job is bound to the prepare fingerprint it trained on (persisted in
 ``status.json`` by the job runner). After a re-prepare with a different
 config:
 
-- ``GET …/models`` keeps serving the old-split rows (honesty = label, not
-  hide) but flags them ``stale_split`` and exposes both fingerprints;
-- the regression paired bootstrap is ``null`` whenever the compared pair
-  spans different fingerprints (a cross-split comparison is meaningless);
-- sandbox predict on a stale-split job still works, but its provenance block
-  gains ``stale_split`` + a plain-English note.
+- ``GET …/models`` keeps the old rows for auditability but marks them
+  ``stale_split`` and ``eligible_for_selection: false``; only current-fingerprint
+  results can become the selected candidate or enter paired bootstrap;
+- evaluation and sandbox prediction reject stale jobs with HTTP 409 so model
+  artifacts can never be combined with a newer preprocessing state.
 """
 from __future__ import annotations
 
@@ -43,7 +42,7 @@ _ALT_CONFIG_BODY: dict = {
 
 
 class TestStaleSplitAfterReprepare:
-    def test_models_and_predict_flag_stale_split(
+    def test_models_and_block_stale_split(
         self,
         workflow_client: TestClient,
         workflow_roots: SimpleNamespace,
@@ -105,17 +104,22 @@ class TestStaleSplitAfterReprepare:
             assert ridge["name"] == "ridge"
             assert ridge["stale_split"] is True
             assert ridge["prepare_fingerprint"] == first_fingerprint
+            assert ridge["eligible_for_selection"] is False
             assert stale_models["provenance"]["prepare_fingerprint"] == second_fingerprint
             assert stale_models["provenance"]["n_val"] == int(second.json()["splits"]["val"])
 
-            # Sandbox predict on the stale job still works — flagged provenance.
+            # Evaluation and prediction must reject the stale model/data combination.
+            stale_eval = workflow_client.get(
+                f"/workflow/jobs/{job1_id}/evaluation/ridge"
+            )
+            assert stale_eval.status_code == 409, stale_eval.text
+            assert "fingerprint" in stale_eval.json()["detail"]
+
             stale_predict = workflow_client.post(
                 f"/workflow/jobs/{job1_id}/predict/ridge", json=MINIMAL_PROPERTY_PAYLOAD
             )
-            assert stale_predict.status_code == 200, stale_predict.text
-            provenance = stale_predict.json()["provenance"]
-            assert provenance["stale_split"] is True
-            assert "previous preprocessing configuration" in provenance["stale_note"]
+            assert stale_predict.status_code == 409, stale_predict.text
+            assert "fingerprint" in stale_predict.json()["detail"]
 
             # A new job trains on the new split; the mixed pair nulls the bootstrap.
             accepted2 = workflow_client.post(
@@ -133,6 +137,9 @@ class TestStaleSplitAfterReprepare:
             by_name = {c["name"]: c for c in mixed["candidates"]}
             assert by_name["ridge"]["stale_split"] is True
             assert by_name["linear"]["stale_split"] is False
+            assert by_name["linear"]["eligible_for_selection"] is True
+            assert by_name["linear"]["best"] is True
+            assert by_name["ridge"]["best"] is False
             assert mixed["bootstrap"] is None  # cross-split pair: meaningless
         finally:
             workflow_client.delete(f"/workflow/datasets/{dataset_id}")
