@@ -11,11 +11,10 @@ status-file protocol):
 - **Poll** — job truth is the subprocess-written
   ``models/workflow/<dataset_id>/jobs/<job_id>/status.json``; the API writes
   the initial ``queued`` file before spawning so polling works immediately.
-- **One job at a time** (§4.8) — a module-level in-memory guard plus a
-  startup orphan sweep (any ``queued``/``preparing``/``running`` status file
-  found on first use is marked ``failed`` — "server restarted", §3.9). The
-  POST handler also scans the on-disk statuses, so a job orphaned by an
-  un-swept crash still blocks correctly with 409 naming the running job.
+- **One operation at a time** (§4.8) — a filesystem admission lock shared by all
+  API processes serializes training and preprocessing. The trainer owns the lock
+  for the full fit; stale preparation fingerprints are rejected before fitting
+  and again at evaluation/prediction boundaries.
 - **Status normalization** — the on-disk protocol spells the terminal success
   state ``complete``; the §3.9 API shape spells it ``done``. The service maps
   ``complete`` -> ``done`` at the HTTP boundary.
@@ -365,8 +364,8 @@ class WorkflowJobService:
 
     def _job_dir_for(self, job_id: str) -> tuple[str, Path, dict[str, Any]]:
         """Locate a job dir by id -> ``(dataset_id, job_dir, status payload)``; 404."""
-        if _valid_job_id(job_id) and WORKFLOW_MODELS_ROOT.exists():
-            for status_file in WORKFLOW_MODELS_ROOT.glob(f"*/jobs/{job_id}/status.json"):
+        if _valid_job_id(job_id) and wf_datasets.WORKFLOW_MODELS_ROOT.exists():
+            for status_file in wf_datasets.WORKFLOW_MODELS_ROOT.glob(f"*/jobs/{job_id}/status.json"):
                 payload = _read_status_file(status_file)
                 if payload is not None:
                     return status_file.parents[2].name, status_file.parent, payload
