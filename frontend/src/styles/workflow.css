@@ -163,7 +163,7 @@
 
 .wf-ds { position: relative; }
 
- .wf-ds-chip {
+.wf-ds-chip {
   display: inline-flex;
   align-items: center;
   gap: 9px;
