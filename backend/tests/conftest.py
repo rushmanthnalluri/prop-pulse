@@ -171,10 +171,9 @@ def workflow_client(tmp_path_factory: pytest.TempPathFactory) -> TestClient:
 def workflow_roots(tmp_path_factory: pytest.TempPathFactory) -> SimpleNamespace:
     """Redirect workflow storage roots to a per-module tmp dir for one module.
 
-    Yields ``SimpleNamespace(tmp=..., uploads=..., models=...)``. Also resets
-    the job service's process-global single-job guard and orphan-sweep flag at
-    setup *and* teardown so a hanging fake job in one module can never block
-    another module's jobs.
+    Yields ``SimpleNamespace(tmp=..., uploads=..., models=...)``. Storage roots are
+    isolated per module; workflow admission is handled by the shared filesystem
+    lock rather than a process-global test flag.
     """
     tmp = tmp_path_factory.mktemp("wf_roots")
     uploads = tmp / "uploads"
