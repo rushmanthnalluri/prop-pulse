@@ -1,29 +1,8 @@
-"""Shared fixtures/helpers for the WF-B4 workflow integration tests (workflow-architecture §8/§9).
+"""Shared fixtures/helpers for the workflow integration tests.
 
-This file is **additive only**: there was no ``backend/tests/conftest.py`` before
-WF-B4 and the five pre-existing test modules keep their own module-scoped
-clients — nothing here is registered for them (they never request these
-fixtures).
-
-Design notes:
-
-- **One app for all workflow modules.** ``create_app`` loads the champions and
-  warms the SHAP singleton (~11 s measured), so every ``test_workflow_*``
-  module shares a single session-scoped ``TestClient``. The app's prediction
-  log is a session tmp file, so even the champion-parity calls never touch the
-  real ``logs/predictions.jsonl``.
-- **Per-module storage roots.** ``workflow_roots`` redirects the WF-B1 storage
-  roots (``ml.workflow.datasets.UPLOADS_ROOT`` / ``WORKFLOW_MODELS_ROOT`` plus
-  the job service's import-time copy of the latter) onto a per-module tmp dir
-  — the WF-B1 test pattern (``tests/ml/workflow/test_datasets.py``) extended to
-  the HTTP layer. It also resets the job service's process-global guard
-  (``_running_job``) and sweep flag (``_orphan_sweep_done``) so modules stay
-  independent of each other and of execution order.
-- **Real subprocesses get the env hooks.** Modules that spawn real training
-  subprocesses through the API additionally request ``workflow_subprocess_env``
-  (``PROPULSE_UPLOADS_ROOT`` / ``PROPULSE_WORKFLOW_MODELS_ROOT`` /
-  ``PYTHONPATH`` — the documented redirection hooks of
-  ``ml.workflow.train_job``), so subprocess writes land in the same tmp roots.
+The workflow tests isolate uploaded datasets and sandbox models per module.
+Cross-process training/preprocessing concurrency is enforced by the shared
+filesystem admission lock in ml.workflow.admission.
 """
 from __future__ import annotations
 
@@ -40,7 +19,6 @@ from fastapi.testclient import TestClient
 
 from backend.app.config import Settings
 from backend.app.main import create_app
-import backend.app.services.workflow.jobs as jobs_service
 from ml.data.ingest import RAW_TRAIN_CSV
 from ml.paths import REPO_ROOT
 from ml.workflow import datasets
@@ -135,7 +113,7 @@ def spawn_in_process(
     from ml.workflow.train_job import run_job  # noqa: PLC0415
 
     run_job(dataset_id, job_id, objective, list(candidates))
-    return SimpleNamespace(pid=-1)
+    return SimpleNamespace(pid=-1, wait=lambda: 0)
 
 
 def write_status_file(
@@ -193,10 +171,9 @@ def workflow_client(tmp_path_factory: pytest.TempPathFactory) -> TestClient:
 def workflow_roots(tmp_path_factory: pytest.TempPathFactory) -> SimpleNamespace:
     """Redirect workflow storage roots to a per-module tmp dir for one module.
 
-    Yields ``SimpleNamespace(tmp=..., uploads=..., models=...)``. Also resets
-    the job service's process-global single-job guard and orphan-sweep flag at
-    setup *and* teardown so a hanging fake job in one module can never block
-    another module's jobs.
+    Yields ``SimpleNamespace(tmp=..., uploads=..., models=...)``. Storage roots are
+    isolated per module; workflow admission is handled by the shared filesystem
+    lock rather than a process-global test flag.
     """
     tmp = tmp_path_factory.mktemp("wf_roots")
     uploads = tmp / "uploads"
@@ -204,16 +181,10 @@ def workflow_roots(tmp_path_factory: pytest.TempPathFactory) -> SimpleNamespace:
     monkey = pytest.MonkeyPatch()
     monkey.setattr(datasets, "UPLOADS_ROOT", uploads)
     monkey.setattr(datasets, "WORKFLOW_MODELS_ROOT", models)
-    # The job service imported WORKFLOW_MODELS_ROOT by value (from-import), so
-    # its module global must be redirected too.
-    monkey.setattr(jobs_service, "WORKFLOW_MODELS_ROOT", models)
-    jobs_service._running_job = None  # noqa: SLF001 — process-global guard (§4.8)
-    jobs_service._orphan_sweep_done = True  # noqa: SLF001 — no surprise sweeps
+    # The service reads the shared root through the workflow datasets module.
     try:
         yield SimpleNamespace(tmp=tmp, uploads=uploads, models=models)
     finally:
-        jobs_service._running_job = None  # noqa: SLF001
-        jobs_service._orphan_sweep_done = True  # noqa: SLF001
         monkey.undo()
 
 

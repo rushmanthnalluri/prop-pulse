@@ -24,18 +24,23 @@ the lowest possible error.
 
 ## Verification status
 
-Wave-10 release v1.1.0 (2026-08-08) — every row is backed by a committed
-report with pasted command output:
+**Current release truth:** [`RELEASE_STATUS.md`](RELEASE_STATUS.md). It is the
+only current release-status authority. Historical release notes and audits
+remain useful evidence, but their old test counts and security findings are
+not current assertions.
 
-| Area | Status | Evidence |
-|---|---|---|
-| Automated tests | **454 passed, 0 failed** (`pytest tests backend/tests -q`, re-run 2026-08-19) | `pytest.ini` suite, run below |
-| Forensic audit | **Completed** — full-codebase audit (waves A–C); all P2/P3 findings fixed and regression-tested (210 green at audit close) | `docs/audit/FINAL_AUDIT.md` |
-| Docker build + smoke | **Verified** (2026-08-07, v1.0.0 build — not re-run in wave 10) — both images build (backend 1.77 GB, frontend 93.9 MB) and pass an in-compose smoke test (`/predict`, `/market/clusters`, CORS preflight, in-container drift check); default ports 8000/8080, alt ports 18000/18080 via the opt-in `docker-compose.alt-ports.yml` | `reports/DOCKER_SMOKE.md` |
-| Browser E2E | **49/49 tests pass** (last full run 2026-08-18; `e2e/test-results/.last-run.json`) — Playwright (Chromium, headless) against the live API (backend :8200, Vite dev :5300); 4 spec files, no mocks in the live specs; coverage includes comps, market position, scenario explorer, confidence flags, prefill, and the 9-stage guided-workbench journey | `reports/E2E.md` |
-| Performance | Warm `/predict` **p50 ≈ 197 ms** (c=1, quiet machine, measured 2026-08-07 on the v1.0.0 build; ~800 ms before the wave-9b fix — contended runs measure 2–3× higher); first call on a fresh process ≈ 0.5 s; 0 errors in 2,000+ measured requests | `reports/PERFORMANCE.md` |
-| Reproducibility | **Audit PASS** — processed data + feature artifacts byte-identical on re-run; full retrain matches (ridge Δ = 0.0; calibrated RF Δ ≤ 2.22e-16, one float64 ulp) | `reports/REPRODUCIBILITY.md` |
-| Security | Audit applied — security-headers + request-body-limit hardening; 1 accepted CVE (`PYSEC-2026-3552`, `cryptography<50` pinned by mlflow 3.15.1, vulnerable code path unreachable here), now gated in CI (`pip-audit --strict` + `npm audit --audit-level=high`) | `reports/SECURITY.md` |
+| Area | Verification authority |
+|---|---|
+| Backend tests | GitHub Actions `python` job |
+| Frontend lint/build | GitHub Actions `frontend` job |
+| Compose validation | GitHub Actions `docker` job |
+| Docker runtime smoke | GitHub Actions `docker-build` job |
+| Security | `pip-audit` and `npm audit` in CI |
+| Browser E2E | `e2e/` suite; hosted CI status is reported explicitly when available |
+| Consolidated release verification | CI `verification` job artifact and `$GITHUB_STEP_SUMMARY` |
+
+Do not copy historical figures from `FINAL-RELEASE.md`, `reports/`, or
+`docs/audit/` into current status without rerunning the corresponding gate.
 
 ## Showcase
 
@@ -103,8 +108,8 @@ A guided five-minute walkthrough of these screens: **`docs/DEMO.md`**.
   compares live traffic against the train reference and recommends (never
   triggers) retraining.
 - **Full MLOps loop**: MLflow experiment tracking, a file-based champion
-  registry (`models/registry/` + `models/champion.json`), 454 automated
-  tests, Playwright browser E2E, CI, and verified Docker packaging.
+  registry (`models/registry/` + `models/champion.json`), automated tests,
+  Playwright browser E2E, CI, and Docker packaging.
 
 ## Architecture
 
@@ -120,7 +125,7 @@ flowchart TD
     F --> H
     H --> I[models/registry + champion.json<br/>MLflow file store mlruns/]
     H --> J[ml/explainability<br/>SHAP artifacts + per-prediction service]
-    I --> K[backend FastAPI<br/>/predict /market/clusters /model/info /metrics /health /workflow/*]
+    I --> K[backend FastAPI<br/>/predict /market/clusters /model/info /metrics /health /ready /workflow/*]
     J --> K
     K --> L["frontend React dashboard<br/>Overview | Valuation | Market | Insights | Health<br/>+ 9-stage guided ML workbench"]
     K --> M[ml/monitoring<br/>prediction log → PSI drift check → retrain recommendation]
@@ -400,13 +405,9 @@ docker compose up --build                    # backend :8000, frontend :8080
 docker compose --profile mlflow up --build   # + MLflow UI on :5000 (opt-in)
 ```
 
-Builds are **verified** (2026-08-07, Docker 29.4 / Compose v5.1.1): both
-images build cleanly on `python:3.12-slim` / `node:24-alpine` (backend
-1.77 GB — dominated by pinned ML runtime deps; frontend 93.9 MB nginx
-bundle) and pass an in-compose smoke test — `/health`, `/predict` with 5
-populated SHAP factors, `/market/clusters`, `/model/importance`, CORS
-preflight from the composed frontend's origin, and an in-container drift
-check. Full evidence: **`reports/DOCKER_SMOKE.md`**.
+Historical Docker smoke evidence is preserved in `reports/DOCKER_SMOKE.md`.
+The current release gate is the `docker-build` GitHub Actions job, which builds
+both images and verifies `/health` plus `/ready` on the exact commit.
 
 If the default host ports are already taken (as they were on the dev
 machine), the repo carries an optional **`docker-compose.alt-ports.yml`** —
@@ -428,34 +429,27 @@ hardening notes: **`docs/DEPLOYMENT.md`**.
 
 ## Testing
 
+Run the local suite with:
+
 ```bash
-.venv/Scripts/python.exe -m pytest tests backend/tests -q   # 454 tests
-.venv/Scripts/python.exe -m pytest tests -m integration -q  # end-to-end only
+.venv/Scripts/python.exe -m pytest tests backend/tests -q
+.venv/Scripts/python.exe -m pytest tests -m integration -q
 ```
 
-`pytest.ini` sets `pythonpath=.` and the `integration` marker (end-to-end
-tests that exercise the committed processed data and champion artifacts).
-Current status: **454 passed** (re-run 2026-08-19; 232 at the wave-10
-release, 162 at wave-9, 210 post-audit). API tests run through FastAPI's
-TestClient against the real champion artifacts.
+`pytest.ini` sets `pythonpath=.` and the tests exercise the committed data and
+model artifacts. Current pass/fail counts belong to the exact CI commit and are
+reported in [`RELEASE_STATUS.md`](RELEASE_STATUS.md) plus the generated CI
+verification artifact; dated reports intentionally remain historical evidence.
 
-Browser E2E (separate npm project in `e2e/`, Playwright + Chromium,
-headless; backend on :8200, Vite dev server on :5300): **49 tests pass across
-4 spec files** (last full run 2026-08-18). `dashboard.spec.js` (12: overview,
-valuation flow, valuation-result extras covering confidence / market position
-/ comps / scenario explorer, pinned-estimate compare, map→form prefill,
-client validation, market page, model insights, model health, 404 page,
-API-down degradation), `audit-blackbox.spec.js` (11), and `workflow.spec.js`
-(16: the 9-stage guided-ML workbench journey — upload → train → evaluate →
-sandbox predict — plus stage gating and 390 px responsive) run against the
-live API with no mocks; `frontend-fixes.spec.js` (10) covers mocked-failure
-and UI regressions. How to re-run: `reports/E2E.md`.
+Browser E2E lives in `e2e/` (Playwright + Chromium). Its current result must be
+read from the current verification record rather than copied from older audit
+reports.
 
 ## Monitoring and drift
 
 - The backend appends every prediction to `logs/predictions.jsonl`
   (best-effort; binding schema in SPEC §10) and the metrics middleware feeds
-  `GET /metrics` (counters, latency, latest drift summary).
+  `GET /metrics` (counters, in-flight requests, latency, request timestamp, latest drift summary).
 - `python -m ml.monitoring.drift_check [--window N] [--log PATH]` computes
   per-numeric-feature **PSI** of the recent log window against the train
   reference (`models/monitoring/reference_stats.json`): warn ≥ 0.1, drift ≥

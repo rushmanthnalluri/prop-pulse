@@ -35,6 +35,8 @@ from backend.app.api import (
 )
 from backend.app.config import Settings, get_settings
 from backend.app.monitoring.middleware import (
+    REQUEST_ID_HEADER,
+    REQUEST_ID_SCOPE_KEY,
     START_TIME_SCOPE_KEY,
     MetricsMiddleware,
     route_template_key,
@@ -48,6 +50,7 @@ from backend.app.security import (
 from backend.app.services.cluster_service import ClusterService
 from backend.app.services.comps_service import CompsService
 from backend.app.services.monitoring_service import MonitoringService
+from backend.app.services.workflow.jobs import sweep_orphaned_jobs
 from backend.app.services.prediction_service import (
     PredictionService,
     force_single_threaded,
@@ -196,6 +199,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         }
 
         app.state.settings = settings
+        app.state.models_loaded = models_loaded
         app.state.champion = champion
         app.state.neighborhood_stats = neighborhood_stats
         app.state.model_features = list(features_payload["features"])
@@ -210,6 +214,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             f"{app.state.model_version['regression']}"
             f"+{app.state.model_version['classification']}"
         )
+
+        # Clean up jobs left active by a previous API process. This is a true
+        # startup task and runs under the same cross-process lock as training.
+        sweep_orphaned_jobs()
         app.state.prediction_service = PredictionService(
             regression_model=joblib.load(regression_path),
             classification_model=force_single_threaded(joblib.load(classification_path)),
@@ -315,7 +323,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         ``MetricsMiddleware`` never sees these failures, so the error is
         counted into the monitoring service here directly (AUD-03).
         """
-        logger.exception("unhandled error on %s %s", request.method, request.url.path)
+        request_id = request.scope.get(REQUEST_ID_SCOPE_KEY)
+        logger.exception("unhandled error on %s %s request_id=%s", request.method, request.url.path, request_id)
         monitoring = getattr(request.app.state, "monitoring_service", None)
         if monitoring is not None:
             try:
@@ -331,7 +340,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error"},
-            headers=SECURITY_HEADERS,
+            headers={**SECURITY_HEADERS, REQUEST_ID_HEADER: str(request_id) if request_id else ""},
         )
 
     return app

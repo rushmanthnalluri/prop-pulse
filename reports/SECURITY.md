@@ -1,5 +1,16 @@
 # PropPulse — Security Audit & Hardening Report
 
+> **Historical audit snapshot.** This report records the security/dependency
+> state observed on 2026-08-07. It is preserved as evidence, not as the current
+> release status. For current vulnerabilities, dependency resolution, and
+> verification, use [`RELEASE_STATUS.md`](../RELEASE_STATUS.md) and the latest
+> GitHub Actions run for the exact commit.
+>
+> Sections below may explicitly describe vulnerabilities, versions, or test
+> counts that were true at the time and were subsequently changed.
+
+---
+
 **Date:** 2026-08-07 · **Auditor:** `security-audit` hardening agent ·
 **Scope:** dependency vulnerabilities, HTTP hardening, input validation,
 secrets/config, model-artifact trust, Docker image review.

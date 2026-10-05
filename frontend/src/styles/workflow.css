@@ -388,7 +388,10 @@
 @media (max-width: 640px) {
   .wf-context { padding: 10px 0; }
   .wf-context-top { gap: 8px 14px; }
-  .wf-context-side { gap: 10px; }
+  .wf-context-side { gap: 10px; min-width: 0; }
+  .wf-ds { min-width: 0; max-width: 100%; }
+  .wf-ds-chip { max-width: calc(100vw - 148px); }
+  .wf-ds-chip-name { max-width: 120px; min-width: 0; }
   .wf-progress { padding-top: 9px; }
   .wf-progress-seg { height: 23px; }
   .wf-ds-chip-name { max-width: 140px; }

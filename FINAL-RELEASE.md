@@ -1,5 +1,13 @@
 # PropPulse — FINAL RELEASE
 
+## Current release-status rule
+
+> **The v1.1.0 material below is historical.** The authoritative current status
+> is [`RELEASE_STATUS.md`](RELEASE_STATUS.md). Test counts, security findings,
+> Docker results, and release readiness must be taken from the latest CI
+> verification for the commit being released.
+
+---
 **Version:** 1.1.0 · **Date:** 2026-08-08 · **Status:** RELEASED (lead-verified)
 
 PropPulse is an end-to-end property valuation and market-intelligence platform:

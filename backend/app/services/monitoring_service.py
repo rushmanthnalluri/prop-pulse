@@ -61,13 +61,23 @@ class MonitoringService:
         self._lock = threading.Lock()
         self._requests_total = 0
         self._errors_total = 0
+        self._requests_in_flight = 0
+        self._last_request_at = None
         self._requests_by_path: dict[str, int] = {}
         self._latency_sum_ms = 0.0
 
+    def begin_request(self) -> None:
+        """Increment the in-flight request gauge."""
+        with self._lock:
+            self._requests_in_flight += 1
+
+
     def record_request(self, path: str, status_code: int, latency_ms: float) -> None:
-        """Record one served request (called by the metrics middleware)."""
+        """Record one served request and close its in-flight slot."""
         with self._lock:
             self._requests_total += 1
+            self._requests_in_flight = max(0, self._requests_in_flight - 1)
+            self._last_request_at = time.time()
             self._requests_by_path[path] = self._requests_by_path.get(path, 0) + 1
             self._latency_sum_ms += float(latency_ms)
             if status_code >= 500:
@@ -103,6 +113,8 @@ class MonitoringService:
             return {
                 "requests_total": total,
                 "errors_total": self._errors_total,
+                "requests_in_flight": self._requests_in_flight,
+                "last_request_at": self._last_request_at,
                 "requests_by_path": dict(self._requests_by_path),
                 "avg_latency_ms": round(avg_latency, 3),
                 "uptime_seconds": round(time.monotonic() - self._started_at, 3),

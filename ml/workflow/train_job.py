@@ -25,10 +25,10 @@ queued -> (preparing ->) running -> done|failed — and after every candidate::
      "error": null | "<message>",
      "created_at": "<iso>", "finished_at": null | "<iso>"}
 
-``prepare_fingerprint`` (red-team F1) is persisted when the job starts —
-after the auto-prepare self-heal, so it always names the split the job
-actually trains on. The serving layer compares it against the *current*
-prepare fingerprint to flag stale-split results after a re-prepare.
+``prepare_fingerprint`` (red-team F1) is bound by the API before spawn
+and preserved by the trainer child, so it names the preparation state current
+when the job was accepted. The trainer refuses a mismatch before fitting;
+serving also rejects stale evaluation/prediction pairs.
 
 A failed candidate never fails the job (§6.4); the job is ``done`` when at
 least one candidate succeeded, ``failed`` when every candidate failed or the
@@ -59,6 +59,7 @@ from pathlib import Path
 from typing import Any
 
 from ml.workflow import datasets
+from ml.workflow.admission import TrainingAdmissionLock
 from ml.workflow.datasets import UnknownDataset, sandbox_dir
 from ml.workflow.prepare import (
     PrepareConfig,
@@ -190,11 +191,25 @@ def run_job(
         return 2
 
     started = time.perf_counter()
-    created_at = _utc_now_iso()
+    status_path = job_dir / _STATUS_NAME
+    existing_status: dict[str, Any] = {}
+    if status_path.exists():
+        try:
+            payload = json.loads(status_path.read_text(encoding='utf-8'))
+            if isinstance(payload, dict):
+                existing_status = payload
+        except (OSError, ValueError):
+            logger.warning(
+                'job %s has an unreadable pre-created status file; rebuilding it',
+                job_id,
+            )
+    created_at = str(existing_status.get('created_at') or _utc_now_iso())
+    bound_fingerprint = existing_status.get('prepare_fingerprint')
     status: dict[str, Any] = {
         "job_id": job_id,
         "dataset_id": dataset_id,
         "objective": objective,
+        "prepare_fingerprint": bound_fingerprint,
         "status": "queued",
         "progress": {
             "done": 0,
@@ -223,19 +238,29 @@ def run_job(
 
     _flush("queued")
 
-    # Validate the request before any heavy work (§3.9: 422 lists valid candidates).
-    try:
-        valid = valid_candidates(objective)
-    except ValueError as exc:
-        return _fail(str(exc))
-    unknown = [c for c in candidates if c not in valid]
-    if unknown or not candidates:
-        return _fail(
-            f"unknown candidates for objective {objective!r}: {unknown}; "
-            f"valid candidates: {list(valid)}"
-        )
+    # The trainer process is the long-lived owner of the workflow admission
+    # lock. This makes the concurrency guarantee survive an API worker restart.
+    admission = TrainingAdmissionLock(
+        dataset_id=dataset_id, job_id=job_id, operation="training"
+    )
+    deadline = time.monotonic() + 60.0
+    while not admission.acquire():
+        if time.monotonic() >= deadline:
+            return _fail("training admission remained busy for 60 seconds")
+        time.sleep(0.25)
 
     try:
+        # Validate the request before any heavy work (§3.9: 422 lists valid candidates).
+        try:
+            valid = valid_candidates(objective)
+        except ValueError as exc:
+            return _fail(str(exc))
+        unknown = [c for c in candidates if c not in valid]
+        if unknown or not candidates:
+            return _fail(
+                f"unknown candidates for objective {objective!r}: {unknown}; "
+                f"valid candidates: {list(valid)}"
+            )
         # §3.9 self-healing: an unprepared dataset is auto-prepared with the
         # default config, surfaced explicitly as the ``preparing`` phase.
         # "Prepared" means the stage-06 sandbox artifacts exist — for the
@@ -261,7 +286,21 @@ def run_job(
         # stale-split instead of silently mixing old-split numbers with
         # new-split provenance.
         report = preview_report(dataset_id)
-        status["prepare_fingerprint"] = report.fingerprint if report is not None else None
+        current_fingerprint = report.fingerprint if report is not None else None
+        bound_fingerprint = status.get("prepare_fingerprint")
+        if (
+            bound_fingerprint is not None
+            and current_fingerprint is not None
+            and bound_fingerprint != current_fingerprint
+        ):
+            return _fail(
+                "preprocessing changed before training started: "
+                f"job bound to {bound_fingerprint}, current prepare is "
+                f"{current_fingerprint}; re-run training for the current split"
+            )
+        if current_fingerprint is None:
+            return _fail("training requires a prepared dataset but no prepare report exists")
+        status["prepare_fingerprint"] = current_fingerprint
         _flush()
 
         def _on_progress(event: dict[str, Any]) -> None:
@@ -304,6 +343,8 @@ def run_job(
     except Exception as exc:  # noqa: BLE001 — the crash is contained in this subprocess
         logger.exception("job %s aborted", job_id)
         return _fail(f"{type(exc).__name__}: {exc}")
+    finally:
+        admission.release()
 
 
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:

@@ -11,11 +11,10 @@ status-file protocol):
 - **Poll** — job truth is the subprocess-written
   ``models/workflow/<dataset_id>/jobs/<job_id>/status.json``; the API writes
   the initial ``queued`` file before spawning so polling works immediately.
-- **One job at a time** (§4.8) — a module-level in-memory guard plus a
-  startup orphan sweep (any ``queued``/``preparing``/``running`` status file
-  found on first use is marked ``failed`` — "server restarted", §3.9). The
-  POST handler also scans the on-disk statuses, so a job orphaned by an
-  un-swept crash still blocks correctly with 409 naming the running job.
+- **One operation at a time** (§4.8) — a filesystem admission lock shared by all
+  API processes serializes training and preprocessing. The trainer owns the lock
+  for the full fit; stale preparation fingerprints are rejected before fitting
+  and again at evaluation/prediction boundaries.
 - **Status normalization** — the on-disk protocol spells the terminal success
   state ``complete``; the §3.9 API shape spells it ``done``. The service maps
   ``complete`` -> ``done`` at the HTTP boundary.
@@ -32,7 +31,6 @@ import os
 import re
 import subprocess
 import sys
-import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -43,13 +41,14 @@ import pandas as pd
 from fastapi import HTTPException
 
 from ml.paths import REPO_ROOT
+from ml.workflow.admission import TrainingAdmissionLock
 from ml.workflow.datasets import (
-    WORKFLOW_MODELS_ROOT,
     UnknownDataset,
     get_record,
     sandbox_dir,
 )
 from ml.workflow.prepare import preview_report
+from ml.workflow import datasets as wf_datasets
 
 from backend.app.services.workflow.datasets import (
     ACTIVE_JOB_STATES,
@@ -84,10 +83,9 @@ _SELECTION_BLOCKS: dict[str, dict[str, Any]] = {
     },
 }
 
-_JOB_LOCK = threading.Lock()
-#: ``(dataset_id, job_id)`` of the job this process spawned and considers active.
-_running_job: tuple[str, str] | None = None
-_orphan_sweep_done = False
+# Cross-process training/preprocessing admission is authoritative in
+# TrainingAdmissionLock. No process-local admission mutex is used as the
+# concurrency authority.
 
 
 # ---------------------------------------------------------------------------
@@ -191,20 +189,17 @@ def spawn_training_job(
 
 
 def sweep_orphaned_jobs() -> int:
-    """Mark every active status file ``failed`` ("server restarted", §3.9/§4.8).
-
-    Runs once per process (first job-service construction); returns the number
-    of status files flipped.
-    """
-    global _orphan_sweep_done
-    with _JOB_LOCK:
-        if _orphan_sweep_done:
-            return 0
-        _orphan_sweep_done = True
+    """Mark active status files failed only when no operation owns the lock."""
+    guard = TrainingAdmissionLock(
+        dataset_id="*", job_id=None, operation="orphan-sweep"
+    )
+    if not guard.acquire():
+        return 0
+    try:
         flipped = 0
-        if not WORKFLOW_MODELS_ROOT.exists():
+        if not wf_datasets.WORKFLOW_MODELS_ROOT.exists():
             return 0
-        for status_file in WORKFLOW_MODELS_ROOT.glob("*/jobs/*/status.json"):
+        for status_file in wf_datasets.WORKFLOW_MODELS_ROOT.glob("*/jobs/*/status.json"):
             payload = _read_status_file(status_file)
             if not _active_status(payload):
                 continue
@@ -219,6 +214,9 @@ def sweep_orphaned_jobs() -> int:
         if flipped:
             logger.info("orphan sweep marked %d stale job(s) failed", flipped)
         return flipped
+    finally:
+        guard.release()
+
 
 
 # ---------------------------------------------------------------------------
@@ -226,35 +224,26 @@ def sweep_orphaned_jobs() -> int:
 # ---------------------------------------------------------------------------
 
 class WorkflowJobService:
-    """Stateless-per-request job facade (§5.3); the guard/sweep are module state."""
+    """Stateless job facade; admission is cross-process and filesystem-backed."""
 
     def __init__(self) -> None:
-        sweep_orphaned_jobs()
+        pass
 
     # -- create (§3.9) --------------------------------------------------------
 
     def create_job(
         self, dataset_id: str, objective: str, candidates: list[str]
     ) -> dict[str, Any]:
-        """Validate, persist a ``queued`` status file, spawn the subprocess -> 202 payload.
+        """Validate, persist a queued status file, and spawn the trainer.
 
-        Raises:
-            HTTPException: 404 unknown dataset; 400 row window; 422 unknown
-                candidates (message lists the valid set); 409 a job is already
-                active server-wide (message names the running job).
+        The admission lock remains held until the trainer subprocess exits.
+        This is the integrity boundary for both training and preprocessing.
         """
-        global _running_job
         try:
             record = get_record(dataset_id)
         except UnknownDataset as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-        can_train, reason = WorkflowDatasetService._train_window(record)
-        if not can_train:
-            raise HTTPException(status_code=400, detail=reason)
-
-        # Lazy: ml.workflow.train imports xgboost at module level — keep it
-        # out of the API process until a job is actually created.
         from ml.workflow.train import OBJECTIVE_CANDIDATES  # noqa: PLC0415
 
         valid = OBJECTIVE_CANDIDATES[objective]
@@ -267,84 +256,63 @@ class WorkflowJobService:
                     f"valid candidates: {list(valid)}"
                 ),
             )
-        # De-duplicate while preserving order (repeated names would double the cost).
         candidates = list(dict.fromkeys(candidates))
 
-        with _JOB_LOCK:
-            running = self._active_job_locked()
-            if running is not None:
-                run_dataset, run_job = running
-                raise HTTPException(
-                    status_code=409,
-                    detail=(
-                        f"job {run_job} (dataset {run_dataset}) is already running — "
-                        "one training job at a time server-wide"
-                    ),
-                )
+        can_train, reason = WorkflowDatasetService._train_window(record)
+        if not can_train:
+            raise HTTPException(status_code=400, detail=reason)
 
-            job_id = "job_" + uuid.uuid4().hex[:8]
-            job_dir = _jobs_dir(dataset_id) / job_id
-            status_payload: dict[str, Any] = {
-                "job_id": job_id,
-                "dataset_id": dataset_id,
-                "objective": objective,
-                "status": "queued",
-                "progress": {
-                    "done": 0,
-                    "total": len(candidates),
-                    "current": None,
-                    "elapsed_s": 0.0,
-                },
-                "results": {name: {"status": "pending"} for name in candidates},
-                "error": None,
-                "created_at": _utc_now_iso(),
-                "finished_at": None,
-            }
+        job_id = "job_" + uuid.uuid4().hex[:8]
+        job_dir = _jobs_dir(dataset_id) / job_id
+        report = preview_report(dataset_id)
+        prepare_fingerprint = report.fingerprint if report is not None else None
+        status_payload: dict[str, Any] = {
+            "job_id": job_id,
+            "dataset_id": dataset_id,
+            "objective": objective,
+            "prepare_fingerprint": prepare_fingerprint,
+            "status": "queued",
+            "progress": {
+                "done": 0,
+                "total": len(candidates),
+                "current": None,
+                "elapsed_s": 0.0,
+            },
+            "results": {name: {"status": "pending"} for name in candidates},
+            "error": None,
+            "created_at": _utc_now_iso(),
+            "finished_at": None,
+        }
+        _write_status_file(job_dir, status_payload)
+        try:
+            spawn_training_job(
+                dataset_id, job_id, objective, candidates, job_dir
+            )
+        except OSError as exc:
+            status_payload["status"] = "failed"
+            status_payload["error"] = (
+                f"could not spawn the training subprocess ({exc.__class__.__name__})"
+            )
+            status_payload["finished_at"] = _utc_now_iso()
             _write_status_file(job_dir, status_payload)
-            try:
-                spawn_training_job(dataset_id, job_id, objective, candidates, job_dir)
-            except OSError as exc:
-                status_payload["status"] = "failed"
-                # AUD: no {exc} in client-visible strings — OSError text can
-                # embed absolute interpreter paths; the class name is enough.
-                status_payload["error"] = (
-                    f"could not spawn the training subprocess ({exc.__class__.__name__})"
-                )
-                status_payload["finished_at"] = _utc_now_iso()
-                _write_status_file(job_dir, status_payload)
-                raise HTTPException(
-                    status_code=503,
-                    detail=f"could not spawn the training subprocess ({exc.__class__.__name__})",
-                ) from exc
-            _running_job = (dataset_id, job_id)
+            raise HTTPException(
+                status_code=503,
+                detail=f"could not spawn the training subprocess ({exc.__class__.__name__})",
+            ) from exc
 
+        logger.info(
+            "accepted training job %s (dataset=%s objective=%s candidates=%s fingerprint=%s)",
+            job_id,
+            dataset_id,
+            objective,
+            candidates,
+            prepare_fingerprint,
+        )
         return {
             "job_id": job_id,
             "status": "queued",
             "links": {"status": f"/workflow/jobs/{job_id}"},
         }
-
-    def _active_job_locked(self) -> tuple[str, str] | None:
-        """The currently active job ``(dataset_id, job_id)`` or None (caller holds the lock).
-
-        Consults the in-memory guard first, then falls back to an on-disk scan
-        (covers jobs whose in-memory entry was lost); clears the guard when the
-        recorded job reached a terminal state.
-        """
-        global _running_job
-        if _running_job is not None:
-            dataset_id, job_id = _running_job
-            status_file = _jobs_dir(dataset_id) / job_id / "status.json"
-            if _active_status(_read_status_file(status_file)):
-                return _running_job
-            _running_job = None
-        if WORKFLOW_MODELS_ROOT.exists():
-            for status_file in WORKFLOW_MODELS_ROOT.glob("*/jobs/*/status.json"):
-                payload = _read_status_file(status_file)
-                if _active_status(payload):
-                    dataset_id = status_file.parents[2].name
-                    return (dataset_id, status_file.parent.name)
-        return None
 
     # -- reads (§3.9) ----------------------------------------------------------
 
@@ -372,8 +340,8 @@ class WorkflowJobService:
 
     def _job_dir_for(self, job_id: str) -> tuple[str, Path, dict[str, Any]]:
         """Locate a job dir by id -> ``(dataset_id, job_dir, status payload)``; 404."""
-        if _valid_job_id(job_id) and WORKFLOW_MODELS_ROOT.exists():
-            for status_file in WORKFLOW_MODELS_ROOT.glob(f"*/jobs/{job_id}/status.json"):
+        if _valid_job_id(job_id) and wf_datasets.WORKFLOW_MODELS_ROOT.exists():
+            for status_file in wf_datasets.WORKFLOW_MODELS_ROOT.glob(f"*/jobs/{job_id}/status.json"):
                 payload = _read_status_file(status_file)
                 if payload is not None:
                     return status_file.parents[2].name, status_file.parent, payload
@@ -428,14 +396,24 @@ class WorkflowJobService:
                     "prepare_fingerprint": payload.get("prepare_fingerprint"),
                 }
 
-        ranking = self._rank_candidates(objective, merged)
-
         report = None
         try:
             report = preview_report(dataset_id)
         except UnknownDataset:
             report = None
         current_fingerprint = report.fingerprint if report else None
+
+        fresh = (
+            {
+                name: entry
+                for name, entry in merged.items()
+                if current_fingerprint is not None
+                and entry.get("prepare_fingerprint") == current_fingerprint
+            }
+            if current_fingerprint is not None
+            else {}
+        )
+        ranking = self._rank_candidates(objective, fresh)
 
         candidates: list[dict[str, Any]] = []
         for name, entry in merged.items():
@@ -445,10 +423,18 @@ class WorkflowJobService:
             # the dataset was re-prepared after this job trained (its metrics
             # describe a previous split). Missing fingerprints (pre-F1 jobs)
             # flag too — provenance cannot be verified for them.
-            row["stale_split"] = bool(
-                current_fingerprint is not None
-                and entry.get("prepare_fingerprint") != current_fingerprint
+            stale = (
+                current_fingerprint is None
+                or entry.get("prepare_fingerprint") != current_fingerprint
             )
+            row["stale_split"] = stale
+            row["eligible_for_selection"] = not stale
+            if stale:
+                row["stale_note"] = (
+                    "This result was trained against a different or unverifiable "
+                    "preprocessing fingerprint. Re-run preprocessing and training "
+                    "before using it for current model comparison."
+                )
             candidates.append(row)
         candidates.sort(
             key=lambda row: ranking.index(row["name"]) if row["name"] in ranking else len(ranking)
@@ -464,13 +450,9 @@ class WorkflowJobService:
 
         bootstrap = None
         if objective == "regression" and len(ranking) >= 2:
-            # F1: a cross-split comparison is meaningless — only bootstrap a
-            # pair trained on the same prepare fingerprint.
-            same_split = merged[ranking[0]].get("prepare_fingerprint") == merged[
-                ranking[1]
-            ].get("prepare_fingerprint")
-            if same_split:
-                bootstrap = self._regression_bootstrap(dataset_id, merged, ranking[0], ranking[1])
+            bootstrap = self._regression_bootstrap(
+                dataset_id, fresh, ranking[0], ranking[1]
+            )
 
         return {
             "objective": objective,
@@ -583,10 +565,28 @@ class WorkflowJobService:
                     f"(status: {results[candidate].get('status')})"
                 ),
             )
+        report = None
+        try:
+            report = preview_report(_dataset_id)
+        except UnknownDataset:
+            report = None
+        current_fingerprint = report.fingerprint if report else None
+        job_fingerprint = status.get("prepare_fingerprint")
+        if current_fingerprint is None or job_fingerprint != current_fingerprint:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"candidate {candidate!r} of job {job_id} is stale or unverifiable: "
+                    "its training fingerprint does not match the current preprocessing "
+                    "fingerprint; re-run preprocessing and training"
+                ),
+            )
+
         from ml.workflow.evaluate import evaluation_payload  # noqa: PLC0415
 
         try:
             payload = evaluation_payload(job_dir, candidate)
+            payload["prepare_fingerprint"] = current_fingerprint
         except FileNotFoundError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
         except ValueError as exc:

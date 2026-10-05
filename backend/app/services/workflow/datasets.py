@@ -31,7 +31,12 @@ from ml.workflow.datasets import (
     UploadReport,
     UploadValidationError,
 )
-from ml.workflow.prepare import MIN_TRAIN_ROWS, preview_report
+from ml.workflow.prepare import (
+    MIN_TRAIN_ROWS,
+    PrepareConfig,
+    effective_train_row_count,
+    preview_report,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -147,8 +152,8 @@ class WorkflowDatasetService:
         lists objectives with at least one completed job. ``can_train``
         enforces the §2.3 row window (post-split train rows >=
         ``MIN_TRAIN_ROWS`` and upload rows <= ``MAX_UPLOAD_ROWS``); the train
-        count is the persisted split size when prepared, else the default
-        70/15/15 estimate.
+        count is the persisted post-outlier preparation split size when prepared,
+        else the exact default preparation calculation is used without writing artifacts.
         """
         statuses = job_status_scan(record.dataset_id)
         counts = {"total": len(statuses), "running": 0, "done": 0, "failed": 0}
@@ -180,31 +185,41 @@ class WorkflowDatasetService:
 
     @staticmethod
     def _train_window(record: DatasetRecord) -> tuple[bool, str | None]:
-        """The §2.3 training row window; ``(False, reason)`` when outside it."""
+        """Return train eligibility using the exact stage-06 row calculation."""
         if record.n_rows > MAX_UPLOAD_ROWS:
             return False, (
                 f"dataset has {record.n_rows} rows; training is capped at "
                 f"{MAX_UPLOAD_ROWS} rows (the 01-05 exploration stages remain available)"
             )
-        n_train: int | None = None
+
         try:
             report = preview_report(record.dataset_id)
         except UnknownDataset:
             report = None
+
+        # A prepared dataset's persisted config is the configuration whose
+        # fingerprint downstream jobs will bind to. For a fresh dataset the
+        # same default PrepareConfig used by the self-healing trainer applies.
         if report is not None:
-            n_train = int(report.splits.get("train", 0))
+            try:
+                n_train = int(report.splits['train'])
+            except (KeyError, TypeError, ValueError) as exc:
+                return False, f"dataset preparation report is corrupt: {exc}"
         else:
-            # Default-fraction estimate (70/15/15) for an unprepared dataset.
-            n = record.n_rows
-            n_train = n - round(n * 0.15) - round(n * 0.15)
+            try:
+                n_train = effective_train_row_count(record.dataset_id, PrepareConfig())
+            except (ValueError, FileNotFoundError) as exc:
+                return False, f"dataset cannot be prepared for training: {exc}"
+
         if n_train < MIN_TRAIN_ROWS:
             return False, (
-                f"post-split train split has ~{n_train} rows; training and "
+                f"post-preparation train split has {n_train} rows; training and "
                 f"preprocessing require >= {MIN_TRAIN_ROWS} (dataset has "
                 f"{record.n_rows} rows total — the 01-05 exploration stages "
                 "remain available)"
             )
         return True, None
+
 
     # -- shared --------------------------------------------------------------
 

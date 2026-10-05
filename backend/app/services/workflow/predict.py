@@ -22,12 +22,6 @@ from ml.workflow.prepare import preview_report
 from backend.app.services.workflow.datasets import DONE_JOB_STATES, normalize_job_status
 from backend.app.services.workflow.jobs import WorkflowJobService
 
-#: Red-team F1: plain-English provenance note on stale-split sandbox predictions.
-_STALE_SPLIT_NOTE = (
-    "trained on a previous preprocessing configuration — re-run "
-    "preprocessing-aware training for current-split results"
-)
-
 
 class WorkflowPredictService:
     """Sandbox prediction facade (one per request, §5.3)."""
@@ -94,6 +88,21 @@ class WorkflowPredictService:
                     f"(status: {results[candidate].get('status')})"
                 ),
             )
+        # A prediction combines the candidate artifact with the current
+        # sandbox preprocessing state. Never score across prepare fingerprints.
+        try:
+            current = preview_report(dataset_id)
+        except UnknownDataset:
+            current = None
+        if current is None or status.get("prepare_fingerprint") != current.fingerprint:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"job {job_id} is stale or unverifiable: its training fingerprint "
+                    "does not match the current preprocessing fingerprint; "
+                    "re-run preprocessing and training"
+                ),
+            )
         if objective == "regression":
             method = "predict_price"
         elif objective == "classification":
@@ -108,18 +117,6 @@ class WorkflowPredictService:
             response = getattr(model, method)(payload, candidate)
         except ValueError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        # Red-team F1: the prediction still works on a stale-split job, but the
-        # provenance block must say so — the pipeline is old-split while the
-        # sandbox stats it combines with are new-split after a re-prepare.
-        try:
-            current = preview_report(dataset_id)
-        except UnknownDataset:
-            current = None
-        if current is not None and status.get("prepare_fingerprint") != current.fingerprint:
-            provenance = response.get("provenance")
-            if isinstance(provenance, dict):
-                provenance["stale_split"] = True
-                provenance["stale_note"] = _STALE_SPLIT_NOTE
         return response
 
 

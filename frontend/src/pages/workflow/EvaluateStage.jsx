@@ -72,6 +72,22 @@ export default function EvaluateStage() {
 
   const selectedJob = candidates.find((job) => job.job_id === selectedJobId) ?? null
   const objective = selectedJob?.objective ?? null
+  const doneCandidates = useMemo(
+    () => wf.doneCandidateEntries(selectedJob).map(([name]) => name),
+    [selectedJob],
+  )
+  const effectiveCandidate = doneCandidates.includes(selectedCandidate)
+    ? selectedCandidate
+    : doneCandidates[0] ?? null
+
+  // Keep job + candidate as one valid pair even when a refreshed status file
+  // removes a candidate between polls. The derived fallback is never submitted
+  // until state catches up.
+  useEffect(() => {
+    if (effectiveCandidate !== selectedCandidate) {
+      setSelectedCandidate(effectiveCandidate)
+    }
+  }, [effectiveCandidate, selectedCandidate])
 
   const modelsFetcher = useCallback(
     (signal) =>
@@ -131,8 +147,6 @@ export default function EvaluateStage() {
       </div>
     )
   }
-
-  const doneCandidates = wf.doneCandidateEntries(selectedJob).map(([name]) => name)
 
   return (
     <>
@@ -197,8 +211,11 @@ export default function EvaluateStage() {
                 <select
                   id="wf-eval-candidate"
                   className="select"
-                  value={selectedCandidate ?? ''}
-                  onChange={(event) => setSelectedCandidate(event.target.value)}
+                  value={effectiveCandidate ?? ''}
+                  onChange={(event) => {
+                    const next = event.target.value
+                    if (doneCandidates.includes(next)) setSelectedCandidate(next)
+                  }}
                 >
                   {doneCandidates.map((name) => (
                     <option key={name} value={name}>
@@ -232,7 +249,7 @@ export default function EvaluateStage() {
       <div className="section">
         <div className="section-head">
           <h2 className="section-title">
-            Evaluation — <span className="mono">{selectedCandidate}</span>
+            Evaluation — <span className="mono">{effectiveCandidate}</span>
           </h2>
           <span className="section-note mono">{selectedJobId}</span>
         </div>
@@ -244,11 +261,11 @@ export default function EvaluateStage() {
             />
           </div>
         )}
-        {selectedJobId && selectedCandidate && (
+        {selectedJobId && effectiveCandidate && (
           <EvaluationWorkspace
-            key={`${selectedJobId}:${selectedCandidate}`}
+            key={`${selectedJobId}:${effectiveCandidate}`}
             jobId={selectedJobId}
-            candidate={selectedCandidate}
+            candidate={effectiveCandidate}
           />
         )}
       </div>

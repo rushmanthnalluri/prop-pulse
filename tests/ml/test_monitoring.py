@@ -320,6 +320,28 @@ def test_load_reference_stats_corrupt_raises_structured_error(
         load_reference_stats(path)
 
 
+def test_reference_builder_persists_effective_bins(reference_path: Path) -> None:
+    payload = json.loads(reference_path.read_text())
+    assert all(spec['effective_bins'] == len(spec['bin_edges']) - 1
+               for spec in payload['numeric'].values())
+
+
+def test_reference_validation_rejects_one_effective_bin(tmp_path: Path) -> None:
+    path = tmp_path / 'reference_stats.json'
+    path.write_text(json.dumps({
+        'numeric': {
+            'PoolArea': {
+                'bin_edges': [0.0, 738.0],
+                'effective_bins': 1,
+                'degenerate': True,
+                'expected_proportions': [1.0],
+            }
+        }
+    }))
+    with pytest.raises(ValueError, match='at least two effective bins'):
+        load_reference_stats(path)
+
+
 def test_drift_check_corrupt_reference_is_clean_error_not_traceback(
     tmp_path: Path,
 ) -> None:

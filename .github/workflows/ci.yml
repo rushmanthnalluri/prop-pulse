@@ -32,17 +32,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      # Strict dependency audit: the build fails on any known fixable CVE.
-      # The single accepted exception is cryptography 49.0.0 (CVE-2026-69247 /
-      # PYSEC-2026-3552): the only fix (50.0.0) violates mlflow 3.15.1's
-      # cryptography<50 pin and the vulnerable API is never called here —
-      # see reports/SECURITY.md §1.1. Remove the ignore once mlflow permits
-      # cryptography>=50. The slim backend requirements carry no accepted
-      # findings, so they are audited without any ignore.
+      # Dependency security is a hard gate. No historical exception is carried
+      # into the upgraded stack; the current resolver/audit result is the truth.
       - name: Audit Python dependencies
         run: |
           pip install pip-audit
-          pip-audit --strict --ignore-vuln PYSEC-2026-3552 -r requirements.txt
+          pip-audit --strict -r requirements.txt
           pip-audit --strict -r backend/requirements.txt
 
       # pytest.ini sets pythonpath=.; testpaths = tests backend/tests.
@@ -124,23 +119,191 @@ jobs:
       - name: Start backend container
         run: docker run -d --name proppulse-backend-ci -p 8000:8000 proppulse-backend:ci
 
-      # /health only answers once uvicorn is up and the model artifacts are
-      # loaded; poll (2s interval, 60 tries) instead of a fixed sleep so the
-      # gate is as fast as the warm-up allows but bounded at ~120s.
-      - name: Smoke-test backend health
+      # /ready is the deployment readiness gate: it returns 200 only after
+      # required champion artifacts are loaded. Poll it with the same bounded
+      # 120s warm-up budget; /health remains the liveness smoke above it.
+      - name: Smoke-test backend health and readiness
         run: |
           for i in $(seq 1 60); do
-            status=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || true)
-            if [ "$status" = "200" ]; then
-              echo "backend healthy after $((i * 2))s"
+            health=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || true)
+            ready=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/ready || true)
+            if [ "$health" = "200" ] && [ "$ready" = "200" ]; then
+              echo "backend healthy and ready after $((i * 2))s"
               exit 0
             fi
             sleep 2
           done
-          echo "backend did not return 200 from /health within 120s — container logs:"
+          echo "backend did not become healthy+ready within 120s — container logs:"
           docker logs proppulse-backend-ci
           exit 1
 
       - name: Remove backend container
         if: always()
         run: docker rm -f proppulse-backend-ci
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Set up Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm install
+
+      - name: Install E2E dependencies and Chromium
+        working-directory: e2e
+        run: |
+          npm install
+          npx playwright install --with-deps chromium
+
+      - name: Start backend
+        env:
+          CORS_ORIGINS: http://localhost:5300
+        run: |
+          python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8200 > /tmp/proppulse-backend.log 2>&1 &
+          echo $! > /tmp/proppulse-backend.pid
+          for i in $(seq 1 90); do
+            if curl -fsS http://localhost:8200/ready >/dev/null; then exit 0; fi
+            sleep 2
+          done
+          cat /tmp/proppulse-backend.log
+          exit 1
+
+      - name: Start frontend
+        working-directory: frontend
+        env:
+          VITE_API_URL: http://localhost:8200
+        run: |
+          npm run dev -- --host 127.0.0.1 --port 5300 --strictPort > /tmp/proppulse-frontend.log 2>&1 &
+          echo $! > /tmp/proppulse-frontend.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:5300/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/proppulse-frontend.log
+          exit 1
+
+      - name: Run browser E2E suite
+        working-directory: e2e
+        run: npm test
+        env:
+          CI: true
+
+      - name: Upload browser artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proppulse-e2e-${{ github.sha }}
+          path: |
+            e2e/test-results/
+            e2e/playwright-report/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Dump E2E service logs
+        if: failure()
+        run: |
+          cat /tmp/proppulse-backend.log || true
+          cat /tmp/proppulse-frontend.log || true
+
+      - name: Stop E2E services
+        if: always()
+        run: |
+          kill $(cat /tmp/proppulse-frontend.pid) 2>/dev/null || true
+          kill $(cat /tmp/proppulse-backend.pid) 2>/dev/null || true
+  # One generated source of release evidence. This job never hides an upstream
+  # failure: it writes the statuses even when a gate failed, uploads the report,
+  # then returns failure so a release cannot accidentally be marked green.
+  verification:
+    if: ${{ always() }}
+    needs: [python, frontend, docker, docker-build, e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate verification report
+        env:
+          PYTHON_RESULT: ${{ needs.python.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          DOCKER_RESULT: ${{ needs.docker.result }}
+          DOCKER_BUILD_RESULT: ${{ needs['docker-build'].result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+          COMMIT_SHA: ${{ github.sha }}
+          REF_NAME: ${{ github.ref_name }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          mkdir -p reports/verification
+          cat > reports/verification/latest.md <<EOF
+          # PropPulse CI verification
+
+          - Commit: \`$COMMIT_SHA\`
+          - Ref: \`$REF_NAME\`
+          - Run: [$RUN_ID]($RUN_URL)
+
+          | Gate | Result |
+          |---|---|
+          | Python tests + dependency audit | $PYTHON_RESULT |
+          | Frontend audit + lint + build | $FRONTEND_RESULT |
+          | Compose validation | $DOCKER_RESULT |
+          | Docker build + health/readiness smoke | $DOCKER_BUILD_RESULT |
+          | Browser E2E | $E2E_RESULT |
+
+          ## Release gate
+
+          The exact commit is release-verifiable only when every required upstream
+          gate is \`success\`. Historical audit/report counts are not substituted.
+          EOF
+          cat > reports/verification/latest.json <<EOF
+          {
+            "commit": "$COMMIT_SHA",
+            "ref": "$REF_NAME",
+            "run_id": "$RUN_ID",
+            "run_url": "$RUN_URL",
+            "gates": {
+              "python": "$PYTHON_RESULT",
+              "frontend": "$FRONTEND_RESULT",
+              "docker": "$DOCKER_RESULT",
+              "docker-build": "$DOCKER_BUILD_RESULT",
+              "e2e": "$E2E_RESULT"
+            }
+          }
+          EOF
+          cat reports/verification/latest.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verification report
+        uses: actions/upload-artifact@v4
+        with:
+          name: proppulse-verification-${{ github.sha }}
+          path: reports/verification/
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Enforce release gate
+        env:
+          PYTHON_RESULT: ${{ needs.python.result }}
+          FRONTEND_RESULT: ${{ needs.frontend.result }}
+          DOCKER_RESULT: ${{ needs.docker.result }}
+          DOCKER_BUILD_RESULT: ${{ needs.docker-build.result }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+        run: |
+          test "$PYTHON_RESULT" = success
+          test "$FRONTEND_RESULT" = success
+          test "$DOCKER_RESULT" = success
+          test "$DOCKER_BUILD_RESULT" = success

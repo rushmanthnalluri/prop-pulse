@@ -2,13 +2,15 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
+import uuid
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-__all__ = ["MetricsMiddleware", "route_template_key", "START_TIME_SCOPE_KEY"]
+__all__ = ["MetricsMiddleware", "route_template_key", "START_TIME_SCOPE_KEY", "REQUEST_ID_SCOPE_KEY", "REQUEST_ID_HEADER"]
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +19,9 @@ logger = logging.getLogger(__name__)
 #: (Starlette ``ServerErrorMiddleware``), so it reads the start time back from
 #: the scope to record a realistic latency (AUD-03).
 START_TIME_SCOPE_KEY = "proppulse.metrics_started_at"
+REQUEST_ID_SCOPE_KEY = "proppulse.request_id"
+REQUEST_ID_HEADER = "X-Request-ID"
+_REQUEST_ID_RE = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 
 #: Metrics bucket for requests that matched no route (404 probes): arbitrary
 #: URLs must not grow ``requests_by_path`` without bound (AUD-04).
@@ -45,12 +50,21 @@ class MetricsMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:  # type: ignore[override]
         """Time the request and record it (never blocks the response)."""
         started = time.perf_counter()
-        # Stashed before ``call_next`` so the 500 handler can reuse it if the
-        # request never comes back through here (AUD-03).
         request.scope[START_TIME_SCOPE_KEY] = started
+        incoming_id = request.headers.get(REQUEST_ID_HEADER, "")
+        request_id = incoming_id if _REQUEST_ID_RE.fullmatch(incoming_id) else uuid.uuid4().hex
+        request.scope[REQUEST_ID_SCOPE_KEY] = request_id
+        request.state.request_id = request_id
+
+        monitoring = getattr(request.app.state, "monitoring_service", None)
+        if monitoring is not None:
+            try:
+                monitoring.begin_request()
+            except Exception as exc:  # noqa: BLE001
+                logger.warning("metrics begin_request failed: %s", exc)
+
         response = await call_next(request)
         latency_ms = (time.perf_counter() - started) * 1000.0
-        monitoring = getattr(request.app.state, "monitoring_service", None)
         if monitoring is not None:
             try:
                 monitoring.record_request(
@@ -58,6 +72,10 @@ class MetricsMiddleware(BaseHTTPMiddleware):
                 )
             except Exception as exc:  # noqa: BLE001 — metrics must never break serving
                 logger.warning(
-                    "metrics recording failed for %s: %s", request.url.path, exc
+                    "metrics recording failed for %s request_id=%s: %s",
+                    request.url.path,
+                    request_id,
+                    exc,
                 )
+        response.headers[REQUEST_ID_HEADER] = request_id
         return response
