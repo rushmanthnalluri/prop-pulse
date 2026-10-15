@@ -143,7 +143,7 @@ export async function request(path, options = {}) {
       throw new ApiError('You appear to be offline. Check your connection and try again.', 0)
     }
     throw new ApiError(
-      `Cannot reach the PropPulse API at ${API_URL}. Is the backend running?`,
+      `The browser could not connect to the PropPulse API at ${API_URL}. Check that the frontend VITE_API_URL points to the live backend and that the backend CORS_ORIGINS includes this frontend origin. If the issue persists, inspect the browser Network tab for the failed request.`,
       0,
     )
   }

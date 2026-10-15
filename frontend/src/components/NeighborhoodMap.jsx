@@ -11,10 +11,9 @@
  * the same focus+popup without pointing, and the sortable directory table
  * below is the full non-map equivalent (the map's aria-label says so).
  *
- * Dark treatment: CARTO's dark_all basemap (OSM data, no API key, no new
- * dependency) replaces the light OSM Standard tiles so the map sits inside
- * the design system; popup/tooltip chrome is themed to the dark language in
- * styles.css / styles/market.css.
+ * Basemap: OpenStreetMap Standard tiles with visible OpenStreetMap attribution.
+ * The standard tile host is used directly to comply with its published usage
+ * policy; popup/tooltip chrome remains themed to the dark design system.
  *
  * Hardening contract: `points` arrives pre-validated by the parent (finite
  * lat/long only; skipped points are disclosed in the UI there, AUDIT §2.3).
@@ -149,9 +148,8 @@ export default function NeighborhoodMap({
       >
         <MapContainer center={AMES_CENTER} zoom={12} className="map-canvas" scrollWheelZoom>
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-            subdomains="abcd"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <FlyToTarget target={flyTo} reduced={reduced} />
           <FocusPoint focus={focus} points={points} markerRefs={markerRefs} />
