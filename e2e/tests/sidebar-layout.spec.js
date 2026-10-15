@@ -60,3 +60,48 @@ test('desktop sidebar separates Product links from the Dataset and API footer', 
     expect(geometry.status.bottom).toBeLessThanOrEqual(geometry.viewportHeight + 1)
   }
 })
+
+
+test('mobile sidebar keeps Pipeline, Product, and Dataset in distinct rows', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  const sidebar = page.locator('aside.pipeline-sidebar')
+  const pipeline = sidebar.locator('.shell-nav-section--pipeline')
+  const product = sidebar.locator('.shell-nav-section--product')
+  const dataset = sidebar.locator('.shell-foot-fact')
+  const compactStatus = sidebar.locator('.api-status-compact')
+
+  await expect(pipeline.getByText('Pipeline', { exact: true })).toBeVisible()
+  await expect(product.getByText('Product', { exact: true })).toBeVisible()
+  await expect(dataset.getByText('Dataset', { exact: true })).toBeVisible()
+  await expect(dataset.locator('.sidebar-dataset')).toBeVisible()
+  await expect(compactStatus).toBeVisible()
+
+  const geometry = await page.evaluate(() => {
+    const rect = (selector) => {
+      const node = document.querySelector(selector)
+      if (!node) return null
+      const r = node.getBoundingClientRect()
+      return { top: r.top, bottom: r.bottom, height: r.height }
+    }
+    return {
+      pipeline: rect('.shell-nav-section--pipeline'),
+      product: rect('.shell-nav-section--product'),
+      footer: rect('.sidebar-footer'),
+      dataset: rect('.shell-foot-fact'),
+    }
+  })
+
+  expect(geometry.pipeline).not.toBeNull()
+  expect(geometry.product).not.toBeNull()
+  expect(geometry.footer).not.toBeNull()
+  expect(
+    geometry.product.top,
+    'mobile Product row should start after Pipeline ends',
+  ).toBeGreaterThanOrEqual(geometry.pipeline.bottom - 1)
+  expect(
+    geometry.footer.top,
+    'mobile Dataset footer should start after Product ends',
+  ).toBeGreaterThanOrEqual(geometry.product.bottom - 1)
+  expect(geometry.dataset.bottom).toBeLessThanOrEqual(geometry.footer.bottom + 1)
+})
