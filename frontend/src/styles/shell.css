@@ -20,9 +20,16 @@
      nine-stage pipeline scrolls when a desktop viewport is short. */
   .shell-root .shell-navwrap {
     overflow: hidden;
+    gap: 0;
     padding-bottom: 8px;
   }
-  .shell-root .shell-navwrap > .shell-nav:not(.shell-nav--product) {
+  .shell-root .shell-nav-section--pipeline {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .shell-root .shell-nav-section--pipeline > .shell-nav {
     flex: 1 1 auto;
     min-height: 0;
     overflow-x: hidden;
@@ -31,15 +38,18 @@
     scrollbar-width: thin;
     scrollbar-color: var(--border-strong) transparent;
   }
-  .shell-root .shell-navwrap > .shell-nav:not(.shell-nav--product)::-webkit-scrollbar {
+  .shell-root .shell-nav-section--pipeline > .shell-nav::-webkit-scrollbar {
     width: 6px;
   }
-  .shell-root .shell-navwrap > .shell-nav:not(.shell-nav--product)::-webkit-scrollbar-thumb {
+  .shell-root .shell-nav-section--pipeline > .shell-nav::-webkit-scrollbar-thumb {
     background: var(--border-strong);
     border-radius: 999px;
   }
-  .shell-root .shell-navwrap > .shell-nav:not(.shell-nav--product)::-webkit-scrollbar-track {
+  .shell-root .shell-nav-section--pipeline > .shell-nav::-webkit-scrollbar-track {
     background: transparent;
+  }
+  .shell-root .shell-nav-section--product {
+    flex: 0 0 auto;
   }
 }
 
