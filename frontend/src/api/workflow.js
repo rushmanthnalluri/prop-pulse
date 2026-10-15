@@ -414,9 +414,11 @@ export function sandboxPredict(jobId, candidate, payload, signal) {
  *   `reloadState()` from the workflow context when the job turns terminal.
  * @returns {{job: JobStatus|null, error: Error|null, active: boolean, refresh: () => Promise<JobStatus|null>}}
  */
-export function useJobPolling(jobId, { intervalMs = 1500, onUpdate } = {}) {
+export function useJobPolling(jobId, { intervalMs = 3000, onUpdate } = {}) {
   const [job, setJob] = useState(null)
   const [error, setError] = useState(null)
+  const [retryDelay, setRetryDelay] = useState(intervalMs)
+  const [shouldRetry, setShouldRetry] = useState(true)
   const onUpdateRef = useRef(onUpdate)
   useEffect(() => {
     onUpdateRef.current = onUpdate
@@ -428,10 +430,22 @@ export function useJobPolling(jobId, { intervalMs = 1500, onUpdate } = {}) {
       const next = await getJob(jobId)
       setJob(next)
       setError(null)
+      setRetryDelay(intervalMs)
+      setShouldRetry(true)
       onUpdateRef.current?.(next)
       return next
     } catch (err) {
-      if (err?.name !== 'AbortError') setError(err)
+      if (err?.name !== 'AbortError') {
+        setError(err)
+        const status = Number(err?.status ?? 0)
+        // Retry network failures, throttling and upstream/server errors; stop
+        // on missing jobs and other client errors rather than hammering 404s.
+        const retryable = status === 0 || status === 408 || status === 429 || status >= 500
+        setShouldRetry(retryable)
+        if (retryable) {
+          setRetryDelay((current) => Math.min(Math.max(current, intervalMs) * 2, 30000))
+        }
+      }
       return null
     }
   }, [jobId])
@@ -440,11 +454,13 @@ export function useJobPolling(jobId, { intervalMs = 1500, onUpdate } = {}) {
   useEffect(() => {
     setJob(null)
     setError(null)
+    setRetryDelay(intervalMs)
+    setShouldRetry(true)
     refresh()
-  }, [refresh])
+  }, [refresh, intervalMs])
 
-  const active = Boolean(jobId) && (job !== null ? isJobActive(job.status) : error === null)
-  usePolling(refresh, active ? intervalMs : null)
+  const active = Boolean(jobId) && (job !== null ? isJobActive(job.status) : shouldRetry)
+  usePolling(refresh, active ? retryDelay : null)
 
   return { job, error, active, refresh }
 }
