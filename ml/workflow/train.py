@@ -71,11 +71,16 @@ from ml.features.stats import NeighborhoodStats, load_neighborhood_stats
 from ml.paths import RANDOM_SEED
 from ml.training.common import regression_metrics, residual_interval
 from ml.training.train_classification import (
-    MODEL_NAMES,
     candidate_grids,
     classification_metrics,
     fit_calibrated,
     tune_on_train,
+)
+from ml.workflow.candidates import (
+    CLASSIFICATION_CANDIDATES,
+    CLUSTERING_CANDIDATES,
+    OBJECTIVE_CANDIDATES,
+    REGRESSION_CANDIDATES,
 )
 from ml.training.train_regression import (
     CV,
@@ -108,22 +113,8 @@ __all__ = [
     "valid_candidates",
 ]
 
-#: The valid candidate sets per objective (§3.9; unknown candidates -> 422
-#: with this list named, MECH §6 pattern).
-REGRESSION_CANDIDATES: tuple[str, ...] = (
-    "linear",
-    "ridge",
-    "lasso",
-    "random_forest",
-    "xgboost",
-)
-CLASSIFICATION_CANDIDATES: tuple[str, ...] = tuple(MODEL_NAMES)
-CLUSTERING_CANDIDATES: tuple[str, ...] = ("dbscan",)
-OBJECTIVE_CANDIDATES: dict[str, tuple[str, ...]] = {
-    "regression": REGRESSION_CANDIDATES,
-    "classification": CLASSIFICATION_CANDIDATES,
-    "clustering": CLUSTERING_CANDIDATES,
-}
+#: Candidate allowlists are kept in ml.workflow.candidates, a lightweight module
+#: importable by request validation without importing the ML training stack.
 
 #: n_jobs pins (§4.5): searches single-threaded; parallel estimators capped.
 # Keep the sandbox trainer well inside Render's free 512 MiB service limit.
