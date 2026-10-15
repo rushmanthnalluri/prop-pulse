@@ -71,7 +71,7 @@ class Settings(BaseSettings):
                 raise ValueError("CORS_ORIGINS entries must not contain credentials")
             if parsed.path not in {"", "/"}:
                 raise ValueError("CORS_ORIGINS entries must not contain a path")
-            if parsed.netloc.endswith(":") or any(character in host for character in ("/", "\\\\", "%")):
+            if parsed.netloc.endswith(":") or any(character in host for character in ("/", "\\", "%")):
                 raise ValueError("CORS_ORIGINS contains an invalid host or port")
 
             # Browser Origin values omit default ports and use a lowercase host.
