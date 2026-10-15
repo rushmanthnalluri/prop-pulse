@@ -158,9 +158,10 @@ docker compose up --build                        # default ports 8000/8080; for 
   (`docs/DEPLOYMENT.md` checklist). (Post-audit note: the 64 KiB body limit now
   also covers chunked bodies without a declared Content-Length — a streaming
   byte counter returns 413; see `docs/audit/fix-backend.md`.)
-6. Docker images verified on this machine only; CI workflow has not run on a
-  hosted runner. E2E covers Chromium only. Backend image is 1.77 GB (xgboost/numba
-  deps) — slimming is a documented future item.
+6. The 1.77 GB backend image measurement predates the 2026-10-16 SHAP 0.53
+  dependency cleanup (Numba/llvmlite removed). Re-measure the built image before
+  quoting a current size; XGBoost remains a known image-size contributor. E2E
+  coverage is Chromium-only.
 7. Small dataset (1,460 rows, one city, 2006–2010 market).
 
 ### 5. Release contents map
