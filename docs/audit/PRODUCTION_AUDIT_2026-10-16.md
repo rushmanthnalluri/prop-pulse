@@ -18,6 +18,7 @@
 | PP-03 | P2 | `frontend/src/api/client.js` aborted every request after 30 seconds. Render documents that a free web service can take about one minute to resume after idling, so the configured timeout could abort a normal cold-start request before the API came back. | **Fixed:** allow 90 seconds for a Render-hosted API while retaining the 30-second limit for local/self-hosted APIs; cold-start timeout feedback is clearer. |
 | PP-04 | P3 | Middleware comments incorrectly described `SecurityHeadersMiddleware` as the outermost user middleware even though CORS is added outside it. | **Fixed:** clarify the actual wrapping order to reduce the chance of a future middleware-order regression. |
 | PP-05 | P3 | `RELEASE_STATUS.md` still said the hardening branch was pending verification and was last maintained on 2026-10-03, despite later main-branch merges and a green main CI run. | **Fixed:** refresh the status date and document the exact-commit CI requirement. |
+| PP-07 | P3 | The clean Python test run surfaced four upstream deprecation warnings: Starlette `TestClient` falling back to legacy `httpx`, plus SHAP 0.52 calling Matplotlib's deprecated colormap setters. | **Fix prepared:** pin Starlette's supported `httpx2` client and SHAP 0.53, which uses `with_extremes`; remove now-unneeded Numba/llvmlite requirements and refresh dependency rationale. Exact-head CI must confirm tests, audits, Docker, and E2E remain green and the warnings disappear. |
 
 ## Platform constraint that remains
 
@@ -39,6 +40,10 @@ The current code base and its CI now guard the previously observed training OOM 
 ## Previously catalogued audit findings
 
 The older `docs/audit/FINDINGS.md` catalog (AUD-01 through AUD-27) remains the detailed historical list for the prior source-audit wave. Those findings cover non-finite JSON handling, chunked-upload limit enforcement, missing 500 metrics, metric-cardinality bounds, compose port overrides, degenerate-feature PSI, calendar-only retraining alerts, frontend request timeout/abort behavior, warning floods, regression-test thresholds, data preparation guards, path disclosure, configuration path resolution, monitoring lock/I/O, prediction probability fallback, deployment/data-path ergonomics, model artifact logging, and stale documentation. The contemporaneous `FINAL_AUDIT.md` describes those as fixed, documentation-corrected, or intentionally accepted; the `FIX` labels in `FINDINGS.md` describe the original fix assignment and must not be mistaken for the present open backlog. AUD-13 intentionally corrected the data/schema documentation rather than retraining the verified model.
+
+## Additional dependency cleanup
+
+The first Python pass on this branch passed **478 tests** and `pip-audit` found no known vulnerabilities, but pytest emitted four third-party deprecation warnings. The branch now pins `httpx2==2.13.1` for Starlette TestClient and SHAP `0.53.0`; the latter uses Matplotlib's non-deprecated `with_extremes` and its released dependency metadata no longer requires Numba/llvmlite. The newest commit must re-run every CI gate before these warnings can be marked resolved.
 
 ## Remaining security gap requiring a product decision
 
