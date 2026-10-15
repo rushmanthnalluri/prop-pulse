@@ -119,8 +119,8 @@ jobs:
       - name: Build frontend image
         run: docker build -f docker/frontend.Dockerfile -t proppulse-frontend:ci .
 
-      - name: Start backend container
-        run: docker run -d --name proppulse-backend-ci -p 8000:8000 proppulse-backend:ci
+      - name: Start backend container (Render free-tier memory limit)
+        run: docker run -d --memory=512m --memory-swap=512m --name proppulse-backend-ci -p 8000:8000 proppulse-backend:ci
 
       # /ready is the deployment readiness gate: it returns 200 only after
       # required champion artifacts are loaded. Poll it with the same bounded
@@ -139,6 +139,49 @@ jobs:
           echo "backend did not become healthy+ready within 120s — container logs:"
           docker logs proppulse-backend-ci
           exit 1
+
+      # Regression for the production outage: the API and one real training
+      # job must coexist under Render's 512 MiB cgroup without the API being OOM-killed.
+      - name: Smoke-test bounded training under 512 MiB
+        run: |
+          python - <<'PY'
+          import json
+          import time
+          import urllib.error
+          import urllib.request
+
+          base = "http://127.0.0.1:8000"
+
+          def request(path, method="GET", payload=None):
+              data = None if payload is None else json.dumps(payload).encode()
+              headers = {} if data is None else {"Content-Type": "application/json"}
+              req = urllib.request.Request(base + path, data=data, headers=headers, method=method)
+              with urllib.request.urlopen(req, timeout=15) as response:
+                  return response.status, json.loads(response.read())
+
+          code, accepted = request(
+              "/workflow/datasets/ames/jobs",
+              "POST",
+              {"objective": "regression", "candidates": ["linear"]},
+          )
+          assert code == 202, (code, accepted)
+          job_id = accepted["job_id"]
+          deadline = time.monotonic() + 120
+          terminal = None
+          while time.monotonic() < deadline:
+              _, health = request("/health")
+              assert health.get("status") == "ok", health
+              _, status = request(f"/workflow/jobs/{job_id}")
+              if status.get("status") in {"done", "failed"}:
+                  terminal = status
+                  break
+              time.sleep(2)
+          assert terminal is not None, f"training timed out: {job_id}"
+          assert terminal["status"] == "done", terminal
+          _, final_health = request("/health")
+          assert final_health.get("status") == "ok", final_health
+          print(f"bounded training succeeded: {job_id}; API remained healthy")
+          PY
 
       - name: Remove backend container
         if: always()
