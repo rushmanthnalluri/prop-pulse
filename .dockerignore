@@ -30,9 +30,12 @@ frontend/dist
 data/raw
 data/interim
 data/processed
-# ... except the processed train split: the SHAP explainer builds its
-# background distribution from it at serving time (ml/explainability/explainer.py).
+# Re-include the canonical prepared splits required by bundled Ames workflow
+# training; directories must be re-included before individual files.
+!data/processed/
 !data/processed/train.csv
+!data/processed/val.csv
+!data/processed/test.csv
 
 # --- Runtime state: bind-mounted or regenerated, never baked into images ---
 mlruns
