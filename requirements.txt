@@ -5,13 +5,15 @@
 # Pin rationale (see docs/DECISIONS.md ADR-6):
 #   - pandas/numpy/numba remain on the established compatible ML stack.
 #   - mlflow + cryptography are upgraded together so CI can verify the advisory path.
+#   - Champion joblib artifacts were created with scikit-learn 1.9.0; runtime
+#     must match the pickle version to avoid unsupported loading/warning behavior.
 #   - filelock is direct because workflow admission must work across API processes.
 
 # --- core science ---
 pandas==2.3.3
 numpy==2.4.6
 scipy==1.18.0
-scikit-learn==1.9.1
+scikit-learn==1.9.0
 matplotlib==3.11.1
 seaborn==0.13.2
 joblib==1.5.3

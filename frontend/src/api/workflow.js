@@ -442,6 +442,7 @@ export function useJobPolling(jobId, { intervalMs = 3000, onUpdate } = {}) {
         // on missing jobs and other client errors rather than hammering 404s.
         const retryable = status === 0 || status === 408 || status === 429 || status >= 500
         setShouldRetry(retryable)
+        if (!retryable) setJob(null)
         if (retryable) {
           setRetryDelay((current) => Math.min(Math.max(current, intervalMs) * 2, 30000))
         }
@@ -459,7 +460,10 @@ export function useJobPolling(jobId, { intervalMs = 3000, onUpdate } = {}) {
     refresh()
   }, [refresh, intervalMs])
 
-  const active = Boolean(jobId) && (job !== null ? isJobActive(job.status) : shouldRetry)
+  // The retry policy must gate even a cached "running" payload; otherwise
+  // a subsequent non-retryable 404 keeps polling the stale job forever.
+  const active =
+    Boolean(jobId) && shouldRetry && (job !== null ? isJobActive(job.status) : true)
   usePolling(refresh, active ? retryDelay : null)
 
   return { job, error, active, refresh }

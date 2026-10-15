@@ -42,11 +42,15 @@ COPY models/ models/
 # backend/app/services/cluster_service.py all read this CSV).
 COPY data/external/neighborhood_geo.csv data/external/neighborhood_geo.csv
 
-# Also required at serving time: the SHAP explainer samples its background
-# distribution from the processed train split (ml/explainability/explainer.py
-# -> ml.training.common.load_split("train")). Without it /predict returns
-# empty top_price_factors. Un-excluded in .dockerignore; 334 KB.
+# The guided Ames workflow loads this raw CSV to validate and start training.
+# .dockerignore re-includes only this file; the Kaggle archive stays excluded.
+COPY data/raw/ames/train.csv data/raw/ames/train.csv
+
+# Required by the workflow's canonical bundled Ames dataset. Train is also
+# the SHAP background distribution; validation/test are used by training jobs.
 COPY data/processed/train.csv data/processed/train.csv
+COPY data/processed/val.csv data/processed/val.csv
+COPY data/processed/test.csv data/processed/test.csv
 
 # Runtime-writable directories: the prediction JSONL log (bind-mounted in
 # compose) and the drift report written by `python -m ml.monitoring.drift_check`.

@@ -244,7 +244,7 @@ class WorkflowJobService:
         except UnknownDataset as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
-        from ml.workflow.train import OBJECTIVE_CANDIDATES  # noqa: PLC0415
+        from ml.workflow.candidates import OBJECTIVE_CANDIDATES  # noqa: PLC0415
 
         valid = OBJECTIVE_CANDIDATES[objective]
         unknown = [c for c in candidates if c not in valid]

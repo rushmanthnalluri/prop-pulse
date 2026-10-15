@@ -7,10 +7,11 @@
  * display:none, so accessible names survive the icon rail. The main column is
  * the centered 940px container with the mono footer row.
  *
- * ≤900px the sidebar becomes a top bar: brand + compact API-status chip on
- * the first row, then ONE merged horizontal scroll strip (pipeline stages,
- * then product pages, hairline-divided) — .shell-navwrap is the scroller the
- * active item is centred in; the section captions drop to save height.
+ * Desktop keeps the two navigation groups in a vertical scroller with a
+ * fixed, separated Dataset/API footer. ≤900px the sidebar becomes a top bar:
+ * brand + compact API-status chip, then ONE merged horizontal scroll strip
+ * (pipeline stages, then product pages, hairline-divided); section captions
+ * drop out at that breakpoint to save height.
  *
  * The API-status poll pauses when the tab is hidden and re-checks on
  * visibility return or manual click; window online/offline events update the
@@ -284,16 +285,16 @@ export default function Layout() {
       '404 · PropPulse'
   }, [location.pathname])
 
-  // Keep the active stepper item visible inside the ≤900px scroll strip (the
-  // merged .shell-navwrap is the scroller there; on desktop neither wrapper
-  // scrolls and the assignment is a no-op). Manual scrollLeft, NOT
+  // Keep the active stepper item visible inside the ≤900px horizontal strip.
+  // On desktop .shell-navwrap is the vertical nav scroller, so horizontal
+  // scrollLeft remains a no-op. Manual scrollLeft, NOT
   // scrollIntoView: scrollIntoView also moves Chromium's sequential-focus
   // start point to the active link, so the first Tab after navigation would
   // skip the skip-link and every nav item before the active one (hardening
   // §21 keyboard-walk regression).
   useEffect(() => {
     const active = sidebarRef.current?.querySelector('.pipeline-stepper li.is-active a')
-    const strip = active?.closest('.shell-navwrap') ?? active?.closest('.pipeline-stepper')
+    const strip = active?.closest('.shell-nav') ?? active?.closest('.pipeline-stepper')
     if (!active || !strip) return
     const delta = active.getBoundingClientRect().left - strip.getBoundingClientRect().left
     strip.scrollLeft += delta - (strip.clientWidth - active.clientWidth) / 2
@@ -354,38 +355,42 @@ export default function Layout() {
         </div>
 
         <div className="shell-navwrap">
-          <p className="nav-caption shell-caption">Pipeline</p>
-          <nav className="pipeline-stepper shell-nav" aria-label="ML pipeline stages">
-            <ol>
-              {PIPELINE_STAGES.map((stage) => (
-                <SidebarItem
-                  key={stage.slug}
-                  to={`/workflow/${stage.slug}`}
-                  num={stage.num}
-                  label={stage.title}
-                  dataStage={stage.slug}
-                />
-              ))}
-            </ol>
-          </nav>
+          <section className="shell-nav-section shell-nav-section--pipeline" aria-label="Pipeline navigation">
+            <p className="nav-caption shell-caption">Pipeline</p>
+            <nav className="pipeline-stepper shell-nav" aria-label="ML pipeline stages">
+              <ol>
+                {PIPELINE_STAGES.map((stage) => (
+                  <SidebarItem
+                    key={stage.slug}
+                    to={`/workflow/${stage.slug}`}
+                    num={stage.num}
+                    label={stage.title}
+                    dataStage={stage.slug}
+                  />
+                ))}
+              </ol>
+            </nav>
+          </section>
 
-          <p className="nav-caption shell-caption">Product</p>
-          <nav
-            className="pipeline-stepper pipeline-stepper--product shell-nav shell-nav--product"
-            aria-label="Product pages"
-          >
-            <ol>
-              {PRODUCT_ITEMS.map((item) => (
-                <SidebarItem
-                  key={item.to}
-                  to={item.to}
-                  label={item.label}
-                  end={item.end}
-                  Icon={item.Icon}
-                />
-              ))}
-            </ol>
-          </nav>
+          <section className="shell-nav-section shell-nav-section--product" aria-label="Product navigation">
+            <p className="nav-caption shell-caption shell-caption--product">Product</p>
+            <nav
+              className="pipeline-stepper pipeline-stepper--product shell-nav shell-nav--product"
+              aria-label="Product pages"
+            >
+              <ol>
+                {PRODUCT_ITEMS.map((item) => (
+                  <SidebarItem
+                    key={item.to}
+                    to={item.to}
+                    label={item.label}
+                    end={item.end}
+                    Icon={item.Icon}
+                  />
+                ))}
+              </ol>
+            </nav>
+          </section>
         </div>
 
         <div className="sidebar-footer">

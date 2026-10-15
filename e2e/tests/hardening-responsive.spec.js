@@ -83,6 +83,41 @@ function probeOverflow(page) {
   })
 }
 
+test('sidebar: pipeline, product links, and dataset stay visually separated', async ({ page }) => {
+  await ensureBackend()
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await page.goto('/', { waitUntil: 'domcontentloaded' })
+    await expect(page.getByRole('navigation', { name: 'ML pipeline stages' })).toBeVisible()
+    const productNav = page.getByRole('navigation', { name: 'Product pages' })
+    await expect(productNav).toBeVisible()
+    await expect(productNav.getByRole('link', { name: 'Model Insights' })).toBeVisible()
+    await expect(productNav.getByRole('link', { name: 'Model Health' })).toBeVisible()
+    await expect(page.getByText('Dataset', { exact: true })).toBeVisible()
+    const layout = await page.evaluate(() => {
+      const pipeline = document.querySelector('.shell-nav-section--pipeline')?.getBoundingClientRect()
+      const product = document.querySelector('.shell-nav-section--product')?.getBoundingClientRect()
+      const footer = document.querySelector('.sidebar-footer')?.getBoundingClientRect()
+      const pipelineNav = document.querySelector('.shell-nav-section--pipeline nav')?.getBoundingClientRect()
+      const productNav = document.querySelector('.shell-nav-section--product nav')?.getBoundingClientRect()
+      return {
+        pipelineBottom: pipeline?.bottom,
+        productTop: product?.top,
+        productBottom: product?.bottom,
+        footerTop: footer?.top,
+        pipelineNavTop: pipelineNav?.top,
+        productNavTop: productNav?.top,
+      }
+    })
+    expect(layout.productTop).toBeGreaterThanOrEqual(layout.pipelineBottom)
+    expect(layout.productNavTop).toBeGreaterThan(layout.pipelineNavTop)
+    expect(layout.footerTop).toBeGreaterThanOrEqual(layout.productBottom)
+  }
+})
+
 for (const route of ROUTES) {
   test(`responsive: ${route.path} — no page-level horizontal overflow`, async ({ page }) => {
     test.setTimeout(180_000)

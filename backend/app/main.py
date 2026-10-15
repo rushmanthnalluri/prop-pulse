@@ -298,6 +298,11 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
+    @app.get("/", include_in_schema=False)
+    def service_root() -> dict[str, str]:
+        """Small root response for generic platform probes; detailed health is /health."""
+        return {"service": "PropPulse API", "status": "ok", "health": "/health"}
+
     app.include_router(health.router)
     app.include_router(predict.router)
     app.include_router(model.router)

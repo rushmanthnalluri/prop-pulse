@@ -17,6 +17,17 @@ services:
       # Must match the frontend service URL below (no trailing slash).
       - key: CORS_ORIGINS
         value: https://prop-pulse-frontend.onrender.com
+      # Keep math libraries single-threaded on the 512 MiB free-tier service.
+      - key: OMP_NUM_THREADS
+        value: "1"
+      - key: OPENBLAS_NUM_THREADS
+        value: "1"
+      - key: MKL_NUM_THREADS
+        value: "1"
+      - key: NUMEXPR_NUM_THREADS
+        value: "1"
+      - key: VECLIB_MAXIMUM_THREADS
+        value: "1"
 
   # Vite + React frontend. VITE_API_URL is baked into the bundle at build time.
   - type: web

@@ -1,4 +1,6 @@
 # PropPulse CI (SPEC §11/§12).
+# Use Node 24-native GitHub actions so the runner no longer emits Node 20
+# deprecation warnings (checkout/setup-node/setup-python/upload-artifact).
 # - python:       pinned dev environment on Python 3.12 + strict pip-audit
 #                 gate + the full test suite
 # - frontend:     install + npm audit gate + ESLint + production build of the
@@ -19,10 +21,10 @@ jobs:
   python:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -51,12 +53,13 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
+          package-manager-cache: false
 
       # Same pattern as docker/frontend.Dockerfile: npm ci when the lock file
       # is committed (reproducible), npm install while it is absent.
@@ -80,7 +83,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # compose reads env_file .env; derive it from the committed example so
       # validation works on a fresh checkout (no secrets involved).
@@ -106,7 +109,7 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Same build commands as docker/README.md; context is the repo root so
       # ml/, backend/, models/ and the required data files are included.
@@ -116,8 +119,8 @@ jobs:
       - name: Build frontend image
         run: docker build -f docker/frontend.Dockerfile -t proppulse-frontend:ci .
 
-      - name: Start backend container
-        run: docker run -d --name proppulse-backend-ci -p 8000:8000 proppulse-backend:ci
+      - name: Start backend container (Render free-tier memory limit)
+        run: docker run -d --memory=512m --memory-swap=512m --name proppulse-backend-ci -p 8000:8000 proppulse-backend:ci
 
       # /ready is the deployment readiness gate: it returns 200 only after
       # required champion artifacts are loaded. Poll it with the same bounded
@@ -137,6 +140,53 @@ jobs:
           docker logs proppulse-backend-ci
           exit 1
 
+      # Regression for the production outage: the API and one real training
+      # job must coexist under Render's 512 MiB cgroup without the API being OOM-killed.
+      - name: Smoke-test bounded training under 512 MiB
+        run: |
+          python - <<'PY'
+          import json
+          import time
+          import urllib.error
+          import urllib.request
+
+          base = "http://127.0.0.1:8000"
+
+          def request(path, method="GET", payload=None):
+              data = None if payload is None else json.dumps(payload).encode()
+              headers = {} if data is None else {"Content-Type": "application/json"}
+              req = urllib.request.Request(base + path, data=data, headers=headers, method=method)
+              with urllib.request.urlopen(req, timeout=15) as response:
+                  return response.status, json.loads(response.read())
+
+          code, accepted = request(
+              "/workflow/datasets/ames/jobs",
+              "POST",
+              {"objective": "regression", "candidates": ["linear"]},
+          )
+          assert code == 202, (code, accepted)
+          job_id = accepted["job_id"]
+          deadline = time.monotonic() + 120
+          terminal = None
+          while time.monotonic() < deadline:
+              _, health = request("/health")
+              assert health.get("status") == "ok", health
+              _, status = request(f"/workflow/jobs/{job_id}")
+              if status.get("status") in {"done", "failed"}:
+                  terminal = status
+                  break
+              time.sleep(2)
+          assert terminal is not None, f"training timed out: {job_id}"
+          assert terminal["status"] == "done", terminal
+          _, final_health = request("/health")
+          assert final_health.get("status") == "ok", final_health
+          print(f"bounded training succeeded: {job_id}; API remained healthy")
+          PY
+
+      - name: Dump backend logs after smoke failure
+        if: failure()
+        run: docker logs proppulse-backend-ci || true
+
       - name: Remove backend container
         if: always()
         run: docker rm -f proppulse-backend-ci
@@ -144,10 +194,10 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -158,9 +208,10 @@ jobs:
           pip install -r requirements.txt
 
       - name: Set up Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24
+          package-manager-cache: false
 
       - name: Install frontend dependencies
         working-directory: frontend
@@ -207,7 +258,7 @@ jobs:
 
       - name: Upload browser artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: proppulse-e2e-${{ github.sha }}
           path: |
@@ -235,7 +286,7 @@ jobs:
     needs: [python, frontend, docker, docker-build, e2e]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Generate verification report
         env:
@@ -288,7 +339,7 @@ jobs:
           cat reports/verification/latest.md >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload verification report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: proppulse-verification-${{ github.sha }}
           path: reports/verification/

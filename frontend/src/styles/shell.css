@@ -12,6 +12,47 @@
 /* Keep the sidebar's own scroll from chaining into the page. */
 .shell-root .pipeline-sidebar { overscroll-behavior: contain; }
 
+/* Desktop keeps the dataset and API footer anchored while the two nav groups
+   scroll in their own vertical viewport. At short heights this prevents the
+   Product links from colliding visually with Dataset / service status. */
+@media (min-width: 901px) {
+  /* Keep the Product block in-flow and visible above the footer. Only the
+     nine-stage pipeline scrolls when a desktop viewport is short. */
+  .shell-root .shell-navwrap {
+    overflow: hidden;
+    gap: 0;
+    padding-bottom: 8px;
+  }
+  .shell-root .shell-nav-section--pipeline {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .shell-root .shell-nav-section--pipeline > .shell-nav {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .shell-root .shell-nav-section--pipeline > .shell-nav::-webkit-scrollbar {
+    width: 6px;
+  }
+  .shell-root .shell-nav-section--pipeline > .shell-nav::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+  }
+  .shell-root .shell-nav-section--pipeline > .shell-nav::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .shell-root .shell-nav-section--product {
+    flex: 0 0 auto;
+  }
+}
+
 /* --------------------------------------------------------------------------
    Brand row — plain wrapper on desktop; ≤900px it becomes the top bar's
    first row: brand left, in-flow status chip right (replaces the base
@@ -63,6 +104,14 @@
   background: var(--border);
 }
 
+/* Extra breathing room before product destinations: the Product heading,
+   Model Insights and Model Health read as a separate group from the pipeline. */
+.shell-caption--product {
+  margin-top: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
 /* --------------------------------------------------------------------------
    Product-nav icons — 18px currentColor glyphs; the active item tints its
    icon amber to match the step-num accent the pipeline group already had.
@@ -89,9 +138,12 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
+  gap: 5px;
   min-width: 0;
-  padding: 0 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg);
 }
 .shell-foot-caption {
   font-family: var(--font-mono);
@@ -111,7 +163,7 @@
 }
 
 .shell-status-card {
-  margin-top: 12px;
+  margin-top: 0;
   padding: 9px 11px;
   display: flex;
   flex-direction: column;
@@ -235,49 +287,100 @@
 }
 
 /* --------------------------------------------------------------------------
-   ≤900px: ONE merged horizontal nav strip (pipeline stages, hairline,
-   product pages) inside .shell-navwrap — Layout's scroll-centring effect
-   targets this wrapper. Captions drop out; items become ≥40px one-row touch
-   targets; the right-edge fade is the "more items" affordance (mask alpha
-   channel only — the #000 is not a theme colour).
+   Navigation separation. Desktop keeps the vertical pipeline and product
+   groups. On mobile each gets its own labelled horizontal row so product
+   links cannot visually run into pipeline stages or the dataset footer.
    -------------------------------------------------------------------------- */
 
 .shell-navwrap {
-  /* Desktop: plain column that absorbs the aside's free vertical space,
-     keeping the footer pinned to the bottom exactly as before. */
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
+.shell-nav-section { min-width: 0; }
+.shell-nav-section--product {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.shell-nav-section--product .shell-caption { margin-top: 8px; }
+.shell-root .sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
 
 @media (max-width: 900px) {
   .shell-navwrap {
-    flex-direction: row;
+    flex: 0 0 auto;
+    flex-direction: column;
     align-items: stretch;
-    overflow-x: auto;
+    overflow: visible;
+    gap: 4px;
     padding: 6px 0 8px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-strong) transparent;
-    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent);
+    mask-image: none;
   }
-  .shell-navwrap .shell-caption { display: none; }
+  .shell-nav-section { min-width: 0; }
+  .shell-nav-section--product {
+    margin-top: 0;
+    padding-top: 2px;
+    border-top: 1px solid var(--border);
+  }
+  .shell-navwrap .shell-caption {
+    display: flex;
+    margin: 5px 16px 2px;
+    font-size: 9px;
+    line-height: 1.2;
+    letter-spacing: 0.12em;
+  }
   .shell-navwrap .pipeline-stepper {
     flex: 0 0 auto;
-    overflow: visible; /* the wrapper scrolls, not each nav */
-    padding-bottom: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 3px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 22px), transparent);
+  }
+  .shell-navwrap .pipeline-stepper ol {
+    display: flex;
+    gap: 2px;
+    width: max-content;
+    min-width: 100%;
+    padding: 0 10px;
   }
   .shell-nav--product {
-    border-left: 1px solid var(--border);
-    margin-left: 4px;
-    padding-left: 4px;
+    border-left: 0;
+    margin-left: 0;
+    padding-left: 0;
   }
+  /* Keep Dataset visible as its own footer row on mobile instead of hiding
+     it or letting it read as another Product link. The compact API chip in
+     the brand row already provides mobile health status. */
+  .shell-root .sidebar-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 8px 16px 10px;
+    border-top: 1px solid var(--border);
+  }
+  .shell-root .shell-foot-fact {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    padding: 0;
+  }
+  .shell-root .shell-foot-caption { white-space: nowrap; }
+  .shell-root .sidebar-dataset { white-space: nowrap; }
+  .shell-root .shell-status-card { display: none; }
   .pipeline-stepper.shell-nav a {
     flex-direction: row;
     align-items: center;
     gap: 8px;
     min-height: 40px;
     padding: 9px 13px;
+    white-space: nowrap;
   }
 }
 

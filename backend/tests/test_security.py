@@ -59,6 +59,33 @@ def test_security_headers_on_success(client: TestClient) -> None:
     assert response.status_code == 200
     _assert_security_headers(response)
 
+    # Generic platform/root probes should not generate noisy 404s.
+    root = client.get("/")
+    assert root.status_code == 200
+    assert root.json() == {"service": "PropPulse API", "status": "ok", "health": "/health"}
+    _assert_security_headers(root)
+
+
+def test_cors_health_and_preflight_headers(client: TestClient) -> None:
+    """Allowed browser origin gets a valid ACAO value on health and OPTIONS."""
+    origin = "http://localhost:5173"
+    health = client.get("/health", headers={"Origin": origin})
+    assert health.status_code == 200
+    assert health.headers.get("Access-Control-Allow-Origin") == origin
+    assert "Origin" in health.headers.get("Vary", "")
+
+    preflight = client.options(
+        "/health",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "GET",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert preflight.status_code == 200
+    assert preflight.headers.get("Access-Control-Allow-Origin") == origin
+    assert preflight.headers.get("Access-Control-Allow-Credentials") == "true"
+
 
 def test_security_headers_on_error_responses(client: TestClient) -> None:
     """422 (validation) and 404 (unknown route) carry the headers too."""

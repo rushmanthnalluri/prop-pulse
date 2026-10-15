@@ -115,7 +115,8 @@ test('overview loads: hero, 8 headline metrics, driver rows, pipeline list', asy
   expect(await drivers.count()).toBe(5)
 
   // The record tiles (8 domain groups) link into stage 02.
-  expect(await page.locator('.group-index .group-cell').count()).toBe(8)
+  const recordTiles = page.locator('.group-index .group-cell')
+  await expect(recordTiles).toHaveCount(8, { timeout: 30_000 })
 
   // The pipeline roadmap lists the nine live stages into /workflow/*.
   const stages = page.locator('.pipeline-list .pipeline-row')
