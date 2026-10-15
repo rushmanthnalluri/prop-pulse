@@ -183,6 +183,10 @@ jobs:
           print(f"bounded training succeeded: {job_id}; API remained healthy")
           PY
 
+      - name: Dump backend logs after smoke failure
+        if: failure()
+        run: docker logs proppulse-backend-ci || true
+
       - name: Remove backend container
         if: always()
         run: docker rm -f proppulse-backend-ci
