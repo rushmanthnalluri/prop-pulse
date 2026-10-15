@@ -7,10 +7,11 @@
  * display:none, so accessible names survive the icon rail. The main column is
  * the centered 940px container with the mono footer row.
  *
- * ≤900px the sidebar becomes a top bar: brand + compact API-status chip on
- * the first row, then ONE merged horizontal scroll strip (pipeline stages,
- * then product pages, hairline-divided) — .shell-navwrap is the scroller the
- * active item is centred in; the section captions drop to save height.
+ * Desktop keeps the two navigation groups in a vertical scroller with a
+ * fixed, separated Dataset/API footer. ≤900px the sidebar becomes a top bar:
+ * brand + compact API-status chip, then ONE merged horizontal scroll strip
+ * (pipeline stages, then product pages, hairline-divided); section captions
+ * drop out at that breakpoint to save height.
  *
  * The API-status poll pauses when the tab is hidden and re-checks on
  * visibility return or manual click; window online/offline events update the
@@ -284,9 +285,9 @@ export default function Layout() {
       '404 · PropPulse'
   }, [location.pathname])
 
-  // Keep the active stepper item visible inside the ≤900px scroll strip (the
-  // merged .shell-navwrap is the scroller there; on desktop neither wrapper
-  // scrolls and the assignment is a no-op). Manual scrollLeft, NOT
+  // Keep the active stepper item visible inside the ≤900px horizontal strip.
+  // On desktop .shell-navwrap is the vertical nav scroller, so horizontal
+  // scrollLeft remains a no-op. Manual scrollLeft, NOT
   // scrollIntoView: scrollIntoView also moves Chromium's sequential-focus
   // start point to the active link, so the first Tab after navigation would
   // skip the skip-link and every nav item before the active one (hardening
@@ -369,7 +370,7 @@ export default function Layout() {
             </ol>
           </nav>
 
-          <p className="nav-caption shell-caption">Product</p>
+          <p className="nav-caption shell-caption shell-caption--product">Product</p>
           <nav
             className="pipeline-stepper pipeline-stepper--product shell-nav shell-nav--product"
             aria-label="Product pages"
