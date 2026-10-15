@@ -42,6 +42,10 @@ COPY models/ models/
 # backend/app/services/cluster_service.py all read this CSV).
 COPY data/external/neighborhood_geo.csv data/external/neighborhood_geo.csv
 
+# The guided Ames workflow loads this raw CSV to validate and start training.
+# .dockerignore re-includes only this file; the Kaggle archive stays excluded.
+COPY data/raw/ames/train.csv data/raw/ames/train.csv
+
 # Also required at serving time: the SHAP explainer samples its background
 # distribution from the processed train split (ml/explainability/explainer.py
 # -> ml.training.common.load_split("train")). Without it /predict returns

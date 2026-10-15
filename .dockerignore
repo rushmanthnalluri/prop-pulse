@@ -53,3 +53,8 @@ docs
 .dockerignore
 docker-compose.yml
 docker-compose.alt-ports.yml
+# The bundled Ames workbench requires this compact training CSV at runtime.
+# Keep archives and unrelated raw files excluded; re-include only this file.
+!data/raw/
+!data/raw/ames/
+!data/raw/ames/train.csv
