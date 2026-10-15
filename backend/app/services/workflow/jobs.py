@@ -31,6 +31,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -181,6 +182,17 @@ def spawn_training_job(
         )
     finally:
         log_file.close()  # the child holds its own handle from here on
+
+    # Keep the Popen object alive until the child exits and reap it in the
+    # background. The trainer owns the status-file protocol, but discarding
+    # Popen immediately lets __del__ emit ResourceWarning while a valid job is
+    # still training (and can leave a child unreaped in short-lived callers).
+    threading.Thread(
+        target=process.wait,
+        name=f"workflow-reap-{job_id}",
+        daemon=True,
+    ).start()
+
     logger.info(
         "spawned training job %s (dataset=%s objective=%s candidates=%s pid=%s)",
         job_id, dataset_id, objective, candidates, process.pid,
