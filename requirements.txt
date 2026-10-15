@@ -10,11 +10,13 @@
 #   - filelock is direct because workflow admission must work across API processes.
 
 # --- core science ---
+# SHAP 0.52 still calls Colormap.set_bad/set_over/set_under; Matplotlib 3.11 pending-deprecates these APIs.
+# Pin the latest 3.10 patch until SHAP migrates to Colormap.with_extremes.
 pandas==2.3.3
 numpy==2.4.6
 scipy==1.18.0
 scikit-learn==1.9.0
-matplotlib==3.11.1
+matplotlib==3.10.9
 seaborn==0.13.2
 joblib==1.5.3
 
@@ -36,6 +38,8 @@ cryptography==50.0.2
 # --- tests / notebooks / misc ---
 pytest==9.1.1
 httpx==0.28.1
+# Starlette TestClient uses httpx2; keep httpx for existing direct HTTP tooling.
+httpx2==2.13.1
 jupyter==1.1.1
 nbconvert==7.17.1
 requests==2.34.2
