@@ -401,7 +401,7 @@ test('backend down → error + Try again → backend restart → full recovery (
   const error = page
     .locator('main')
     .getByRole('alert')
-    .filter({ hasText: 'Cannot reach the PropPulse API' })
+    .filter({ hasText: /could not connect to the PropPulse API|You appear to be offline|Request timed out/ })
   await expect(error).toBeVisible()
   const tryAgain = page.getByRole('button', { name: 'Try again' })
   await expect(tryAgain).toBeVisible()

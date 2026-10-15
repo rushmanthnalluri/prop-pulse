@@ -93,8 +93,9 @@ export default function NeighborhoodMap({
   // Code of the point whose popup was opened from the keyboard — used to
   // move focus into the popup, and back to the marker when it closes.
   const keyboardPopup = useRef(null)
-  // The toolbar select behaves as an action menu: it stays on the placeholder
-  // and every pick fires a fresh focus request object.
+  // Keep the chosen neighborhood visible in the selector. Selecting the
+  // placeholder clears the current choice; choosing a neighborhood opens its
+  // popup and can be repeated after choosing the placeholder.
   const [focus, setFocus] = useState(null)
 
   // One divIcon per cluster color, memoized — the dot is CSS, the 28px box
@@ -128,10 +129,10 @@ export default function NeighborhoodMap({
         <select
           id="market-focus-select"
           className="chart-select"
-          value=""
+          value={focus?.code ?? ''}
           onChange={(event) => {
             const code = event.target.value
-            if (code) setFocus({ code, at: Date.now() })
+            setFocus(code ? { code, at: Date.now() } : null)
           }}
         >
           <option value="">Choose a neighborhood…</option>

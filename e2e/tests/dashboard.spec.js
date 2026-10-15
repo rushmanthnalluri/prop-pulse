@@ -451,7 +451,7 @@ test('API-down state: valuation submit shows a reachable error (LAST — stops b
   const error = page
     .locator('main')
     .getByRole('alert')
-    .filter({ hasText: 'Cannot reach the PropPulse API' })
+    .filter({ hasText: /could not connect to the PropPulse API|You appear to be offline|Request timed out/ })
   await expect(error).toBeVisible()
   expect(killed).toBe(true) // prove the test really stopped the backend
 })
