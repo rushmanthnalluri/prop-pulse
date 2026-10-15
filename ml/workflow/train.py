@@ -37,6 +37,7 @@ would silently load the champion artifact via the module-global loader.
 """
 from __future__ import annotations
 
+import gc
 import json
 import logging
 import os
@@ -99,6 +100,7 @@ __all__ = [
     "OBJECTIVE_CANDIDATES",
     "REGRESSION_CANDIDATES",
     "SEARCH_N_JOBS",
+    "SANDBOX_TREE_SEARCH_ITERATIONS",
     "UnknownCandidateError",
     "UnknownObjectiveError",
     "train_objective",
@@ -123,8 +125,14 @@ OBJECTIVE_CANDIDATES: dict[str, tuple[str, ...]] = {
 }
 
 #: n_jobs pins (§4.5): searches single-threaded; parallel estimators capped.
+# Keep the sandbox trainer well inside Render's free 512 MiB service limit.
+# These are development/workbench candidates only; committed champion models
+# and their evaluation pipeline are not trained by this module.
 SEARCH_N_JOBS = 1
-ESTIMATOR_N_JOBS = 2
+ESTIMATOR_N_JOBS = 1
+SANDBOX_TREE_SEARCH_ITERATIONS = 3
+SANDBOX_RF_ESTIMATORS = 100
+SANDBOX_XGB_ESTIMATORS = 120
 
 _REGRESSION_TARGET = "SalePrice"
 _CLASSIFICATION_TARGET = "sells_within_30_days"
@@ -257,7 +265,7 @@ def _fit_randomized(
     search = RandomizedSearchCV(
         pipeline,
         param_distributions=param_dist,
-        n_iter=N_ITER_TREE_SEARCH,
+        n_iter=min(SANDBOX_TREE_SEARCH_ITERATIONS, N_ITER_TREE_SEARCH),
         scoring=SCORING,
         cv=CV,
         random_state=RANDOM_SEED,
@@ -333,7 +341,7 @@ def _regression_trainer(name: str) -> Callable[[pd.DataFrame, pd.Series], tuple[
             X,
             y,
             RandomForestRegressor(
-                n_estimators=300, n_jobs=ESTIMATOR_N_JOBS, random_state=RANDOM_SEED
+                n_estimators=SANDBOX_RF_ESTIMATORS, n_jobs=ESTIMATOR_N_JOBS, random_state=RANDOM_SEED
             ),
             RF_PARAM_DIST,
         )
@@ -342,7 +350,7 @@ def _regression_trainer(name: str) -> Callable[[pd.DataFrame, pd.Series], tuple[
             X,
             y,
             XGBRegressor(
-                n_estimators=500,
+                n_estimators=SANDBOX_XGB_ESTIMATORS,
                 learning_rate=0.05,
                 subsample=0.8,
                 colsample_bytree=0.8,
@@ -613,6 +621,14 @@ def train_objective(
         n_pos = int(y_train_all.sum())
         neg_pos_ratio = float((len(y_train_all) - n_pos) / max(n_pos, 1))
         grids = candidate_grids(neg_pos_ratio)
+        # Champion grids are tuned for offline training. Trim the sandbox grids
+        # to a bounded profile so user-launched jobs cannot readily OOM the API.
+        for candidate_name, (estimator, grid) in grids.items():
+            _pin_estimator_n_jobs(estimator)
+            if candidate_name == "random_forest":
+                estimator.set_params(n_estimators=SANDBOX_RF_ESTIMATORS)
+            elif candidate_name == "xgboost":
+                grid["model__n_estimators"] = [100, 150]
 
     results: dict[str, dict[str, Any]] = {}
     for name in candidates:
@@ -637,6 +653,9 @@ def train_objective(
                 {"event": EVENT_CANDIDATE_DONE, "candidate": name, "result": _jsonable(result)}
             )
         results[name] = _jsonable(result)
+        # Release unreachable model/search objects between candidates instead
+        # of carrying allocator pressure across the full user-selected wave.
+        gc.collect()
     logger.info(
         "job wave complete: %s %s -> %s",
         dataset_id,
