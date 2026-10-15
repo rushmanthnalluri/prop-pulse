@@ -344,6 +344,26 @@
     margin-left: 0;
     padding-left: 0;
   }
+  /* Keep Dataset visible as its own footer row on mobile instead of hiding
+     it or letting it read as another Product link. The compact API chip in
+     the brand row already provides mobile health status. */
+  .shell-root .sidebar-footer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 8px 16px 10px;
+    border-top: 1px solid var(--border);
+  }
+  .shell-root .shell-foot-fact {
+    flex-direction: row;
+    align-items: baseline;
+    gap: 8px;
+    padding: 0;
+  }
+  .shell-root .shell-foot-caption { white-space: nowrap; }
+  .shell-root .sidebar-dataset { white-space: nowrap; }
+  .shell-root .shell-status-card { display: none; }
   .pipeline-stepper.shell-nav a {
     flex-direction: row;
     align-items: center;
