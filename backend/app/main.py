@@ -345,10 +345,26 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 monitoring.record_request(route_template_key(request), 500, latency_ms)
             except Exception as metrics_exc:  # noqa: BLE001 — must not mask the 500
                 logger.warning("metrics recording failed in 500 handler: %s", metrics_exc)
+        response_headers = {
+            **SECURITY_HEADERS,
+            REQUEST_ID_HEADER: str(request_id) if request_id else "",
+        }
+        # ServerErrorMiddleware handles this response outside user middleware,
+        # so CORSMiddleware cannot decorate it. Echo only a configured origin;
+        # never use "*" while credentials are enabled.
+        origin = request.headers.get("origin")
+        if origin and origin in settings.cors_origin_list:
+            response_headers.update(
+                {
+                    "Access-Control-Allow-Origin": origin,
+                    "Access-Control-Allow-Credentials": "true",
+                    "Vary": "Origin",
+                }
+            )
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error"},
-            headers={**SECURITY_HEADERS, REQUEST_ID_HEADER: str(request_id) if request_id else ""},
+            headers=response_headers,
         )
 
     return app
