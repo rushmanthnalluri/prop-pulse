@@ -73,7 +73,7 @@ const PREFERRED_SCATTER_X = 'GrLivArea'
 /** Identifier columns are useful for record tracing, not meaningful chart axes. */
 const isIdentifierColumn = (name) =>
   typeof name === 'string' &&
-  /^(id|.*(?:_id|id|_index|index))$/i.test(name.trim())
+  /^(id|.*_id|index|.*_index|row_number|record_number)$/i.test(name.trim())
 
 /** Preferred columns first (when present), then dataset order, capped at `count`. */
 function pickColumns(preferred, available, count) {
