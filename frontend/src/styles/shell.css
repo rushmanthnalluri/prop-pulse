@@ -277,44 +277,72 @@
 }
 
 /* --------------------------------------------------------------------------
-   ≤900px: ONE merged horizontal nav strip (pipeline stages, hairline,
-   product pages) inside .shell-navwrap — Layout's scroll-centring effect
-   targets this wrapper. Captions drop out; items become ≥40px one-row touch
-   targets; the right-edge fade is the "more items" affordance (mask alpha
-   channel only — the #000 is not a theme colour).
+   Navigation separation. Desktop keeps the vertical pipeline and product
+   groups. On mobile each gets its own labelled horizontal row so product
+   links cannot visually run into pipeline stages or the dataset footer.
    -------------------------------------------------------------------------- */
 
 .shell-navwrap {
-  /* Desktop: plain column that absorbs the aside's free vertical space,
-     keeping the footer pinned to the bottom exactly as before. */
   flex: 1;
   display: flex;
   flex-direction: column;
   min-height: 0;
 }
+.shell-nav-section { min-width: 0; }
+.shell-nav-section--product {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.shell-nav-section--product .shell-caption { margin-top: 8px; }
+.shell-root .sidebar-footer {
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
 
 @media (max-width: 900px) {
   .shell-navwrap {
-    padding-bottom: 8px;
-    overflow-y: hidden;
-    flex-direction: row;
+    flex: 0 0 auto;
+    flex-direction: column;
     align-items: stretch;
-    overflow-x: auto;
+    overflow: visible;
+    gap: 4px;
     padding: 6px 0 8px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border-strong) transparent;
-    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 28px), transparent);
+    mask-image: none;
   }
-  .shell-navwrap .shell-caption { display: none; }
+  .shell-nav-section { min-width: 0; }
+  .shell-nav-section--product {
+    margin-top: 0;
+    padding-top: 2px;
+    border-top: 1px solid var(--border);
+  }
+  .shell-navwrap .shell-caption {
+    display: flex;
+    margin: 5px 16px 2px;
+    font-size: 9px;
+    line-height: 1.2;
+    letter-spacing: 0.12em;
+  }
   .shell-navwrap .pipeline-stepper {
     flex: 0 0 auto;
-    overflow: visible; /* the wrapper scrolls, not each nav */
-    padding-bottom: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 0 0 3px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+    mask-image: linear-gradient(90deg, #000 0, #000 calc(100% - 22px), transparent);
+  }
+  .shell-navwrap .pipeline-stepper ol {
+    display: flex;
+    gap: 2px;
+    width: max-content;
+    min-width: 100%;
+    padding: 0 10px;
   }
   .shell-nav--product {
-    border-left: 1px solid var(--border);
-    margin-left: 4px;
-    padding-left: 4px;
+    border-left: 0;
+    margin-left: 0;
+    padding-left: 0;
   }
   .pipeline-stepper.shell-nav a {
     flex-direction: row;
@@ -322,6 +350,7 @@
     gap: 8px;
     min-height: 40px;
     padding: 9px 13px;
+    white-space: nowrap;
   }
 }
 
