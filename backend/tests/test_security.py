@@ -56,6 +56,10 @@ def test_cors_origin_values_are_canonicalized() -> None:
         "https://user@example.com",
         "https://example.com:not-a-port",
         r"https://exa\mple.com",
+        "https://example.com bad",
+        "https://example.com\r\nAccess-Control-Allow-Origin: *",
+        "",
+        " , ",
     ],
 )
 def test_invalid_cors_origin_configuration_is_rejected(cors_origins: str) -> None:
