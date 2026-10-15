@@ -294,7 +294,7 @@ export default function Layout() {
   // §21 keyboard-walk regression).
   useEffect(() => {
     const active = sidebarRef.current?.querySelector('.pipeline-stepper li.is-active a')
-    const strip = active?.closest('.shell-navwrap') ?? active?.closest('.pipeline-stepper')
+    const strip = active?.closest('.shell-nav') ?? active?.closest('.pipeline-stepper')
     if (!active || !strip) return
     const delta = active.getBoundingClientRect().left - strip.getBoundingClientRect().left
     strip.scrollLeft += delta - (strip.clientWidth - active.clientWidth) / 2
@@ -355,38 +355,42 @@ export default function Layout() {
         </div>
 
         <div className="shell-navwrap">
-          <p className="nav-caption shell-caption">Pipeline</p>
-          <nav className="pipeline-stepper shell-nav" aria-label="ML pipeline stages">
-            <ol>
-              {PIPELINE_STAGES.map((stage) => (
-                <SidebarItem
-                  key={stage.slug}
-                  to={`/workflow/${stage.slug}`}
-                  num={stage.num}
-                  label={stage.title}
-                  dataStage={stage.slug}
-                />
-              ))}
-            </ol>
-          </nav>
+          <section className="shell-nav-section shell-nav-section--pipeline" aria-label="Pipeline navigation">
+            <p className="nav-caption shell-caption">Pipeline</p>
+            <nav className="pipeline-stepper shell-nav" aria-label="ML pipeline stages">
+              <ol>
+                {PIPELINE_STAGES.map((stage) => (
+                  <SidebarItem
+                    key={stage.slug}
+                    to={`/workflow/${stage.slug}`}
+                    num={stage.num}
+                    label={stage.title}
+                    dataStage={stage.slug}
+                  />
+                ))}
+              </ol>
+            </nav>
+          </section>
 
-          <p className="nav-caption shell-caption shell-caption--product">Product</p>
-          <nav
-            className="pipeline-stepper pipeline-stepper--product shell-nav shell-nav--product"
-            aria-label="Product pages"
-          >
-            <ol>
-              {PRODUCT_ITEMS.map((item) => (
-                <SidebarItem
-                  key={item.to}
-                  to={item.to}
-                  label={item.label}
-                  end={item.end}
-                  Icon={item.Icon}
-                />
-              ))}
-            </ol>
-          </nav>
+          <section className="shell-nav-section shell-nav-section--product" aria-label="Product navigation">
+            <p className="nav-caption shell-caption shell-caption--product">Product</p>
+            <nav
+              className="pipeline-stepper pipeline-stepper--product shell-nav shell-nav--product"
+              aria-label="Product pages"
+            >
+              <ol>
+                {PRODUCT_ITEMS.map((item) => (
+                  <SidebarItem
+                    key={item.to}
+                    to={item.to}
+                    label={item.label}
+                    end={item.end}
+                    Icon={item.Icon}
+                  />
+                ))}
+              </ol>
+            </nav>
+          </section>
         </div>
 
         <div className="sidebar-footer">
