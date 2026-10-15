@@ -806,4 +806,43 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
 
     expectClean(w)
   })
+
+  test('stale training job 404 stops polling after the first missing status response', async ({ page }) => {
+    let statusRequests = 0
+    await page.route('**/workflow/jobs/job_ffffffff', async (route) => {
+      statusRequests += 1
+      if (statusRequests === 1) {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            job_id: 'job_ffffffff',
+            dataset_id: 'ames',
+            objective: 'regression',
+            status: 'running',
+            progress: { done: 0, total: 1, current: 'ridge', elapsed_s: 1 },
+            results: { ridge: { status: 'running' } },
+            error: null,
+            created_at: '2026-10-16T00:00:00+00:00',
+            finished_at: null,
+          }),
+        })
+        return
+      }
+      await route.fulfill({
+        status: 404,
+        contentType: 'application/json',
+        body: JSON.stringify({ detail: "unknown job id: 'job_ffffffff'" }),
+      })
+    })
+
+    await page.goto(`${ames('07-train')}&job=job_ffffffff`)
+    await expect(page.locator('.wf-jobstatus')).toBeVisible()
+    await expect(page.getByText("Couldn't load the job status")).toBeVisible()
+    // A 404 is non-retryable even though the last known payload said "running".
+    // The second request is expected; any later one indicates a polling loop.
+    await page.waitForTimeout(5500)
+    expect(statusRequests).toBe(2)
+  })
+
 })
