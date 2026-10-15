@@ -70,6 +70,11 @@ const PREFERRED_HISTOGRAMS = ['SalePrice', 'GrLivArea', 'LotArea', 'YearBuilt', 
 const PREFERRED_CATEGORIES = ['Neighborhood', 'BldgType', 'HouseStyle', 'SaleCondition']
 const PREFERRED_SCATTER_X = 'GrLivArea'
 
+/** Identifier columns are useful for record tracing, not meaningful chart axes. */
+const isIdentifierColumn = (name) =>
+  typeof name === 'string' &&
+  /^(id|.*(?:_id|id|_index|index))$/i.test(name.trim())
+
 /** Preferred columns first (when present), then dataset order, capped at `count`. */
 function pickColumns(preferred, available, count) {
   const picks = preferred.filter((name) => available.includes(name))
@@ -815,14 +820,14 @@ export default function VizExplorer({ datasetId }) {
   const numericCols = useMemo(
     () =>
       (features.data?.raw_features ?? [])
-        .filter((f) => f?.dtype === 'numeric')
+        .filter((f) => f?.dtype === 'numeric' && !isIdentifierColumn(f?.name))
         .map((f) => f.name),
     [features.data],
   )
   const categoricalCols = useMemo(
     () =>
       (features.data?.raw_features ?? [])
-        .filter((f) => f?.dtype === 'categorical')
+        .filter((f) => f?.dtype === 'categorical' && !isIdentifierColumn(f?.name))
         .map((f) => f.name),
     [features.data],
   )
