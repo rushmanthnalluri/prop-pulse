@@ -448,7 +448,7 @@ export function useJobPolling(jobId, { intervalMs = 3000, onUpdate } = {}) {
       }
       return null
     }
-  }, [jobId])
+  }, [jobId, intervalMs])
 
   // Initial fetch + reset when the job id changes (stale results never linger).
   useEffect(() => {
