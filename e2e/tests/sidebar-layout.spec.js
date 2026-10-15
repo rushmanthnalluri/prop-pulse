@@ -35,7 +35,7 @@ test('desktop sidebar separates Product links from the Dataset and API footer', 
         viewportHeight: window.innerHeight,
         navWrapOverflowY: getComputedStyle(document.querySelector('.shell-navwrap')).overflowY,
         pipelineOverflowY: getComputedStyle(
-          document.querySelector('.shell-navwrap > .shell-nav:not(.shell-nav--product)'),
+          document.querySelector('.shell-nav-section--pipeline > .shell-nav'),
         ).overflowY,
         product: rect('.shell-nav--product'),
         footer: rect('.sidebar-footer'),
