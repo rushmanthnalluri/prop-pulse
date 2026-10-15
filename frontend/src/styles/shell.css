@@ -16,20 +16,31 @@
    scroll in their own vertical viewport. At short heights this prevents the
    Product links from colliding visually with Dataset / service status. */
 @media (min-width: 901px) {
+  /* Keep the Product block in-flow and visible above the footer. Only the
+     nine-stage pipeline scrolls when a desktop viewport is short. */
   .shell-root .shell-navwrap {
+    overflow: hidden;
+    padding-bottom: 8px;
+  }
+  .shell-root .shell-navwrap > .shell-nav:not(.shell-nav--product) {
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: var(--border-strong) transparent;
-    padding-bottom: 14px;
   }
-  .shell-root .shell-navwrap::-webkit-scrollbar { width: 6px; }
-  .shell-root .shell-navwrap::-webkit-scrollbar-thumb {
+  .shell-root .shell-navwrap > .shell-nav:not(.shell-nav--product)::-webkit-scrollbar {
+    width: 6px;
+  }
+  .shell-root .shell-navwrap > .shell-nav:not(.shell-nav--product)::-webkit-scrollbar-thumb {
     background: var(--border-strong);
     border-radius: 999px;
   }
-  .shell-root .shell-navwrap::-webkit-scrollbar-track { background: transparent; }
+  .shell-root .shell-navwrap > .shell-nav:not(.shell-nav--product)::-webkit-scrollbar-track {
+    background: transparent;
+  }
 }
 
 /* --------------------------------------------------------------------------
