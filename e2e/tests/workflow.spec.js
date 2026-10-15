@@ -859,8 +859,8 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     })
 
     await page.goto(`${ames('07-train')}&job=job_ffffffff`)
-    // Observe the last known running payload, followed by the non-retryable 404 state.
-    await expect(page.locator('.wf-jobstatus')).toBeVisible({ timeout: 10_000 })
+    // A 404 intentionally replaces the live panel with ErrorState, so assert
+    // the terminal error rather than requiring the panel to remain mounted.
     await expect(page.getByText("Couldn't load the job status")).toBeVisible({ timeout: 10_000 })
     // A 404 is non-retryable even though the last known payload said "running".
     // The second request is expected; any later one indicates a polling loop.
