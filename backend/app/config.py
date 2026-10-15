@@ -64,8 +64,12 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         """``CORS_ORIGINS`` parsed as a comma-separated list of origins."""
+        # Browsers serialize an Origin without a trailing slash. Normalize
+        # operator-provided values to that canonical form before matching.
         return [
-            origin.strip() for origin in self.cors_origins.split(",") if origin.strip()
+            value
+            for raw in self.cors_origins.split(",")
+            if (value := raw.strip().rstrip("/"))
         ]
 
 

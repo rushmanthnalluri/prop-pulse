@@ -31,6 +31,17 @@ def client(tmp_path_factory: pytest.TempPathFactory) -> TestClient:
         yield test_client
 
 
+def test_cors_origin_values_are_canonicalized() -> None:
+    """Configured origins match the Origin header even when operators add '/'. """
+    settings = Settings(
+        cors_origins=" https://prop-pulse-frontend.onrender.com/ , http://localhost:5173 "
+    )
+    assert settings.cors_origin_list == [
+        "https://prop-pulse-frontend.onrender.com",
+        "http://localhost:5173",
+    ]
+
+
 def _assert_security_headers(response) -> None:  # noqa: ANN001 — httpx.Response
     """Every baseline security header is present with the expected value."""
     for header, value in SECURITY_HEADERS.items():
@@ -72,10 +83,16 @@ def test_oversized_body_rejected_413(client: TestClient) -> None:
     )
     assert len(oversized) == MAX_BODY_BYTES + 1
     response = client.post(
-        "/predict", content=oversized, headers={"Content-Type": "application/json"}
+        "/predict",
+        content=oversized,
+        headers={
+            "Content-Type": "application/json",
+            "Origin": "http://localhost:5173",
+        },
     )
     assert response.status_code == 413
     assert "detail" in response.json()
+    assert response.headers.get("Access-Control-Allow-Origin") == "http://localhost:5173"
     _assert_security_headers(response)
 
 
@@ -108,8 +125,13 @@ def test_unhandled_exception_500_shape(tmp_path: Path) -> None:
         raise RuntimeError(LEAK_SENTINEL)
 
     with TestClient(app, raise_server_exceptions=False) as test_client:
-        response = test_client.get("/_test_boom")
+        response = test_client.get(
+            "/_test_boom", headers={"Origin": "http://localhost:5173"}
+        )
     assert response.status_code == 500
+    assert response.headers.get("Access-Control-Allow-Origin") == "http://localhost:5173"
+    assert response.headers.get("Access-Control-Allow-Credentials") == "true"
+    assert "Origin" in response.headers.get("Vary", "")
     assert response.json() == {"detail": "Internal server error"}
     assert LEAK_SENTINEL not in response.text
     assert "Traceback" not in response.text
