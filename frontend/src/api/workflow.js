@@ -459,7 +459,10 @@ export function useJobPolling(jobId, { intervalMs = 3000, onUpdate } = {}) {
     refresh()
   }, [refresh, intervalMs])
 
-  const active = Boolean(jobId) && (job !== null ? isJobActive(job.status) : shouldRetry)
+  // The retry policy must gate even a cached "running" payload; otherwise
+  // a subsequent non-retryable 404 keeps polling the stale job forever.
+  const active =
+    Boolean(jobId) && shouldRetry && (job !== null ? isJobActive(job.status) : true)
   usePolling(refresh, active ? retryDelay : null)
 
   return { job, error, active, refresh }
