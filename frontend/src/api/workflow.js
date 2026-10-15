@@ -442,6 +442,7 @@ export function useJobPolling(jobId, { intervalMs = 3000, onUpdate } = {}) {
         // on missing jobs and other client errors rather than hammering 404s.
         const retryable = status === 0 || status === 408 || status === 429 || status >= 500
         setShouldRetry(retryable)
+        if (!retryable) setJob(null)
         if (retryable) {
           setRetryDelay((current) => Math.min(Math.max(current, intervalMs) * 2, 30000))
         }
