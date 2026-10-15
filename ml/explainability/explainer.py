@@ -213,7 +213,7 @@ class RegressionExplainer:
 
     def _build_explainer(self):  # -> shap.Explainer (typed loosely: shap has no stable base type)
         """Instantiate the SHAP explainer for the final estimator."""
-        import shap  # local import: heavy (numba) — pay it only when explaining
+        import shap  # local import: heavy — pay the import cost only when explaining
 
         kind = self.explainer_kind  # raises RuntimeError for unsupported models
         if kind == "LinearExplainer":
