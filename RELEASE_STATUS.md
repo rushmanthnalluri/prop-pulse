@@ -1,7 +1,7 @@
 # PropPulse — Current Release Truth
 
-**Status:** hardening branch pending CI verification
-**Last maintained:** 2026-10-03
+**Status:** main CI is green at `03f40d6`; production-hardening branch changes require CI on their exact commit.
+**Last maintained:** 2026-10-16
 
 This file is the single current release-status authority for PropPulse.
 Date-stamped release notes, forensic audits, agent logs, screenshots, and prior
@@ -52,5 +52,10 @@ release notes.
   one instance.
 - Runtime metrics are process-local counters. Aggregate production metrics
   should come from the deployment's Prometheus/OpenTelemetry/logging layer.
+- `render.yaml` currently selects Render's Free web-service plan. Free services
+  spin down after 15 minutes without traffic and take about one minute to resume;
+  a longer client timeout improves cold-start UX but cannot guarantee continuous
+  availability. Continuous availability requires a paid compute plan
+  ([Render free-service limits](https://render.com/docs/free)).
 - The classification sale-speed target remains explicitly simulated for the
   bundled Ames dataset.
