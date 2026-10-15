@@ -314,9 +314,12 @@ export default function TrainStage() {
   const toast = useToast()
 
   const [objective, setObjective] = useState('regression')
+  // Start with low-memory candidates on the free Render API. The full zoo
+  // remains available for explicit opt-in; tree ensembles are intentionally
+  // not all launched together by default on a 512 MiB service.
   const [selected, setSelected] = useState(() => ({
-    regression: [...wf.OBJECTIVE_CANDIDATES.regression],
-    classification: [...wf.OBJECTIVE_CANDIDATES.classification],
+    regression: ['linear', 'ridge'],
+    classification: ['logistic'],
     clustering: [...wf.OBJECTIVE_CANDIDATES.clustering],
   }))
   const [starting, setStarting] = useState(false)
