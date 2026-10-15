@@ -30,6 +30,7 @@ from ml.workflow.prepare import PrepareConfig, prepare_dataset
 from ml.workflow.train import (
     ESTIMATOR_N_JOBS,
     SANDBOX_TREE_SEARCH_ITERATIONS,
+    SEARCH_N_JOBS,
     UnknownCandidateError,
     UnknownObjectiveError,
     train_objective,
