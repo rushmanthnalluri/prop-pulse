@@ -33,7 +33,10 @@ test('desktop sidebar separates Product links from the Dataset and API footer', 
       }
       return {
         viewportHeight: window.innerHeight,
-        navOverflowY: getComputedStyle(document.querySelector('.shell-navwrap')).overflowY,
+        navWrapOverflowY: getComputedStyle(document.querySelector('.shell-navwrap')).overflowY,
+        pipelineOverflowY: getComputedStyle(
+          document.querySelector('.shell-navwrap > .shell-nav:not(.shell-nav--product)'),
+        ).overflowY,
         product: rect('.shell-nav--product'),
         footer: rect('.sidebar-footer'),
         dataset: rect('.shell-foot-fact'),
@@ -41,7 +44,8 @@ test('desktop sidebar separates Product links from the Dataset and API footer', 
       }
     })
 
-    expect(geometry.navOverflowY).toBe('auto')
+    expect(geometry.navWrapOverflowY).toBe('hidden')
+    expect(geometry.pipelineOverflowY).toBe('auto')
     expect(geometry.product).not.toBeNull()
     expect(geometry.dataset).not.toBeNull()
     expect(
