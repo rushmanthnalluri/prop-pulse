@@ -29,6 +29,7 @@ from ml.workflow.datasets import save_upload, sandbox_dir
 from ml.workflow.prepare import PrepareConfig, prepare_dataset
 from ml.workflow.train import (
     ESTIMATOR_N_JOBS,
+    SANDBOX_TREE_SEARCH_ITERATIONS,
     UnknownCandidateError,
     UnknownObjectiveError,
     train_objective,
@@ -101,6 +102,16 @@ def trained(tmp_path_factory: pytest.TempPathFactory) -> SimpleNamespace:
 # ---------------------------------------------------------------------------
 
 class TestCandidateValidation:
+    def test_sandbox_training_resource_profile_is_bounded(self) -> None:
+        """The API co-locates the trainer subprocess on a 512 MiB free instance."""
+        from ml.workflow.train import SANDBOX_RF_ESTIMATORS, SANDBOX_XGB_ESTIMATORS
+
+        assert SEARCH_N_JOBS == 1
+        assert ESTIMATOR_N_JOBS == 1
+        assert SANDBOX_TREE_SEARCH_ITERATIONS <= 3
+        assert SANDBOX_RF_ESTIMATORS <= 100
+        assert SANDBOX_XGB_ESTIMATORS <= 120
+
     def test_valid_candidate_sets(self) -> None:
         assert valid_candidates("regression") == (
             "linear", "ridge", "lasso", "random_forest", "xgboost",
