@@ -809,6 +809,28 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
 
   test('stale training job 404 stops polling after the first missing status response', async ({ page }) => {
     let statusRequests = 0
+    // The Train stage restores deep-linked jobs only when the dataset's job list
+    // confirms their ownership. Simulate the status file disappearing after that list response.
+    await page.route('**/workflow/datasets/ames/jobs', async (route) => {
+      if (route.request().method() !== 'GET') return route.continue()
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify([
+          {
+            job_id: 'job_ffffffff',
+            dataset_id: 'ames',
+            objective: 'regression',
+            status: 'running',
+            progress: { done: 0, total: 1, current: 'ridge', elapsed_s: 1 },
+            results: { ridge: { status: 'running' } },
+            error: null,
+            created_at: '2026-10-16T00:00:00+00:00',
+            finished_at: null,
+          },
+        ]),
+      })
+    })
     await page.route('**/workflow/jobs/job_ffffffff', async (route) => {
       statusRequests += 1
       if (statusRequests === 1) {
@@ -837,8 +859,9 @@ test.describe('guided workflow — full journey (WF-F5)', () => {
     })
 
     await page.goto(`${ames('07-train')}&job=job_ffffffff`)
-    await expect(page.locator('.wf-jobstatus')).toBeVisible()
-    await expect(page.getByText("Couldn't load the job status")).toBeVisible()
+    // Observe the last known running payload, followed by the non-retryable 404 state.
+    await expect(page.locator('.wf-jobstatus')).toBeVisible({ timeout: 10_000 })
+    await expect(page.getByText("Couldn't load the job status")).toBeVisible({ timeout: 10_000 })
     // A 404 is non-retryable even though the last known payload said "running".
     // The second request is expected; any later one indicates a polling loop.
     await page.waitForTimeout(5500)
