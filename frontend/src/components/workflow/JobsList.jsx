@@ -54,7 +54,7 @@ export default function JobsList({ jobs, datasetId, activeJobId, onSelect }) {
                 key={job.job_id}
                 className={isActive ? 'wf-row-active' : undefined}
               >
-                <td className="mono strong">{job.job_id}</td>
+                <td className="mono strong" title={`Internal job reference: ${job.job_id}`}>Run · {formatDateTime(job.created_at)}</td>
                 <td>{job.objective}</td>
                 <td>
                   <span className={`badge ${JOB_STATUS_CHIP[job.status] ?? 'badge-muted'}`}>
