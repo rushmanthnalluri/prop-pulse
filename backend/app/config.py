@@ -84,6 +84,8 @@ class Settings(BaseSettings):
             canonical = f"{scheme}://{authority}"
             if canonical not in normalized_origins:
                 normalized_origins.append(canonical)
+        if not normalized_origins:
+            raise ValueError("CORS_ORIGINS must contain at least one explicit HTTP(S) origin")
         return ",".join(normalized_origins)
 
     @staticmethod
