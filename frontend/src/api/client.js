@@ -5,9 +5,10 @@
  * are root-level — no `/api` prefix. No prediction data is ever hardcoded here;
  * every number rendered in the UI comes from a live response.
  *
- * Every request carries a 30s timeout (AUD-10) so a stalled-but-open connection
- * surfaces an error instead of spinning forever. Callers may pass an AbortSignal
- * via `options.signal` to cancel in-flight requests (e.g. on component unmount);
+ * Every request has a bounded timeout (AUD-10): 30s for local/self-hosted APIs
+ * and 90s for Render-hosted APIs, whose free instances can take about a minute
+ * to wake after idle. Callers may pass an AbortSignal via `options.signal` to
+ * cancel in-flight requests (e.g. on component unmount);
  * such cancellations reject with an `AbortError` and are swallowed by callers.
  *
  * Error normalization (CONTRACT §5.11):
@@ -23,8 +24,11 @@ const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replac
 
 export { API_URL }
 
+/** Render free-tier cold starts need more time than ordinary local requests. */
+const IS_RENDER_HOSTED_API = /^https:\/\/[^/]+\.onrender\.com$/i.test(API_URL)
+
 /** Max time any API request may stay in flight before it is aborted (AUD-10). */
-export const REQUEST_TIMEOUT_MS = 30_000
+export const REQUEST_TIMEOUT_MS = IS_RENDER_HOSTED_API ? 90_000 : 30_000
 
 /**
  * One entry of a FastAPI 422 `detail` list, normalized to a stable shape.
@@ -135,7 +139,7 @@ export async function request(path, options = {}) {
     if (error?.name === 'AbortError') throw error // caller-initiated cancel; callers ignore it
     if (error?.name === 'TimeoutError') {
       throw new ApiError(
-        `Request timed out after ${REQUEST_TIMEOUT_MS / 1000} seconds — the API may be busy or unreachable. Check your connection and try again.`,
+        `Request timed out after ${REQUEST_TIMEOUT_MS / 1000} seconds — the API may be starting, busy, or unreachable. If this is a free Render instance, it can take about a minute to wake after idle. Check your connection and try again.`,
         0,
       )
     }

@@ -241,10 +241,14 @@ repo-root scratch store (`mlruns_repro_audit/`, deleted afterwards). Any future
 
 ## Step 6 — Dependency pins
 
-`requirements.txt`: 21 requirements, **0 unpinned** (all `==`). `backend/requirements.txt`:
-14 requirements, **0 unpinned**. `.venv/Scripts/python.exe -m pip check` → exit 0,
-`No broken requirements found.` Pin rationale (pandas 2.3.3 <3 for mlflow, numpy 2.4.6 <2.5
-for numba/shap) is recorded in ADR-6.
+As of 2026-10-16, `requirements.txt` has 23 exact-pinned entries and
+`backend/requirements.txt` has 16; there are no unpinned requirements. SHAP is
+pinned to `0.53.0` and Numba/llvmlite are no longer explicit dependencies.
+`httpx2==2.13.1` is installed for Starlette's `TestClient`, while `httpx==0.28.1`
+remains for the async load-test client. NumPy remains pinned to the verified
+`2.4.6` model/runtime baseline; see ADR-6 for the rationale and history.
+The release gates re-run dependency installation/audits and the full suite on the
+exact commit before release.
 
 ## Step 7 — From-scratch reproduction runbook
 

@@ -32,14 +32,40 @@ def client(tmp_path_factory: pytest.TempPathFactory) -> TestClient:
 
 
 def test_cors_origin_values_are_canonicalized() -> None:
-    """Configured origins match the Origin header even when operators add '/'. """
+    """Configured origins normalize host casing, default ports, whitespace, and '/'. """
     settings = Settings(
-        cors_origins=" https://prop-pulse-frontend.onrender.com/ , http://localhost:5173 "
+        cors_origins=(
+            " HTTPS://Prop-Pulse-Frontend.Onrender.com:443/ , "
+            "http://LOCALHOST:80/ , http://localhost:5173 "
+        )
     )
     assert settings.cors_origin_list == [
         "https://prop-pulse-frontend.onrender.com",
+        "http://localhost",
         "http://localhost:5173",
     ]
+
+
+@pytest.mark.parametrize(
+    "cors_origins",
+    [
+        "*",
+        "ftp://example.com",
+        "https://example.com/api",
+        "https://example.com?debug=1",
+        "https://user@example.com",
+        "https://example.com:not-a-port",
+        r"https://exa\mple.com",
+        "https://example.com bad",
+        "https://example.com\r\nAccess-Control-Allow-Origin: *",
+        "",
+        " , ",
+    ],
+)
+def test_invalid_cors_origin_configuration_is_rejected(cors_origins: str) -> None:
+    """Invalid origin values fail at startup instead of producing bad CORS headers."""
+    with pytest.raises(ValueError, match="CORS_ORIGINS"):
+        Settings(cors_origins=cors_origins)
 
 
 def _assert_security_headers(response) -> None:  # noqa: ANN001 — httpx.Response

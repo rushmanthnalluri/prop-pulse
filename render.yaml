@@ -9,7 +9,8 @@ services:
     plan: free
     buildCommand: pip install -r backend/requirements.txt
     startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
-    healthCheckPath: /health
+    # Readiness avoids routing traffic to a process whose model artifacts are still loading.
+    healthCheckPath: /ready
     envVars:
       # Dependencies are pinned/verified on Python 3.14.5 (see backend/requirements.txt).
       - key: PYTHON_VERSION
