@@ -150,8 +150,8 @@ export default function NeighborhoodMap({
         <MapContainer center={AMES_CENTER} zoom={12} className="map-canvas" scrollWheelZoom>
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png"
-            subdomains="abcd"
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            subdomains={['a', 'b', 'c']}
           />
           <FlyToTarget target={flyTo} reduced={reduced} />
           <FocusPoint focus={focus} points={points} markerRefs={markerRefs} />
