@@ -92,9 +92,10 @@ test('sidebar: pipeline, product links, and dataset stay visually separated', as
     await page.setViewportSize(viewport)
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     await expect(page.getByRole('navigation', { name: 'ML pipeline stages' })).toBeVisible()
-    await expect(page.getByRole('navigation', { name: 'Product pages' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Model Insights' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'Model Health' })).toBeVisible()
+    const productNav = page.getByRole('navigation', { name: 'Product pages' })
+    await expect(productNav).toBeVisible()
+    await expect(productNav.getByRole('link', { name: 'Model Insights' })).toBeVisible()
+    await expect(productNav.getByRole('link', { name: 'Model Health' })).toBeVisible()
     await expect(page.getByText('Dataset', { exact: true })).toBeVisible()
     const layout = await page.evaluate(() => {
       const pipeline = document.querySelector('.shell-nav-section--pipeline')?.getBoundingClientRect()
