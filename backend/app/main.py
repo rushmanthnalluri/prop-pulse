@@ -281,10 +281,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     app.add_middleware(MetricsMiddleware)
-    # Security hardening (reports/SECURITY.md): added after MetricsMiddleware so
-    # SecurityHeadersMiddleware is the outermost user middleware — its headers
-    # then land on every response that passes through the stack, including the
-    # 413s produced by BodySizeLimitMiddleware.
+    # SecurityHeadersMiddleware wraps BodySizeLimitMiddleware and MetricsMiddleware,
+    # so normal responses and body-limit 413 responses receive baseline headers.
     app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(SecurityHeadersMiddleware)
     # Starlette's last-added user middleware is outermost. Keep CORS outermost
