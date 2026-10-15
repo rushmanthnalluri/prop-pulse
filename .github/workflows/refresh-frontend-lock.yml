@@ -1,0 +1,33 @@
+name: Refresh frontend lockfile (temporary maintenance)
+on:
+  push:
+    branches:
+      - chore/recharts-v3-install-policy
+permissions:
+  contents: write
+jobs:
+  refresh-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: chore/recharts-v3-install-policy
+          persist-credentials: true
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Regenerate the frontend lockfile without executing dependency scripts
+        run: |
+          cd frontend
+          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          cd ..
+          if git diff --quiet -- frontend/package-lock.json; then
+            echo "Lockfile is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/package-lock.json
+          git commit -m "chore(deps): refresh frontend package lock"
+          git push origin HEAD:chore/recharts-v3-install-policy
