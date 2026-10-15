@@ -81,7 +81,7 @@ export default function JobStatus({ jobId, datasetId, onTerminal }) {
   }, [jobId])
 
   const { job, error, active, refresh } = useJobPolling(jobId, {
-    intervalMs: 1500,
+    intervalMs: 3000,
     onUpdate: (payload) => {
       const was = prevStatus.current
       prevStatus.current = payload?.status ?? was
