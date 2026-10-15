@@ -76,6 +76,11 @@ downgrades, verified in installed package metadata:
 (`files.pythonhosted.org` NameResolutionError) hit the first mlflow download
 attempt; a retry after ~45s succeeded with no package changes.
 
+**Current update (audit, 2026-10-16):**
+- SHAP is now pinned to `0.53.0`. The released dependency metadata no longer requires Numba/llvmlite; they were removed from both requirement sets to reduce unnecessary native dependencies. The original 2026-08-07 resolver notes above describe SHAP 0.52.0 and are historical.
+- `httpx2==2.13.1` is pinned for Starlette's current `TestClient` implementation. The separate `httpx==0.28.1` pin remains because `scripts/load_test.py` uses `httpx.AsyncClient` directly.
+- NumPy stays pinned at `2.4.6` to avoid combining dependency cleanup with an independent numeric-stack/model-artifact change.
+
 ## ADR-7: Docker containers pin python:3.12 (independent of host 3.14)
 The dev machine runs Python 3.14 only; containers use `python:3.12-slim` for a
 stable, widely-wheeled target. The daemon was unavailable during the build waves
