@@ -243,7 +243,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         app.state.model_info_payload = model.build_model_info_payload(app.state)
         app.state.model_importance = model.load_model_importance(settings.resolved_model_dir)
 
-        # Avoid loading SHAP/numba and building its background explainer during
+        # Avoid loading SHAP and building its background explainer during
         # startup by default. On the Render 512 MiB service, eager warming
         # competed with the isolated workflow-training subprocess and caused
         # OOM restarts. Opt in only on deployments with sufficient memory.
