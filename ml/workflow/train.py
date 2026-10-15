@@ -25,7 +25,8 @@ helpers are imported from the champion trainers (``one_se_alpha``,
 n_jobs-pinned copies of ``train_regression.py:144,176`` — the champions pin
 ``n_jobs=-1``, which saturates co-located serving (§4.5; the classification
 trainer's Windows spawn-storm precedent). All searches run ``n_jobs=1`` and
-forest/xgboost estimators are re-pinned to ``n_jobs <= 2``.
+forest/xgboost estimators are re-pinned to ``n_jobs=1`` and the sandbox
+search uses at most three randomized fits per tree model.
 
 Safety (§4): no MLflow — this module never touches ``mlflow`` and never calls
 ``ml.tracking`` (job provenance lives in the job's ``status.json``); the
