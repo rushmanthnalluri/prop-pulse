@@ -61,19 +61,6 @@ from typing import Any
 from ml.workflow import datasets
 from ml.workflow.admission import TrainingAdmissionLock
 from ml.workflow.datasets import UnknownDataset, sandbox_dir
-from ml.workflow.prepare import (
-    PrepareConfig,
-    load_prepared_splits,
-    prepare_dataset,
-    preview_report,
-)
-from ml.workflow.train import (
-    EVENT_CANDIDATE_DONE,
-    EVENT_CANDIDATE_FAILED,
-    EVENT_CANDIDATE_STARTED,
-    train_objective,
-    valid_candidates,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -250,6 +237,23 @@ def run_job(
         time.sleep(0.25)
 
     try:
+        # Do not import the candidate trainers/search stack until this child owns
+        # the admission lock. Queued child processes stay smaller while another
+        # training run uses the deployment's memory budget.
+        from ml.workflow.prepare import (
+            PrepareConfig,
+            load_prepared_splits,
+            prepare_dataset,
+            preview_report,
+        )  # noqa: PLC0415
+        from ml.workflow.train import (
+            EVENT_CANDIDATE_DONE,
+            EVENT_CANDIDATE_FAILED,
+            EVENT_CANDIDATE_STARTED,
+            train_objective,
+            valid_candidates,
+        )  # noqa: PLC0415
+
         # Validate the request before any heavy work (§3.9: 422 lists valid candidates).
         try:
             valid = valid_candidates(objective)
