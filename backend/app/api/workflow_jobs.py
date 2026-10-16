@@ -34,7 +34,9 @@ def create_job(
     Errors: 400 row window; 404 dataset; 409 a job is already running
     (message names it); 422 unknown candidates (message lists the valid set).
     An unprepared dataset is auto-prepared by the subprocess with the default
-    config (surfaced as a ``preparing`` phase, §3.9).
+    config (surfaced as a ``preparing`` phase, §3.9). At most two jobs may be
+    queued/running across datasets (one active + one waiting); further submissions
+    return 409 to avoid unbounded waiting trainer processes on small instances.
     """
     return service.create_job(dataset_id, body.objective, body.candidates)
 
