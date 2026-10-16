@@ -151,6 +151,24 @@ def _active_workflow_jobs() -> list[dict[str, Any]]:
     return active
 
 
+def _owner_job_status(owner: dict[str, Any]) -> str | None:
+    """Find the status of the job that currently owns the shared admission lock."""
+    root = wf_datasets.WORKFLOW_MODELS_ROOT
+    job_id = owner.get("job_id")
+    dataset_id = owner.get("dataset_id")
+    if not root.exists() or not isinstance(job_id, str) or not isinstance(dataset_id, str):
+        return None
+    for status_file in root.glob("*/jobs/*/status.json"):
+        payload = _read_status_file(status_file)
+        if (
+            payload is not None
+            and payload.get("job_id") == job_id
+            and payload.get("dataset_id") == dataset_id
+        ):
+            return str(payload.get("status") or "")
+    return None
+
+
 def _jsonable(value: Any) -> Any:
     """Best-effort numpy/pandas -> Python conversion for status payloads."""
     if isinstance(value, float) and not math.isfinite(value):
@@ -345,6 +363,18 @@ class WorkflowJobService:
                         detail=(
                             "cannot submit training while workflow operation "
                             f"{operation!r} is active; retry when it finishes"
+                        ),
+                    )
+                owner_status = _owner_job_status(owner)
+                # Queue behind a job only after preparation has finished. A
+                # queued/preparing owner can still be writing split artifacts,
+                # which _train_window and preview_report must not read concurrently.
+                if owner_status not in {"running", "done", "complete", "failed"}:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=(
+                            "the current training job is still queued or preparing; "
+                            "retry after it enters the running phase"
                         ),
                     )
 
