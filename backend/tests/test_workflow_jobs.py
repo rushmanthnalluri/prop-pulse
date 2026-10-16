@@ -264,6 +264,36 @@ class TestConcurrencyGuard:
         assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
 
 
+    def test_reprepare_is_rejected_when_a_job_is_queued(
+        self,
+        workflow_client: TestClient,
+        workflow_roots: SimpleNamespace,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A queued child protects its split artifacts before acquiring admission."""
+        calls: list[tuple[str, str]] = []
+        monkeypatch.setattr(jobs_service, "spawn_training_job", _queued_spawn(calls))
+        dataset_id = upload_dataset(
+            workflow_client, ames_slice_csv(), filename="reprepare-queued.csv"
+        ).json()["dataset_id"]
+        accepted = workflow_client.post(
+            f"/workflow/datasets/{dataset_id}/jobs",
+            json={"objective": "regression", "candidates": ["linear"]},
+        )
+        assert accepted.status_code == 202, accepted.text
+        job_id = accepted.json()["job_id"]
+        try:
+            response = workflow_client.post(
+                f"/workflow/datasets/{dataset_id}/preprocess/preview", json={}
+            )
+            assert response.status_code == 409, response.text
+            assert "queued work to finish" in response.json()["detail"]
+            assert len(calls) == 1
+        finally:
+            _force_failed(workflow_roots, dataset_id, job_id)
+            assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
+
+
     def test_job_submission_is_rejected_during_preprocessing(
         self,
         workflow_client: TestClient,
