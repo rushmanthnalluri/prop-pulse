@@ -33,7 +33,6 @@ def _route_bucket(method: str, path: str) -> tuple[str, tuple[int, int]] | None:
         return None
     if method == "POST" and path in {
         "/predict", "/predict/price", "/predict/sale-probability",
-        "/workflow/jobs",
     }:
         return "prediction", DEFAULT_LIMITS["prediction"]
     if path.startswith("/workflow/") and method in {"POST", "PUT", "PATCH", "DELETE"}:
