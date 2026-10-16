@@ -18,7 +18,13 @@ FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    VIRTUAL_ENV=/opt/venv
+
+# Install Python dependencies in a virtual environment. This keeps site packages
+# isolated and avoids pip's warning about performing system installs as root.
+RUN python -m venv "$VIRTUAL_ENV"
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 WORKDIR /app
 
@@ -26,7 +32,7 @@ WORKDIR /app
 # requirements change. backend/requirements.txt is the slim serving subset
 # (no mlflow — ml.tracking imports mlflow lazily, only inside training calls).
 COPY backend/requirements.txt backend/requirements.txt
-RUN pip install --no-cache-dir -r backend/requirements.txt
+RUN python -m pip install --no-cache-dir -r backend/requirements.txt
 
 # Application code + model artifacts.
 #   ml/      — feature pipeline, clustering serving, explainability, monitoring

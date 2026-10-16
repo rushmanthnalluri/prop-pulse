@@ -21,6 +21,9 @@ jobs:
   python:
     runs-on: ubuntu-latest
     steps:
+      - name: Set stable default branch for checkout
+        working-directory: ${{ github.workspace }}
+        run: git config --global init.defaultBranch main
       - uses: actions/checkout@v7
 
       - name: Set up Python 3.12
@@ -45,7 +48,7 @@ jobs:
       # pytest.ini sets pythonpath=.; testpaths = tests backend/tests.
       # Integration tests use the committed processed data + champion artifacts.
       - name: Run tests
-        run: python -m pytest tests backend/tests -q
+        run: python -m pytest tests backend/tests -q -W error
 
   frontend:
     runs-on: ubuntu-latest
@@ -53,6 +56,9 @@ jobs:
       run:
         working-directory: frontend
     steps:
+      - name: Set stable default branch for checkout
+        working-directory: ${{ github.workspace }}
+        run: git config --global init.defaultBranch main
       - uses: actions/checkout@v7
 
       - name: Set up Node.js 24
@@ -83,6 +89,9 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     steps:
+      - name: Set stable default branch for checkout
+        working-directory: ${{ github.workspace }}
+        run: git config --global init.defaultBranch main
       - uses: actions/checkout@v7
 
       # compose reads env_file .env; derive it from the committed example so
@@ -109,6 +118,9 @@ jobs:
   docker-build:
     runs-on: ubuntu-latest
     steps:
+      - name: Set stable default branch for checkout
+        working-directory: ${{ github.workspace }}
+        run: git config --global init.defaultBranch main
       - uses: actions/checkout@v7
 
       # Same build commands as docker/README.md; context is the repo root so
@@ -194,6 +206,9 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     steps:
+      - name: Set stable default branch for checkout
+        working-directory: ${{ github.workspace }}
+        run: git config --global init.defaultBranch main
       - uses: actions/checkout@v7
 
       - name: Set up Python 3.12
@@ -286,6 +301,9 @@ jobs:
     needs: [python, frontend, docker, docker-build, e2e]
     runs-on: ubuntu-latest
     steps:
+      - name: Set stable default branch for checkout
+        working-directory: ${{ github.workspace }}
+        run: git config --global init.defaultBranch main
       - uses: actions/checkout@v7
 
       - name: Generate verification report
