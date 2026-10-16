@@ -39,10 +39,11 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from filelock import FileLock, Timeout
 from fastapi import HTTPException
 
 from ml.paths import REPO_ROOT
-from ml.workflow.admission import TrainingAdmissionLock
+from ml.workflow.admission import TrainingAdmissionLock, read_training_owner
 from ml.workflow.datasets import (
     UnknownDataset,
     get_record,
@@ -63,6 +64,11 @@ logger = logging.getLogger(__name__)
 
 #: Job id scheme (§3.9): ``job_`` + uuid8 — mirrors the dataset uuid8 scheme.
 _JOB_ID_RE = re.compile(r"^job_[0-9a-f]{8}$")
+
+# One running job plus one waiting job bounds resident trainer subprocesses on
+# small deployments. Additional work returns 409 instead of spawning more Python
+# children that would each load the ML stack while waiting for the shared lock.
+MAX_OUTSTANDING_WORKFLOW_JOBS = 2
 
 #: §3.9 selection blocks per objective (best flag + comparison-table note).
 _SELECTION_BLOCKS: dict[str, dict[str, Any]] = {
@@ -130,6 +136,19 @@ def _write_status_file(job_dir: Path, payload: dict[str, Any]) -> None:
 
 def _active_status(payload: dict[str, Any] | None) -> bool:
     return payload is not None and str(payload.get("status")) in ACTIVE_JOB_STATES
+
+
+def _active_workflow_jobs() -> list[dict[str, Any]]:
+    """Return every queued/running job across datasets (training is globally serialized)."""
+    root = wf_datasets.WORKFLOW_MODELS_ROOT
+    if not root.exists():
+        return []
+    active: list[dict[str, Any]] = []
+    for status_file in root.glob("*/jobs/*/status.json"):
+        payload = _read_status_file(status_file)
+        if _active_status(payload):
+            active.append(payload)
+    return active
 
 
 def _jsonable(value: Any) -> Any:
@@ -246,10 +265,12 @@ class WorkflowJobService:
     def create_job(
         self, dataset_id: str, objective: str, candidates: list[str]
     ) -> dict[str, Any]:
-        """Validate, persist a queued status file, and spawn the trainer.
+        """Validate, reserve a bounded queue slot, persist status, and spawn the trainer.
 
-        The admission lock remains held until the trainer subprocess exits.
-        This is the integrity boundary for both training and preprocessing.
+        A separate cross-process submission lock makes the queue-size check
+        atomic. The shared training lock is probed before reading preparation
+        state so uploads/re-preparation are not read while being rewritten.
+        The trainer itself owns the shared lock for the heavy fit.
         """
         try:
             record = get_record(dataset_id)
@@ -276,55 +297,122 @@ class WorkflowJobService:
 
         job_id = "job_" + uuid.uuid4().hex[:8]
         job_dir = _jobs_dir(dataset_id) / job_id
-        report = preview_report(dataset_id)
-        prepare_fingerprint = report.fingerprint if report is not None else None
-        status_payload: dict[str, Any] = {
-            "job_id": job_id,
-            "dataset_id": dataset_id,
-            "objective": objective,
-            "prepare_fingerprint": prepare_fingerprint,
-            "status": "queued",
-            "progress": {
-                "done": 0,
-                "total": len(candidates),
-                "current": None,
-                "elapsed_s": 0.0,
-            },
-            "results": {name: {"status": "pending"} for name in candidates},
-            "error": None,
-            "created_at": _utc_now_iso(),
-            "finished_at": None,
-        }
-        _write_status_file(job_dir, status_payload)
+
+        queue_root = wf_datasets.WORKFLOW_MODELS_ROOT
+        queue_root.mkdir(parents=True, exist_ok=True)
+        submission_lock = FileLock(str(queue_root / ".job-submission.lock"))
         try:
-            spawn_training_job(
-                dataset_id, job_id, objective, candidates, job_dir
-            )
-        except OSError as exc:
-            status_payload["status"] = "failed"
-            status_payload["error"] = (
-                f"could not spawn the training subprocess ({exc.__class__.__name__})"
-            )
-            status_payload["finished_at"] = _utc_now_iso()
-            _write_status_file(job_dir, status_payload)
+            submission_lock.acquire(timeout=0)
+        except Timeout as exc:
             raise HTTPException(
-                status_code=503,
-                detail=f"could not spawn the training subprocess ({exc.__class__.__name__})",
+                status_code=409,
+                detail="another workflow job is being submitted; retry shortly",
             ) from exc
 
-        logger.info(
-            "accepted training job %s (dataset=%s objective=%s candidates=%s fingerprint=%s)",
-            job_id,
-            dataset_id,
-            objective,
-            candidates,
-            prepare_fingerprint,
-        )
-        return {
-            "job_id": job_id,
-            "status": "queued",
-            "links": {"status": f"/workflow/jobs/{job_id}"},
-        }
+        reservation: TrainingAdmissionLock | None = None
+        reservation_acquired = False
+        try:
+            active_jobs = _active_workflow_jobs()
+            if len(active_jobs) >= MAX_OUTSTANDING_WORKFLOW_JOBS:
+                active_ids = [
+                    str(job.get("job_id") or "unknown") for job in active_jobs
+                ]
+                raise HTTPException(
+                    status_code=409,
+                    detail=(
+                        "workflow training queue is full "
+                        f"({len(active_jobs)}/{MAX_OUTSTANDING_WORKFLOW_JOBS} "
+                        f"queued or running jobs; active jobs: {active_ids})"
+                    ),
+                )
+
+            # Reserve the shared lock while reading preparation state and
+            # writing the queued status when it is free. If a trainer already
+            # owns it, one waiting job is permitted by the bounded queue. A
+            # preprocess/orphan-sweep owner is never treated as a training queue.
+            reservation = TrainingAdmissionLock(
+                dataset_id=dataset_id,
+                job_id=job_id,
+                operation="job-submission",
+            )
+            reservation_acquired = reservation.acquire()
+            if not reservation_acquired:
+                owner = read_training_owner()
+                if owner is None or owner.get("job_id") is None:
+                    operation = (
+                        str(owner.get("operation") or "unknown")
+                        if owner is not None
+                        else "unknown"
+                    )
+                    raise HTTPException(
+                        status_code=409,
+                        detail=(
+                            "cannot submit training while workflow operation "
+                            f"{operation!r} is active; retry when it finishes"
+                        ),
+                    )
+
+            report = preview_report(dataset_id)
+            prepare_fingerprint = report.fingerprint if report is not None else None
+            status_payload: dict[str, Any] = {
+                "job_id": job_id,
+                "dataset_id": dataset_id,
+                "objective": objective,
+                "prepare_fingerprint": prepare_fingerprint,
+                "status": "queued",
+                "progress": {
+                    "done": 0,
+                    "total": len(candidates),
+                    "current": None,
+                    "elapsed_s": 0.0,
+                },
+                "results": {name: {"status": "pending"} for name in candidates},
+                "error": None,
+                "created_at": _utc_now_iso(),
+                "finished_at": None,
+            }
+            _write_status_file(job_dir, status_payload)
+
+            # The child must be able to acquire the workflow lock. Releasing
+            # after persisting status makes concurrent submission visible
+            # before another request can reserve a queue slot.
+            if reservation_acquired:
+                reservation.release()
+                reservation_acquired = False
+
+            try:
+                spawn_training_job(
+                    dataset_id, job_id, objective, candidates, job_dir
+                )
+            except OSError as exc:
+                status_payload["status"] = "failed"
+                status_payload["error"] = (
+                    f"could not spawn the training subprocess ({exc.__class__.__name__})"
+                )
+                status_payload["finished_at"] = _utc_now_iso()
+                _write_status_file(job_dir, status_payload)
+                raise HTTPException(
+                    status_code=503,
+                    detail=f"could not spawn the training subprocess ({exc.__class__.__name__})",
+                ) from exc
+
+            logger.info(
+                "accepted training job %s (dataset=%s objective=%s candidates=%s fingerprint=%s)",
+                job_id,
+                dataset_id,
+                objective,
+                candidates,
+                prepare_fingerprint,
+            )
+            return {
+                "job_id": job_id,
+                "status": "queued",
+                "links": {"status": f"/workflow/jobs/{job_id}"},
+            }
+        finally:
+            if reservation_acquired and reservation is not None:
+                reservation.release()
+            submission_lock.release()
 
     # -- reads (§3.9) ----------------------------------------------------------
 
