@@ -7,8 +7,17 @@ filesystem admission lock in ml.workflow.admission.
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
+
+# Integration tests intentionally issue many requests from one TestClient peer.
+# Disable incidental throttling in these broad workflow suites; focused
+# backend/tests/test_abuse_controls.py tests set explicit low limits and verify
+# 429 behavior independently. These are test-process-only defaults.
+for _name in ("PREDICTION", "WORKFLOW_WRITE", "TRAINING", "GENERAL"):
+    os.environ.setdefault(f"PROPULSE_RATE_LIMIT_{_name}", "100000")
+    os.environ.setdefault(f"PROPULSE_RATE_WINDOW_{_name}", "60")
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
