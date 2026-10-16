@@ -291,10 +291,6 @@ class WorkflowJobService:
             )
         candidates = list(dict.fromkeys(candidates))
 
-        can_train, reason = WorkflowDatasetService._train_window(record)
-        if not can_train:
-            raise HTTPException(status_code=400, detail=reason)
-
         job_id = "job_" + uuid.uuid4().hex[:8]
         job_dir = _jobs_dir(dataset_id) / job_id
 
@@ -351,6 +347,12 @@ class WorkflowJobService:
                             f"{operation!r} is active; retry when it finishes"
                         ),
                     )
+
+            # Check row-window eligibility only after admission confirms that
+            # preparation is not rewriting the persisted split artifacts.
+            can_train, reason = WorkflowDatasetService._train_window(record)
+            if not can_train:
+                raise HTTPException(status_code=400, detail=reason)
 
             report = preview_report(dataset_id)
             prepare_fingerprint = report.fingerprint if report is not None else None
