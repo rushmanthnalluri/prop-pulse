@@ -246,6 +246,44 @@ class TestConcurrencyGuard:
             assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
 
 
+
+    def test_job_submission_is_rejected_while_existing_job_prepares(
+        self,
+        workflow_client: TestClient,
+        workflow_roots: SimpleNamespace,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A second job must not read split metadata while the first auto-prepares."""
+        calls: list[tuple[str, str]] = []
+        monkeypatch.setattr(jobs_service, "spawn_training_job", _queued_spawn(calls))
+        dataset_id = upload_dataset(
+            workflow_client, ames_slice_csv(), filename="training-prepare-busy.csv"
+        ).json()["dataset_id"]
+        owner_job_id = "job_00000042"
+        write_status_file(
+            workflow_roots.models,
+            dataset_id,
+            owner_job_id,
+            status="preparing",
+        )
+        lock = TrainingAdmissionLock(
+            dataset_id=dataset_id, job_id=owner_job_id, operation="training"
+        )
+        assert lock.acquire()
+        try:
+            response = workflow_client.post(
+                f"/workflow/datasets/{dataset_id}/jobs",
+                json={"objective": "regression", "candidates": ["linear"]},
+            )
+            assert response.status_code == 409, response.text
+            assert "preparing" in response.json()["detail"]
+            assert calls == []
+        finally:
+            lock.release()
+            _force_failed(workflow_roots, dataset_id, owner_job_id)
+            assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
+
+
 # ---------------------------------------------------------------------------
 # Orphan sweep (§3.9/§4.8) + status normalization (complete -> done)
 # ---------------------------------------------------------------------------
