@@ -11,7 +11,11 @@ from filelock import FileLock, Timeout
 
 from ml.workflow import datasets as wf_datasets
 
-__all__ = ["TrainingAdmissionLock", "read_training_owner"]
+# Shared with workflow-job submissions and dataset deletion so filesystem
+# mutations cannot race with queue acceptance.
+JOB_SUBMISSION_LOCK_NAME = ".job-submission.lock"
+
+__all__ = ["JOB_SUBMISSION_LOCK_NAME", "TrainingAdmissionLock", "read_training_owner"]
 
 
 def _lock_path() -> Path:

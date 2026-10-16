@@ -1,6 +1,7 @@
 # PropPulse — Current Release Truth
 
-**Status:** main CI is green at `03f40d6`; production-hardening branch changes require CI on their exact commit.
+**Status source:** release readiness is the latest successful CI run on `main` **and** a matching live Render deployment. Check the [main CI runs](https://github.com/rushmanthnalluri/prop-pulse/actions/workflows/ci.yml?query=branch%3Amain) and [Render service/deploy history](https://dashboard.render.com/web/srv-d9s4um7avr4c73afli80) together; a pull-request run alone is not proof that a change is released.
+**Verified baseline snapshot:** on 2026-10-16, `dde8ed9` passed main CI run [#38833983638](https://github.com/rushmanthnalluri/prop-pulse/actions/runs/38833983638) and Render reported that deployment live. This baseline is historical evidence, not a substitute for checking later releases.
 **Last maintained:** 2026-10-16
 
 This file is the single current release-status authority for PropPulse.
@@ -27,12 +28,15 @@ be used as current pass/fail or vulnerability status.
 | P0 | One current release truth | Implemented |
 | P1 | Prepare-fingerprint binding | Implemented at train, model-selection, evaluation, and sandbox-predict boundaries |
 | P1 | Stale model/evaluation combinations | Rejected with HTTP 409; stale candidates remain auditable but are ineligible for selection |
+| P1 | Public API authentication and rate limits | **Open:** tracked in [issue #10](https://github.com/rushmanthnalluri/prop-pulse/issues/10); requires an access-model decision. Queue caps mitigate one resource-exhaustion vector but do not replace AuthN/AuthZ or per-client quotas |
 | P2 | Candidate-selection synchronization | Frontend derives an effective completed candidate and validates the pair at submission |
 | P2 | `can_train` eligibility | Uses the same split/outlier rules as stage-06 preparation |
 | P2 | Training lock | Cross-process filesystem admission lock; trainer owns it during the fit |
+| P2 | Workflow subprocess fan-out | Audit follow-up bounds queued/running jobs to two, rejects overflow with 409, delays heavyweight training imports until lock ownership, and extends the admission wait to 15 minutes; confirm the exact-head CI and live Render deploy before treating the changes as shipped |
+| P2 | Python runtime parity | Audit follow-up runs the Python gate on both 3.12 (Docker/test baseline) and 3.14.5 (configured Render runtime); release gate must pass on both |
 | P2 | PSI degenerate features | Effective-bin metadata is validated and degenerate features are surfaced in drift reports |
 | P3 | Historical documentation contradictions | Current truth separated from historical evidence |
-| P3 | Dependency upgrades | Runtime pins upgraded and frontend transitive advisories patched; exact-commit CI must validate resolver/audit compatibility |
+| P3 | Dependency upgrades | Recharts 3 and refreshed Python/frontend pins; npm audit, pip-audit, strict-warning tests, and both Python runtime versions are release gates |
 | P3 | Production observability | Request IDs, in-flight request gauge, last-request timestamp, and readiness probe added |
 | P3 | CI verification report | Added as a consolidated generated artifact/summary |
 | P3 | Deployment/scaling documentation | Shared-lock/storage and metrics scope documented |

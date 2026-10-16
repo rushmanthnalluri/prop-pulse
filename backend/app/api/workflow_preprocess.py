@@ -9,17 +9,21 @@ from __future__ import annotations
 from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
+from filelock import FileLock, Timeout
 
+from ml.workflow import datasets as wf_datasets
 from ml.workflow.datasets import UnknownDataset
 from ml.workflow.prepare import prepare_dataset, preview_report
 
 from backend.app.api.deps import get_workflow_dataset_service
 from ml.workflow.admission import (
+    JOB_SUBMISSION_LOCK_NAME,
     TrainingAdmissionLock,
     read_training_owner,
 )
 from backend.app.schemas.workflow import PreprocessPreviewRequest, PreprocessStatusOut
 from backend.app.services.workflow import WorkflowDatasetService
+from backend.app.services.workflow.datasets import ACTIVE_JOB_STATES, job_status_scan
 
 router = APIRouter(tags=["workflow"])
 
@@ -61,28 +65,63 @@ def preprocess_preview(
     service.get_dataset(dataset_id)  # 404 gate
     config = body.config  # already validated — the request schema IS PrepareConfig
 
-    # Preparation rewrites the split/artifact state that a training job uses.
-    # Hold the same cross-process admission lock for the whole preparation so
-    # a re-prepare cannot race a running trainer and invalidate its fingerprint.
+    # Acquire locks in the same order as job submission and dataset deletion.
+    # Serializing submissions alone is not enough: preprocessing must also refuse
+    # to rewrite a dataset that already has a queued child waiting for admission.
+    queue_root = wf_datasets.WORKFLOW_MODELS_ROOT
+    queue_root.mkdir(parents=True, exist_ok=True)
+    submission_lock = FileLock(str(queue_root / JOB_SUBMISSION_LOCK_NAME))
+    try:
+        submission_lock.acquire(timeout=0)
+    except Timeout as exc:
+        raise HTTPException(
+            status_code=409,
+            detail="another workflow job is being submitted; retry shortly",
+        ) from exc
+
     lock = TrainingAdmissionLock(
         dataset_id=dataset_id, job_id=None, operation="preprocess"
     )
-    if not lock.acquire():
-        owner = read_training_owner()
-        detail = (
-            f"cannot re-prepare while job {owner.get('job_id')} on dataset "
-            f"{owner.get('dataset_id')} is running"
-            if owner
-            else "cannot re-prepare while another training/preprocessing operation is running"
-        )
-        raise HTTPException(status_code=409, detail=detail)
+    lock_acquired = False
     try:
-        report = prepare_dataset(dataset_id, config)
-    except UnknownDataset as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except ValueError as exc:
-        # Row-window and cleaner failures are client-actionable -> 400.
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
+        # Revalidate after acquiring the submission lock: a deletion that won
+        # the lock immediately before this request must surface as a clean 404.
+        service.get_dataset(dataset_id)
+
+        active_jobs = [
+            job for job in job_status_scan(dataset_id)
+            if str(job.get("status")) in ACTIVE_JOB_STATES
+        ]
+        if active_jobs:
+            job = active_jobs[0]
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    f"cannot re-prepare dataset {dataset_id!r} while job "
+                    f"{job.get('job_id')!r} is {job.get('status')!r}; "
+                    "wait for its queued/running work to finish"
+                ),
+            )
+
+        if not lock.acquire():
+            owner = read_training_owner()
+            detail = (
+                f"cannot re-prepare while job {owner.get('job_id')} on dataset "
+                f"{owner.get('dataset_id')} is running"
+                if owner
+                else "cannot re-prepare while another training/preprocessing operation is running"
+            )
+            raise HTTPException(status_code=409, detail=detail)
+        lock_acquired = True
+        try:
+            report = prepare_dataset(dataset_id, config)
+        except UnknownDataset as exc:
+            raise HTTPException(status_code=404, detail=str(exc)) from exc
+        except ValueError as exc:
+            # Row-window and cleaner failures are client-actionable -> 400.
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return report.to_dict()
     finally:
-        lock.release()
-    return report.to_dict()
+        if lock_acquired:
+            lock.release()
+        submission_lock.release()

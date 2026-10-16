@@ -61,19 +61,6 @@ from typing import Any
 from ml.workflow import datasets
 from ml.workflow.admission import TrainingAdmissionLock
 from ml.workflow.datasets import UnknownDataset, sandbox_dir
-from ml.workflow.prepare import (
-    PrepareConfig,
-    load_prepared_splits,
-    prepare_dataset,
-    preview_report,
-)
-from ml.workflow.train import (
-    EVENT_CANDIDATE_DONE,
-    EVENT_CANDIDATE_FAILED,
-    EVENT_CANDIDATE_STARTED,
-    train_objective,
-    valid_candidates,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +90,28 @@ _FORBIDDEN_COMPONENTS = frozenset(
 )
 
 _STATUS_NAME = "status.json"
+
+# Keep the single permitted waiting trainer alive while a legitimate longer
+# fit completes. The global outstanding-job cap bounds this wait to one child.
+TRAINING_ADMISSION_WAIT_SECONDS = 15 * 60
+_ADMISSION_POLL_INTERVAL_SECONDS = 0.25
+
+
+def _acquire_training_admission(
+    admission: TrainingAdmissionLock,
+    *,
+    timeout_seconds: float = TRAINING_ADMISSION_WAIT_SECONDS,
+    poll_interval_seconds: float = _ADMISSION_POLL_INTERVAL_SECONDS,
+) -> bool:
+    """Wait for the shared training lock, returning False only at the deadline."""
+    deadline = time.monotonic() + max(0.0, timeout_seconds)
+    while True:
+        if admission.acquire():
+            return True
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return False
+        time.sleep(min(poll_interval_seconds, remaining))
 
 
 def _utc_now_iso() -> str:
@@ -243,13 +252,30 @@ def run_job(
     admission = TrainingAdmissionLock(
         dataset_id=dataset_id, job_id=job_id, operation="training"
     )
-    deadline = time.monotonic() + 60.0
-    while not admission.acquire():
-        if time.monotonic() >= deadline:
-            return _fail("training admission remained busy for 60 seconds")
-        time.sleep(0.25)
+    if not _acquire_training_admission(admission):
+        return _fail(
+            "training admission remained busy for "
+            f"{TRAINING_ADMISSION_WAIT_SECONDS} seconds"
+        )
 
     try:
+        # Do not import the candidate trainers/search stack until this child owns
+        # the admission lock. Queued child processes stay smaller while another
+        # training run uses the deployment's memory budget.
+        from ml.workflow.prepare import (  # noqa: PLC0415
+            PrepareConfig,
+            load_prepared_splits,
+            prepare_dataset,
+            preview_report,
+        )
+        from ml.workflow.train import (  # noqa: PLC0415
+            EVENT_CANDIDATE_DONE,
+            EVENT_CANDIDATE_FAILED,
+            EVENT_CANDIDATE_STARTED,
+            train_objective,
+            valid_candidates,
+        )
+
         # Validate the request before any heavy work (§3.9: 422 lists valid candidates).
         try:
             valid = valid_candidates(objective)

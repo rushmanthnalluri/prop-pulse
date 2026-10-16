@@ -21,9 +21,10 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from filelock import FileLock
 
 import backend.app.services.workflow.jobs as jobs_service
-from ml.workflow.admission import TrainingAdmissionLock
+from ml.workflow.admission import JOB_SUBMISSION_LOCK_NAME, TrainingAdmissionLock
 from backend.tests.conftest import (
     JOB_ID_RE,
     MINIMAL_PROPERTY_PAYLOAD,
@@ -195,6 +196,14 @@ class TestConcurrencyGuard:
         assert len(calls) == 2
 
         try:
+            third = workflow_client.post(
+                f"/workflow/datasets/{dataset_id}/jobs",
+                json={"objective": "regression", "candidates": ["linear"]},
+            )
+            assert third.status_code == 409, third.text
+            assert "queue is full" in third.json()["detail"]
+            assert len(calls) == 2  # no third Python child was spawned
+
             busy = workflow_client.delete(f"/workflow/datasets/{dataset_id}")
             assert busy.status_code == 409
             detail = busy.json()["detail"]
@@ -207,6 +216,147 @@ class TestConcurrencyGuard:
         finally:
             for job_id in (first_job, second.json()["job_id"]):
                 _force_failed(workflow_roots, dataset_id, job_id)
+            assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
+
+
+    def test_delete_refuses_while_workflow_admission_lock_is_held(
+        self, workflow_client: TestClient
+    ) -> None:
+        """A dataset must not be removed while a workflow operation owns admission."""
+        dataset_id = upload_dataset(
+            workflow_client, ames_slice_csv(), filename="delete-admission-busy.csv"
+        ).json()["dataset_id"]
+        lock = TrainingAdmissionLock(
+            dataset_id=dataset_id, job_id="job_00000010", operation="training"
+        )
+        assert lock.acquire()
+        try:
+            response = workflow_client.delete(f"/workflow/datasets/{dataset_id}")
+            assert response.status_code == 409, response.text
+            assert "training" in response.json()["detail"]
+        finally:
+            lock.release()
+
+        # The failed delete must leave the upload intact and deletable afterward.
+        assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
+
+
+    def test_delete_refuses_during_job_submission_lock(
+        self,
+        workflow_client: TestClient,
+        workflow_roots: SimpleNamespace,
+    ) -> None:
+        """Serialize deletion with the job-creation window before status is written."""
+        dataset_id = upload_dataset(
+            workflow_client, ames_slice_csv(), filename="delete-submit-busy.csv"
+        ).json()["dataset_id"]
+        submission_lock = FileLock(
+            str(workflow_roots.models / JOB_SUBMISSION_LOCK_NAME)
+        )
+        submission_lock.acquire(timeout=0)
+        try:
+            response = workflow_client.delete(f"/workflow/datasets/{dataset_id}")
+            assert response.status_code == 409, response.text
+            assert "being submitted" in response.json()["detail"]
+        finally:
+            submission_lock.release()
+
+        assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
+
+
+    def test_reprepare_is_rejected_when_a_job_is_queued(
+        self,
+        workflow_client: TestClient,
+        workflow_roots: SimpleNamespace,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A queued child protects its split artifacts before acquiring admission."""
+        calls: list[tuple[str, str]] = []
+        monkeypatch.setattr(jobs_service, "spawn_training_job", _queued_spawn(calls))
+        dataset_id = upload_dataset(
+            workflow_client, ames_slice_csv(), filename="reprepare-queued.csv"
+        ).json()["dataset_id"]
+        accepted = workflow_client.post(
+            f"/workflow/datasets/{dataset_id}/jobs",
+            json={"objective": "regression", "candidates": ["linear"]},
+        )
+        assert accepted.status_code == 202, accepted.text
+        job_id = accepted.json()["job_id"]
+        try:
+            response = workflow_client.post(
+                f"/workflow/datasets/{dataset_id}/preprocess/preview", json={}
+            )
+            assert response.status_code == 409, response.text
+            assert "queued/running work to finish" in response.json()["detail"]
+            assert len(calls) == 1
+        finally:
+            _force_failed(workflow_roots, dataset_id, job_id)
+            assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
+
+
+    def test_job_submission_is_rejected_during_preprocessing(
+        self,
+        workflow_client: TestClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Do not start another heavy child while preprocessing owns the shared lock."""
+        calls: list[tuple[str, str]] = []
+        monkeypatch.setattr(jobs_service, "spawn_training_job", _queued_spawn(calls))
+        dataset_id = upload_dataset(
+            workflow_client, ames_slice_csv(), filename="preprocess-busy.csv"
+        ).json()["dataset_id"]
+        lock = TrainingAdmissionLock(
+            dataset_id=dataset_id, job_id=None, operation="preprocess"
+        )
+        assert lock.acquire()
+        try:
+            response = workflow_client.post(
+                f"/workflow/datasets/{dataset_id}/jobs",
+                json={"objective": "regression", "candidates": ["linear"]},
+            )
+            assert response.status_code == 409, response.text
+            assert "preprocess" in response.json()["detail"]
+            assert calls == []
+        finally:
+            lock.release()
+            assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
+
+
+
+    def test_job_submission_is_rejected_while_existing_job_prepares(
+        self,
+        workflow_client: TestClient,
+        workflow_roots: SimpleNamespace,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """A second job must not read split metadata while the first auto-prepares."""
+        calls: list[tuple[str, str]] = []
+        monkeypatch.setattr(jobs_service, "spawn_training_job", _queued_spawn(calls))
+        dataset_id = upload_dataset(
+            workflow_client, ames_slice_csv(), filename="training-prepare-busy.csv"
+        ).json()["dataset_id"]
+        owner_job_id = "job_00000042"
+        write_status_file(
+            workflow_roots.models,
+            dataset_id,
+            owner_job_id,
+            status="preparing",
+        )
+        lock = TrainingAdmissionLock(
+            dataset_id=dataset_id, job_id=owner_job_id, operation="training"
+        )
+        assert lock.acquire()
+        try:
+            response = workflow_client.post(
+                f"/workflow/datasets/{dataset_id}/jobs",
+                json={"objective": "regression", "candidates": ["linear"]},
+            )
+            assert response.status_code == 409, response.text
+            assert "preparing" in response.json()["detail"]
+            assert calls == []
+        finally:
+            lock.release()
+            _force_failed(workflow_roots, dataset_id, owner_job_id)
             assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
 
 

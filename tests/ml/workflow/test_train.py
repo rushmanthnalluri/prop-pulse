@@ -25,6 +25,7 @@ import numpy as np
 from ml.data.ingest import RAW_TRAIN_CSV
 from ml.paths import MLRUNS_DIR, MODELS_DIR, REPO_ROOT
 from ml.workflow import datasets
+from ml.workflow import train_job as train_job_module
 from ml.workflow.datasets import save_upload, sandbox_dir
 from ml.workflow.prepare import PrepareConfig, prepare_dataset
 from ml.workflow.train import (
@@ -36,7 +37,13 @@ from ml.workflow.train import (
     train_objective,
     valid_candidates,
 )
-from ml.workflow.train_job import assert_sandbox_output, job_dir_for, run_job
+from ml.workflow.train_job import (
+    TRAINING_ADMISSION_WAIT_SECONDS,
+    _acquire_training_admission,
+    assert_sandbox_output,
+    job_dir_for,
+    run_job,
+)
 
 #: 240 rows -> 168/36/36 at the default fractions (>= MIN_TRAIN_ROWS).
 _UPLOAD_ROWS = 240
@@ -332,6 +339,51 @@ class TestProgressEvents:
 # ---------------------------------------------------------------------------
 
 class TestRunJob:
+    def test_training_admission_wait_window_and_deadline(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """The bounded queue waits through a longer fit, but still has a deadline."""
+        assert TRAINING_ADMISSION_WAIT_SECONDS >= 15 * 60
+        clock = {"now": 0.0}
+
+        def fake_monotonic() -> float:
+            return clock["now"]
+
+        def fake_sleep(seconds: float) -> None:
+            clock["now"] += seconds
+
+        monkeypatch.setattr(
+            train_job_module,
+            "time",
+            SimpleNamespace(monotonic=fake_monotonic, sleep=fake_sleep),
+        )
+
+        class BusyThenAvailable:
+            def __init__(self, available_on_call: int | None) -> None:
+                self.calls = 0
+                self.available_on_call = available_on_call
+
+            def acquire(self) -> bool:
+                self.calls += 1
+                if self.available_on_call is None:
+                    return False
+                return self.calls >= self.available_on_call
+
+        lock = BusyThenAvailable(available_on_call=3)
+        assert _acquire_training_admission(
+            lock, timeout_seconds=1.0, poll_interval_seconds=0.25
+        ) is True
+        assert lock.calls == 3
+        assert clock["now"] == pytest.approx(0.5)
+
+        clock["now"] = 0.0
+        busy_lock = BusyThenAvailable(available_on_call=None)
+        assert _acquire_training_admission(
+            busy_lock, timeout_seconds=1.0, poll_interval_seconds=0.25
+        ) is False
+        assert busy_lock.calls == 5
+        assert clock["now"] == pytest.approx(1.0)
+
     def test_status_protocol_done(self, trained: SimpleNamespace) -> None:
         job_id = "job_" + uuid.uuid4().hex[:8]
         rc = run_job(trained.dataset_id, job_id, "regression", ["linear"])
