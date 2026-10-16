@@ -240,19 +240,19 @@ def run_job(
         # Do not import the candidate trainers/search stack until this child owns
         # the admission lock. Queued child processes stay smaller while another
         # training run uses the deployment's memory budget.
-        from ml.workflow.prepare import (
+        from ml.workflow.prepare import (  # noqa: PLC0415
             PrepareConfig,
             load_prepared_splits,
             prepare_dataset,
             preview_report,
-        )  # noqa: PLC0415
-        from ml.workflow.train import (
+        )
+        from ml.workflow.train import (  # noqa: PLC0415
             EVENT_CANDIDATE_DONE,
             EVENT_CANDIDATE_FAILED,
             EVENT_CANDIDATE_STARTED,
             train_objective,
             valid_candidates,
-        )  # noqa: PLC0415
+        )
 
         # Validate the request before any heavy work (§3.9: 422 lists valid candidates).
         try:
