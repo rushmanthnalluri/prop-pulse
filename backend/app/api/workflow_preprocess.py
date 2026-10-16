@@ -22,11 +22,8 @@ from ml.workflow.admission import (
     read_training_owner,
 )
 from backend.app.schemas.workflow import PreprocessPreviewRequest, PreprocessStatusOut
-from backend.app.services.workflow import (
-    ACTIVE_JOB_STATES,
-    WorkflowDatasetService,
-    job_status_scan,
-)
+from backend.app.services.workflow import WorkflowDatasetService
+from backend.app.services.workflow.datasets import ACTIVE_JOB_STATES, job_status_scan
 
 router = APIRouter(tags=["workflow"])
 
