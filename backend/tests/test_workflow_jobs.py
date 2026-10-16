@@ -21,9 +21,10 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
+from filelock import FileLock
 
 import backend.app.services.workflow.jobs as jobs_service
-from ml.workflow.admission import TrainingAdmissionLock
+from ml.workflow.admission import JOB_SUBMISSION_LOCK_NAME, TrainingAdmissionLock
 from backend.tests.conftest import (
     JOB_ID_RE,
     MINIMAL_PROPERTY_PAYLOAD,
@@ -237,6 +238,29 @@ class TestConcurrencyGuard:
             lock.release()
 
         # The failed delete must leave the upload intact and deletable afterward.
+        assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
+
+
+    def test_delete_refuses_during_job_submission_lock(
+        self,
+        workflow_client: TestClient,
+        workflow_roots: SimpleNamespace,
+    ) -> None:
+        """Serialize deletion with the job-creation window before status is written."""
+        dataset_id = upload_dataset(
+            workflow_client, ames_slice_csv(), filename="delete-submit-busy.csv"
+        ).json()["dataset_id"]
+        submission_lock = FileLock(
+            str(workflow_roots.models / JOB_SUBMISSION_LOCK_NAME)
+        )
+        submission_lock.acquire(timeout=0)
+        try:
+            response = workflow_client.delete(f"/workflow/datasets/{dataset_id}")
+            assert response.status_code == 409, response.text
+            assert "being submitted" in response.json()["detail"]
+        finally:
+            submission_lock.release()
+
         assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
 
 
