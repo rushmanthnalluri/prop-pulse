@@ -43,6 +43,7 @@ from backend.app.monitoring.middleware import (
     route_template_key,
 )
 from backend.app.monitoring.prediction_log import PredictionLogger
+from backend.app.abuse_controls import AbuseControlMiddleware
 from backend.app.security import (
     SECURITY_HEADERS,
     BodySizeLimitMiddleware,
@@ -281,6 +282,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
 
     app.add_middleware(MetricsMiddleware)
+    # Public valuations stay accessible, but expensive prediction/workflow routes
+    # receive conservative per-peer throttles. This is process-local defense in
+    # depth; see docs/DEPLOYMENT.md before running multiple replicas.
+    app.add_middleware(AbuseControlMiddleware)
     # SecurityHeadersMiddleware wraps BodySizeLimitMiddleware and MetricsMiddleware,
     # so normal responses and body-limit 413 responses receive baseline headers.
     app.add_middleware(BodySizeLimitMiddleware)
