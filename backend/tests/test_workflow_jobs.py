@@ -287,7 +287,7 @@ class TestConcurrencyGuard:
                 f"/workflow/datasets/{dataset_id}/preprocess/preview", json={}
             )
             assert response.status_code == 409, response.text
-            assert "queued work to finish" in response.json()["detail"]
+            assert "queued/running work to finish" in response.json()["detail"]
             assert len(calls) == 1
         finally:
             _force_failed(workflow_roots, dataset_id, job_id)
