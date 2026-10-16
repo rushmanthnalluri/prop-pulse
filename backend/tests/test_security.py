@@ -250,3 +250,25 @@ def test_abuse_nested_and_unknown_structures_rejected(client: TestClient) -> Non
     payload = {**MINIMAL_PAYLOAD, "nested": nested, "another": [1, 2, 3]}
     response = client.post("/predict", json=payload)
     assert response.status_code == 422
+
+
+
+@pytest.mark.parametrize("raw_number", ["NaN", "Infinity", "-Infinity", "1e999"])
+def test_non_finite_json_numbers_are_client_errors(client: TestClient, raw_number: str) -> None:
+    """Non-standard/non-finite JSON numbers must remain 422s, never trigger 500s.
+
+    Use raw JSON because json.dumps()/the TestClient json= helper normalize or
+    reject some non-finite values before the request reaches the API.
+    """
+    raw = json.dumps(MINIMAL_PAYLOAD).replace('"bedrooms": 3', f'"bedrooms": {raw_number}')
+    assert raw != json.dumps(MINIMAL_PAYLOAD)
+    response = client.post(
+        "/predict",
+        content=raw,
+        headers={"Content-Type": "application/json"},
+    )
+    assert response.status_code == 422, response.text
+    assert response.json()["detail"]
+    assert "Internal server error" not in response.text
+    assert "Traceback" not in response.text
+    _assert_security_headers(response)
