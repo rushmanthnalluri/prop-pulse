@@ -20,8 +20,14 @@ import logging
 from typing import Any
 
 from fastapi import HTTPException
+from filelock import FileLock, Timeout
 
 from ml.workflow import datasets as wf_datasets
+from ml.workflow.admission import (
+    JOB_SUBMISSION_LOCK_NAME,
+    TrainingAdmissionLock,
+    read_training_owner,
+)
 from ml.workflow.datasets import (
     MAX_UPLOAD_ROWS,
     CorruptUpload,
@@ -133,15 +139,65 @@ class WorkflowDatasetService:
         return self.build_state(self._record_or_404(dataset_id))
 
     def delete_dataset(self, dataset_id: str) -> None:
-        """Delete an upload (storage + sandbox); 400 bundled, 404 unknown, 409 busy."""
+        """Delete an upload under the same submission/admission lock order as training."""
+        # Preserve 400/404 validation responses even when another workflow is active.
         try:
-            wf_datasets.delete_dataset(dataset_id)
-        except ValueError as exc:  # bundled: "The bundled dataset cannot be deleted"
+            wf_datasets.get_record(dataset_id)
+        except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         except UnknownDataset as exc:
             raise _unknown_404(exc) from exc
-        except DatasetBusyError as exc:
-            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        if dataset_id == wf_datasets.BUNDLED_DATASET_ID:
+            raise HTTPException(
+                status_code=400, detail="The bundled dataset cannot be deleted"
+            )
+
+        queue_root = wf_datasets.WORKFLOW_MODELS_ROOT
+        queue_root.mkdir(parents=True, exist_ok=True)
+        submission_lock = FileLock(str(queue_root / JOB_SUBMISSION_LOCK_NAME))
+        try:
+            submission_lock.acquire(timeout=0)
+        except Timeout as exc:
+            raise HTTPException(
+                status_code=409,
+                detail="another workflow job is being submitted; retry shortly",
+            ) from exc
+
+        admission = TrainingAdmissionLock(
+            dataset_id=dataset_id, job_id=None, operation="dataset-delete"
+        )
+        admission_acquired = False
+        try:
+            admission_acquired = admission.acquire()
+            if not admission_acquired:
+                owner = read_training_owner()
+                if owner is None:
+                    detail = (
+                        "cannot delete while another workflow operation is active; "
+                        "retry when it finishes"
+                    )
+                else:
+                    detail = (
+                        f"cannot delete dataset {dataset_id!r} while workflow operation "
+                        f"{owner.get('operation')!r} is active on dataset "
+                        f"{owner.get('dataset_id')!r}"
+                    )
+                    if owner.get("job_id") is not None:
+                        detail += f" (job {owner.get('job_id')!r})"
+                raise HTTPException(status_code=409, detail=detail)
+
+            try:
+                wf_datasets.delete_dataset(dataset_id)
+            except ValueError as exc:  # bundled: "The bundled dataset cannot be deleted"
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            except UnknownDataset as exc:
+                raise _unknown_404(exc) from exc
+            except DatasetBusyError as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+        finally:
+            if admission_acquired:
+                admission.release()
+            submission_lock.release()
 
     # -- state assembly (§3.2) -----------------------------------------------
 
