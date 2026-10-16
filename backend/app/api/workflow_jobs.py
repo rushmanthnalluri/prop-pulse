@@ -31,12 +31,12 @@ def create_job(
 ) -> dict[str, Any]:
     """Queue a training job (stage 07, §3.9) -> 202 ``{job_id, status, links}``.
 
-    Errors: 400 row window; 404 dataset; 409 a job is already running
-    (message names it); 422 unknown candidates (message lists the valid set).
-    An unprepared dataset is auto-prepared by the subprocess with the default
-    config (surfaced as a ``preparing`` phase, §3.9). At most two jobs may be
-    queued/running across datasets (one active + one waiting); further submissions
-    return 409 to avoid unbounded waiting trainer processes on small instances.
+    Errors: 400 row window; 404 dataset; 409 when the submission lock is busy,
+    preprocessing owns the workflow lock, the current job is still preparing,
+    or two jobs are already queued/running; 422 unknown candidates (valid set
+    included). An unprepared dataset is auto-prepared by the subprocess with
+    the default config (surfaced as a ``preparing`` phase, §3.9). At most two
+    jobs are outstanding globally to bound memory on small instances.
     """
     return service.create_job(dataset_id, body.objective, body.candidates)
 
