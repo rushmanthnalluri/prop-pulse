@@ -24,6 +24,10 @@ copy it, never commit secrets). Relative paths resolve against the repo root.
 | `MLFLOW_TRACKING_URI` | *(empty)* | Empty → local file store `./mlruns`; set e.g. `http://localhost:5000` for a server |
 | `VITE_API_URL` | `http://localhost:8000` | Frontend → backend base URL. For the frontend Docker image this is a **build-time ARG** (Vite inlines it); changing it requires rebuilding the image |
 | `LOG_LEVEL` | `INFO` | Backend logging verbosity (`DEBUG|INFO|WARNING|ERROR`) |
+| `PROPULSE_RATE_LIMIT_PREDICTION` / `PROPULSE_RATE_WINDOW_PREDICTION` | `30` / `60` | Prediction POST requests per peer per rolling window (requests / seconds) |
+| `PROPULSE_RATE_LIMIT_WORKFLOW_WRITE` / `PROPULSE_RATE_WINDOW_WORKFLOW_WRITE` | `8` / `60` | Workflow mutation requests per peer per rolling window |
+| `PROPULSE_RATE_LIMIT_TRAINING` / `PROPULSE_RATE_WINDOW_TRAINING` | `2` / `60` | Training-job submissions per peer per rolling window |
+| `PROPULSE_RATE_LIMIT_GENERAL` / `PROPULSE_RATE_WINDOW_GENERAL` | `120` / `60` | Other non-health requests per peer per rolling window |
 | `PREDICTION_LOG_PATH` | `logs/predictions.jsonl` | JSONL prediction log (SPEC §10 binding schema) |
 | `DRIFT_PSI_THRESHOLD` | `0.2` | PSI drift threshold honored by `ml.monitoring.drift_check`; the warn threshold is a fixed 0.1 (half of the default — it does not scale with an override) |
 | `CORS_ORIGINS` | `http://localhost:5173,http://localhost:4173,http://localhost:8080` | Comma-separated browser origins allowed by CORS (Vite dev server, Vite preview, compose frontend). Parsed by `Settings.cors_origin_list` |
@@ -216,8 +220,9 @@ The service is a development-grade deployment. For production:
 - **Reverse proxy / TLS:** put nginx/Traefik/Caddy in front; terminate TLS,
   route `/` to the frontend and the API paths to uvicorn; drop the published
   ports.
-- **AuthN/AuthZ:** the API is wide open — add an API key or OAuth2/JWT at the
-  proxy or as FastAPI dependencies, and rate-limit the prediction endpoints.
+- **Abuse controls:** conservative in-process rolling-window limits now cover predictions, workflow mutations, training submissions, and other non-health requests. HTTP 429 responses include `Retry-After`; health/readiness and CORS preflight requests are exempt. Configure limits with the `PROPULSE_RATE_LIMIT_*` / `PROPULSE_RATE_WINDOW_*` variables above.
+- **AuthN/AuthZ remains a separate decision:** rate limits do not authenticate callers or make uploaded datasets private. For sensitive/private deployments, add identity and per-user authorization through a server-side session/proxy architecture; never embed a static API secret in Vite/browser code.
+- **Limiter scope:** counters are process-local and reset on restart. This is best-effort defense in depth for the current single-instance deployment, not a distributed quota. Use a shared Redis/API-gateway limiter before horizontal scaling.
 - **CORS:** `CORS_ORIGINS` is env-driven — restrict it to your real frontend
   domain(s) exactly (drop `allow_credentials` if unused).
 - **Secrets:** keep `.env` out of version control (already gitignored);
