@@ -218,6 +218,28 @@ class TestConcurrencyGuard:
             assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
 
 
+    def test_delete_refuses_while_workflow_admission_lock_is_held(
+        self, workflow_client: TestClient
+    ) -> None:
+        """A dataset must not be removed while a workflow operation owns admission."""
+        dataset_id = upload_dataset(
+            workflow_client, ames_slice_csv(), filename="delete-admission-busy.csv"
+        ).json()["dataset_id"]
+        lock = TrainingAdmissionLock(
+            dataset_id=dataset_id, job_id="job_00000010", operation="training"
+        )
+        assert lock.acquire()
+        try:
+            response = workflow_client.delete(f"/workflow/datasets/{dataset_id}")
+            assert response.status_code == 409, response.text
+            assert "training" in response.json()["detail"]
+        finally:
+            lock.release()
+
+        # The failed delete must leave the upload intact and deletable afterward.
+        assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
+
+
     def test_job_submission_is_rejected_during_preprocessing(
         self,
         workflow_client: TestClient,
