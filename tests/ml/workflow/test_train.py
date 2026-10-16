@@ -25,6 +25,7 @@ import numpy as np
 from ml.data.ingest import RAW_TRAIN_CSV
 from ml.paths import MLRUNS_DIR, MODELS_DIR, REPO_ROOT
 from ml.workflow import datasets
+from ml.workflow import train_job as train_job_module
 from ml.workflow.datasets import save_upload, sandbox_dir
 from ml.workflow.prepare import PrepareConfig, prepare_dataset
 from ml.workflow.train import (
@@ -351,8 +352,11 @@ class TestRunJob:
         def fake_sleep(seconds: float) -> None:
             clock["now"] += seconds
 
-        monkeypatch.setattr("ml.workflow.train_job.time.monotonic", fake_monotonic)
-        monkeypatch.setattr("ml.workflow.train_job.time.sleep", fake_sleep)
+        monkeypatch.setattr(
+            train_job_module,
+            "time",
+            SimpleNamespace(monotonic=fake_monotonic, sleep=fake_sleep),
+        )
 
         class BusyThenAvailable:
             def __init__(self, available_on_call: int | None) -> None:
