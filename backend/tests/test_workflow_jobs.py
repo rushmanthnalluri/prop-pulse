@@ -195,6 +195,14 @@ class TestConcurrencyGuard:
         assert len(calls) == 2
 
         try:
+            third = workflow_client.post(
+                f"/workflow/datasets/{dataset_id}/jobs",
+                json={"objective": "regression", "candidates": ["linear"]},
+            )
+            assert third.status_code == 409, third.text
+            assert "queue is full" in third.json()["detail"]
+            assert len(calls) == 2  # no third Python child was spawned
+
             busy = workflow_client.delete(f"/workflow/datasets/{dataset_id}")
             assert busy.status_code == 409
             detail = busy.json()["detail"]
@@ -207,6 +215,34 @@ class TestConcurrencyGuard:
         finally:
             for job_id in (first_job, second.json()["job_id"]):
                 _force_failed(workflow_roots, dataset_id, job_id)
+            assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
+
+
+    def test_job_submission_is_rejected_during_preprocessing(
+        self,
+        workflow_client: TestClient,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Do not start another heavy child while preprocessing owns the shared lock."""
+        calls: list[tuple[str, str]] = []
+        monkeypatch.setattr(jobs_service, "spawn_training_job", _queued_spawn(calls))
+        dataset_id = upload_dataset(
+            workflow_client, ames_slice_csv(), filename="preprocess-busy.csv"
+        ).json()["dataset_id"]
+        lock = TrainingAdmissionLock(
+            dataset_id=dataset_id, job_id=None, operation="preprocess"
+        )
+        assert lock.acquire()
+        try:
+            response = workflow_client.post(
+                f"/workflow/datasets/{dataset_id}/jobs",
+                json={"objective": "regression", "candidates": ["linear"]},
+            )
+            assert response.status_code == 409, response.text
+            assert "preprocess" in response.json()["detail"]
+            assert calls == []
+        finally:
+            lock.release()
             assert workflow_client.delete(f"/workflow/datasets/{dataset_id}").status_code == 204
 
 
