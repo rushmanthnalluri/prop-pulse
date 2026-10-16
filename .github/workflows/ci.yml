@@ -1,8 +1,8 @@
 # PropPulse CI (SPEC §11/§12).
 # Use Node 24-native GitHub actions so the runner no longer emits Node 20
 # deprecation warnings (checkout/setup-node/setup-python/upload-artifact).
-# - python:       pinned dev environment on Python 3.12 + strict pip-audit
-#                 gate + the full test suite
+# - python:       strict pip-audit + full tests on Python 3.12 (Docker/test
+#                 baseline) and 3.14.5 (the configured Render runtime)
 # - frontend:     install + npm audit gate + ESLint + production build of the
 #                 Vite app
 # - docker:       static validation of the compose files — base alone and
@@ -20,16 +20,20 @@ on:
 jobs:
   python:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.14.5"]
     steps:
       - name: Set stable default branch for checkout
         working-directory: ${{ github.workspace }}
         run: git config --global init.defaultBranch main
       - uses: actions/checkout@v7
 
-      - name: Set up Python 3.12
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v7
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python-version }}
           cache: pip
 
       - name: Install dependencies
