@@ -361,7 +361,9 @@ class TestRunJob:
 
             def acquire(self) -> bool:
                 self.calls += 1
-                return self.calls >= self.available_on_call if self.available_on_call else False
+                if self.available_on_call is None:
+                    return False
+                return self.calls >= self.available_on_call
 
         lock = BusyThenAvailable(available_on_call=3)
         assert _acquire_training_admission(
