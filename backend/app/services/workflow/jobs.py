@@ -43,7 +43,11 @@ from filelock import FileLock, Timeout
 from fastapi import HTTPException
 
 from ml.paths import REPO_ROOT
-from ml.workflow.admission import TrainingAdmissionLock, read_training_owner
+from ml.workflow.admission import (
+    JOB_SUBMISSION_LOCK_NAME,
+    TrainingAdmissionLock,
+    read_training_owner,
+)
 from ml.workflow.datasets import (
     UnknownDataset,
     get_record,
@@ -314,7 +318,7 @@ class WorkflowJobService:
 
         queue_root = wf_datasets.WORKFLOW_MODELS_ROOT
         queue_root.mkdir(parents=True, exist_ok=True)
-        submission_lock = FileLock(str(queue_root / ".job-submission.lock"))
+        submission_lock = FileLock(str(queue_root / JOB_SUBMISSION_LOCK_NAME))
         try:
             submission_lock.acquire(timeout=0)
         except Timeout as exc:
@@ -326,6 +330,13 @@ class WorkflowJobService:
         reservation: TrainingAdmissionLock | None = None
         reservation_acquired = False
         try:
+            # Re-read under the submission lock: a concurrent delete may have
+            # completed after the optimistic lookup above but before admission.
+            try:
+                record = get_record(dataset_id)
+            except UnknownDataset as exc:
+                raise HTTPException(status_code=404, detail=str(exc)) from exc
+
             active_jobs = _active_workflow_jobs()
             if len(active_jobs) >= MAX_OUTSTANDING_WORKFLOW_JOBS:
                 active_ids = [
