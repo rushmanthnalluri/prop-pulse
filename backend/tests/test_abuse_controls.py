@@ -7,6 +7,14 @@ from fastapi.testclient import TestClient
 from backend.app.abuse_controls import AbuseControlMiddleware
 
 
+def test_workflow_job_submission_uses_training_bucket() -> None:
+    from backend.app.abuse_controls import _route_bucket
+
+    bucket = _route_bucket("POST", "/workflow/jobs")
+    assert bucket is not None
+    assert bucket[0] == "training"
+
+
 def _client() -> TestClient:
     app = FastAPI()
     app.add_middleware(AbuseControlMiddleware)
